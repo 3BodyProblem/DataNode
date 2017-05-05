@@ -2,10 +2,6 @@
 #define	__DATA_TABLE_PAINTER_H__
 
 
-#include "Interface.h"
-#include "Infrastructure/Lock.h"
-
-
 /**
  * @brief				DLL导出接口
  * @author				barry
@@ -13,12 +9,17 @@
  */
 extern "C"
 {
-
+	/**
+	 * @brief					运行节点服务器
+	 * @return					==0				正常运行结束
+								!=0				运行异常结束
+	 */
+	int							RunNodeServer();
 
 	/**
-	 * @brief								单元测试导出函数
+	 * @brief					单元测试导出函数
 	 */
-	__declspec(dllexport) void				ExecuteUnitTest();
+	void						ExecuteUnitTest();
 }
 
 

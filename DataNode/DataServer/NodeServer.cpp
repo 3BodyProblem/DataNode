@@ -65,7 +65,7 @@ bool DataEngine::OnQuery( unsigned int nDataID, char* pData, unsigned int nDataL
 ///< ----------------------------------------------------------------------------
 
 
-int DataNodeService::Active()
+int DataNodeService::Activate()
 {
 	return -1;
 }

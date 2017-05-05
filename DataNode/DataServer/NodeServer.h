@@ -18,7 +18,7 @@
  * @date					2017/5/3
  * @author					barry
  */
-class DataEngine : public I_DataHandle, protected SimpleTask
+class DataEngine : public I_DataHandle, public SimpleTask
 {
 public:
 	DataEngine();
@@ -112,7 +112,7 @@ public:
 	/**
 	 * @brief				启动行情服务
 	 */
-	int						Active( /*tagDll_DataCenterInput* pIn, tagDll_DriverOutput* pOut*/ );
+	int						Activate( /*tagDll_DataCenterInput* pIn, tagDll_DriverOutput* pOut*/ );
 
 	/**
 	 * @brief				销毁行情服务

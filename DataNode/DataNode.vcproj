@@ -262,6 +262,22 @@
 				RelativePath=".\DataServer\SvrConfig.h"
 				>
 			</File>
+			<Filter
+				Name="ServiceIO"
+				>
+				<File
+					RelativePath=".\DataServer\ServiceIO\MServicePlug.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\DataServer\ServiceIO\MServicePlug.h"
+					>
+				</File>
+				<File
+					RelativePath=".\DataServer\ServiceIO\MServicePlug.hpp"
+					>
+				</File>
+			</Filter>
 		</Filter>
 		<File
 			RelativePath=".\DataNode.cpp"
