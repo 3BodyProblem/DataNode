@@ -20,7 +20,7 @@
 			Name="Debug|Win32"
 			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
-			ConfigurationType="2"
+			ConfigurationType="1"
 			CharacterSet="2"
 			>
 			<Tool
@@ -65,7 +65,7 @@
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="../libs/gtest/library_vc9/Debug/"
 				GenerateDebugInformation="true"
-				SubSystem="2"
+				SubSystem="1"
 				TargetMachine="1"
 			/>
 			<Tool
@@ -94,7 +94,7 @@
 			Name="Release|Win32"
 			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
-			ConfigurationType="2"
+			ConfigurationType="1"
 			CharacterSet="2"
 			WholeProgramOptimization="1"
 			>
@@ -140,7 +140,7 @@
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="../libs/gtest/library_vc9/Release/"
 				GenerateDebugInformation="true"
-				SubSystem="2"
+				SubSystem="1"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
 				TargetMachine="1"
@@ -268,15 +268,19 @@
 			>
 		</File>
 		<File
-			RelativePath=".\DataNode.def"
-			>
-		</File>
-		<File
 			RelativePath=".\DataNode.h"
 			>
 		</File>
 		<File
-			RelativePath=".\dllmain.cpp"
+			RelativePath=".\Interface.cpp"
+			>
+		</File>
+		<File
+			RelativePath=".\Interface.h"
+			>
+		</File>
+		<File
+			RelativePath=".\main.cpp"
 			>
 			<FileConfiguration
 				Name="Debug|Win32"
@@ -296,14 +300,6 @@
 					CompileAsManaged="0"
 				/>
 			</FileConfiguration>
-		</File>
-		<File
-			RelativePath=".\Interface.cpp"
-			>
-		</File>
-		<File
-			RelativePath=".\Interface.h"
-			>
 		</File>
 		<File
 			RelativePath=".\ReadMe.txt"
