@@ -9,6 +9,7 @@
 #include "../Infrastructure/Thread.h"
 #include "ServiceIO/MServicePlug.h"
 #include "ServiceIO/MServicePlug.hpp"
+#include "../MemoryDB/MemoryDatabase.h"
 #include "../DataCollector/DataCollector.h"
 
 
@@ -113,6 +114,7 @@ protected:
 
 private:
 	DataCollector			m_oDataCollector;				///< 行情采集模块接口
+
 //	IMemDatabase*			m_pIQueryMemDatabase;			///< 行情数据保护数据块接口,对外提供查询功能
 
 private:

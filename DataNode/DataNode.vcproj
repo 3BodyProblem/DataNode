@@ -232,6 +232,26 @@
 			</File>
 		</Filter>
 		<Filter
+			Name="MemoryDB"
+			>
+			<File
+				RelativePath=".\MemoryDB\Interface.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\MemoryDB\Interface.h"
+				>
+			</File>
+			<File
+				RelativePath=".\MemoryDB\MemoryDatabase.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\MemoryDB\MemoryDatabase.h"
+				>
+			</File>
+		</Filter>
+		<Filter
 			Name="DataServer"
 			>
 			<File
@@ -273,10 +293,6 @@
 		</File>
 		<File
 			RelativePath=".\DataNode.h"
-			>
-		</File>
-		<File
-			RelativePath=".\Interface.cpp"
 			>
 		</File>
 		<File
