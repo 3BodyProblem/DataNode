@@ -232,18 +232,6 @@
 			</File>
 		</Filter>
 		<Filter
-			Name="Initializer"
-			>
-			<File
-				RelativePath=".\Initializer\Initializer.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\Initializer\Initializer.h"
-				>
-			</File>
-		</Filter>
-		<Filter
 			Name="DataServer"
 			>
 			<File

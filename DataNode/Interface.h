@@ -14,6 +14,8 @@ public:
 	/**
  	 * @brief				初始化性质的行情数据回调
 	 * @note				只是更新构造好行情数据的内存初始结构，不推送
+							&
+							会导致框架模块的重新初始化状态
 	 * @param[in]			nDataID				消息ID
 	 * @param[in]			pData				数据内容
 	 * @param[in]			nDataLen			长度

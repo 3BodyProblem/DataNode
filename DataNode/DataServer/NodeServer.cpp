@@ -54,12 +54,6 @@ int DataEngine::Initialize( const std::string& sDataCollectorPluginPath, const s
 {
 	int			nErrorCode = 0;
 
-	if( 0 != (nErrorCode = m_oInitializer.Initialize( Configuration::GetConfigObj().GetHolidayFilePath(), Configuration::GetConfigObj().GetTestFlag() )) )
-	{
-		SvrFramework::GetFramework().WriteError( "DataEngine::Initialize() : failed 2 initialize reinstnace policy module, errorcode=%d", nErrorCode );
-		return -1;
-	}
-
 	nErrorCode = m_oDataCollector.Initialize( NULL );
 	nErrorCode = SimpleTask::Activate();
 
