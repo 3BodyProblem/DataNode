@@ -24,6 +24,7 @@ public:
 
 protected:
 	IDBFactory*						m_pIDBFactoryPtr;				///< 工厂类
+	I_Database*						m_pIDatabase;					///< 数据库指针
 };
 
 

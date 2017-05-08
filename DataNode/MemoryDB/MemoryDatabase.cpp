@@ -3,7 +3,7 @@
 
 
 DatabaseManager::DatabaseManager()
-: m_pIDBFactoryPtr( NULL )
+: m_pIDBFactoryPtr( NULL ), m_pIDatabase( NULL )
 {
 }
 
