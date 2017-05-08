@@ -18,21 +18,25 @@ class EngineInitializer
 {
 public:
 	/**
-	 * @brief			初始化交易时间段，节假日表，测试标识
+	 * @brief						初始化交易时间段，节假日表，测试标识
+	 * @param[in]					sHolidayFilePath		节假日文件路径
+	 * @param[in]					bTestFlag				节假日测试标识
+	 * @return						==0						初始化成功
+									!=0						失败
 	 */
-	void				Initialize( /*const std::vector<tagTradingPeriod>& refTradingPeriods, const std::string& sHolidayFilePath, bool bTestFlag*/ );
+	int								Initialize( /*const std::vector<tagTradingPeriod>& refTradingPeriods,*/ const std::string& sHolidayFilePath, bool bTestFlag );
 
 public:
-	bool				Get() const;
+	bool							Get() const;
 
-	void				Set( bool bNewFlag );
+	void							Set( bool bNewFlag );
 
-	bool				IsTradingPeriod() const;
+	bool							IsTradingPeriod() const;
 
 private:
-	CriticalObject		m_oLock;
-	bool				m_bTestFlag;			///< 测试模式标识
-//	Holiday				m_oHolidayTable;		///< 节假日记录
+	CriticalObject					m_oLock;
+	bool							m_bTestFlag;			///< 测试模式标识
+//	Holiday							m_oHolidayTable;		///< 节假日记录
 //	std::vector<tagTradingPeriod>	m_vctTradingPeriod;		/// 交易时段列表，用于判断是否该初始化了
 };
 

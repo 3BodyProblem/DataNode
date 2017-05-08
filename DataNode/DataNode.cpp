@@ -34,7 +34,9 @@ extern "C"
 			SimpleThread::Sleep( 1000*2 );
 		}
 
+		::printf( "RunNodeServer() : joining thread..... \n" );
 		objService.Join();							///< 等待退出服务
+		::printf( "RunNodeServer() : thread ended....... \n" );
 
 		return nErrorCode;
 	}

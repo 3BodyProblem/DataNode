@@ -5,13 +5,14 @@
 #include <string>
 #include "../Infrastructure/Lock.h"
 #include "../Infrastructure/Thread.h"
+#include "ServiceIO/MServicePlug.hpp"
 
 
 /**
- * @class				Configuration
- * @brief				节点服务器的配置信息管理类
- * @date				2017/5/4
- * @author				barry
+ * @class						Configuration
+ * @brief						节点服务器的配置信息管理类
+ * @date						2017/5/4
+ * @author						barry
  */
 class Configuration
 {
@@ -20,25 +21,58 @@ private:
 
 public:
 	/**
-	 * @brief				取得配置对象的单键引用
+	 * @brief					取得配置对象的单键引用
 	 */
-	static Configuration&	GetConfigObj();
+	static Configuration&		GetConfigObj();
 
 	/**
-	 * @brief				初始化加载配置
-	 * @return				==0				成功
-							!=				失败
+	 * @brief					初始化加载配置
+	 * @return					==0				成功
+								!=				失败
 	 */
-	int						Load();
+	int							Load();
 
-	const std::string&		GetMemPluginPath() const;
-	const std::string&		GetCompressPluginPath() const;
-	const std::string&		GetDataCollectorPluginPath() const;
+	/**
+	 * @brief					节假日测试标识
+	 * @return					返回节假日是否需要测试的标识
+	 */
+	bool						GetTestFlag() const;
+
+	/**
+	 * @brief					节假文件路径
+	 */
+	const std::string&			GetHolidayFilePath() const;
+
+	/**
+	 * @brief					内存插件模块路径
+	 */
+	const std::string&			GetMemPluginPath() const;
+
+	/**
+	 * @brief					压缩模块插件路径
+	 */
+	const std::string&			GetCompressPluginPath() const;
+
+	/**
+	 * @brief					数据采集插件路径
+	 */
+	const std::string&			GetDataCollectorPluginPath() const;
+
+	/**
+	 * @brief					服务框架启动参数
+	 */
+	const tagServicePlug_StartInParam&	GetStartInParam() const;
 
 protected:
-	std::string				m_sMemPluginPath;				///< 数据内存块插件所在路径
-	std::string				m_sCompressPluginPath;			///< 数据压缩插件所在路径
-	std::string				m_sDataCollectorPluginPath;		///< 数据采集插件所在路径
+	tagServicePlug_StartInParam	m_oStartInParam;				///< 服务引擎启动参数
+
+protected:
+	bool						m_bTestFlag;					///< 测试标识
+	std::string					m_sHolidayFilePath;				///< 节假日文件路径
+	std::string					m_sMemPluginPath;				///< 数据内存块插件所在路径
+	std::string					m_sCompressPluginPath;			///< 数据压缩插件所在路径
+	std::string					m_sDataCollectorPluginPath;		///< 数据采集插件所在路径
+
 };
 
 

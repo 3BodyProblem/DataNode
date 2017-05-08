@@ -9,6 +9,8 @@ int _tmain( int argc, _TCHAR* argv[] )
 {
 	int		nErrorCode = 0;
 
+	::printf( "--------------- [Main()] ------------------------\n" );
+
 	if( argc <= 1 )
 	{
 		::printf( "--------------- [Service] ------------------------\n" );

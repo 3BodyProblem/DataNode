@@ -4,8 +4,10 @@
 #include "Initializer.h"
 
 
-void EngineInitializer::Initialize( /*const std::vector<tagTradingPeriod>& refTradingPeriods, const std::string& sHolidayFilePath, bool bTestFlag*/ )
+int EngineInitializer::Initialize( /*const std::vector<tagTradingPeriod>& refTradingPeriods,*/ const std::string& sHolidayFilePath, bool bTestFlag )
 {
+
+	return 0;
 }
 
 bool EngineInitializer::Get() const

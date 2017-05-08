@@ -28,7 +28,11 @@ bool IniFile::parse(const string &content, string &key, string &value, char c/*=
 
     if (i >= 0 && i < len) {
         key = string(content.c_str(), i);
+		trimleft( key );
+		trimright( key );
         value = string(content.c_str() + i + 1, len - i - 1);
+		trimleft( value );
+		trimright( value );
         return true;
     }
 
@@ -553,9 +557,13 @@ void IniFile::trim(string &str)
     len = str.length();
 
     for (i = len - 1; i >= 0; --i) {
-        if (!isspace(str[i])) {
+		if( str[i] != ' ' && str[i] != '\t' ) {
+			break;
+		}
+
+/*        if (!isspace(str[i])) {
             break;
-        }
+        }*/
     }
 
     str = string(str, 0, i + 1);

@@ -7,8 +7,40 @@
 #include "../Interface.h"
 #include "../Infrastructure/Lock.h"
 #include "../Infrastructure/Thread.h"
+#include "ServiceIO/MServicePlug.h"
+#include "ServiceIO/MServicePlug.hpp"
 #include "../Initializer/Initializer.h"
 #include "../DataCollector/DataCollector.h"
+
+
+/**
+ * @class					SvrFramework
+ * @brief					服务框架类
+ * @detail					封装了服务注册、数据收发、状态通知等基础功能
+ * @date					2017/5/2
+ * @author					barry
+ */
+class SvrFramework : public MServicePlug
+{
+private:
+	SvrFramework();
+	~SvrFramework();
+
+public:
+	/**
+	 * @brief				取得服务框架插件
+	 * @return				返回服务框架插件的对象引用
+	 */
+	static SvrFramework&	GetFramework();
+
+	/**
+	 * @brief				初始化服务框架
+	 * @note				在加载完配置文件后，将马上被调用
+	 * @return				==0					成功
+							!=0					失败
+	 */
+	int						Initialize();
+};
 
 
 /**
@@ -26,13 +58,13 @@ public:
 	/**
  	 * @brief				初始化行情各参数，准备工作
 	 * @note				流程中，先从本地文件加载内存插件的行情数据，再初始化行情解析插件
-	 * @param[in]			sDataDriverPluginPath		行情解析插件路径
+	 * @param[in]			sDataCollectorPluginPath	行情解析插件路径
 	 * @param[in]			sMemPluginPath				行情数据内存插件路径
 	 * @param[in]			sHolidayPath				节假日文件路径
 	 * @return				==0							成功
 							!=0							失败
 	 */
-	int						Initialize( const std::string& sDataDriverPluginPath, const std::string& sMemPluginPath, const std::string& sHolidayPath );
+	int						Initialize( const std::string& sDataCollectorPluginPath, const std::string& sMemPluginPath, const std::string& sHolidayPath );
 
 	/**
 	 * @brief				释放行情模块各资源
@@ -110,22 +142,24 @@ class DataNodeService : public DataEngine
 {
 public:
 	/**
-	 * @brief				启动行情服务
+	 * @brief				初始化&启动行情服务
+	 * @return				==0				启动成功
+							!=0				启动出错
 	 */
-	int						Activate( /*tagDll_DataCenterInput* pIn, tagDll_DriverOutput* pOut*/ );
+	int						Activate();
 
 	/**
 	 * @brief				销毁行情服务
 	 */
-	int						Destroy();
+	void					Destroy();
 
+public:
 	/**
 	 * @brief				空闲状态任务: 内存数据落盘/行情超时等...
 	 * @note				所以，关于内存数据落盘文件的存取，需要内存数据插件的标识接口支持
 	 */
 	int						OnIdle();
 
-public:///< 需要支持DLL导出函数的方法
 	/**
 	 * @brief				本引擎的版本序列
 	 */
