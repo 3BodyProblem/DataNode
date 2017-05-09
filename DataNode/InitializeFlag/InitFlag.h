@@ -83,7 +83,12 @@ public:
 
 	void							Set( bool bNewFlag );
 
-	bool							IsTradingPeriod() const;
+	/**
+	 * @brief						判断是否在交易时段内
+	 * @return						true				在交易时段内
+									false				不在
+	 */
+	bool							InTradingPeriod() const;
 
 private:
 	CriticalObject					m_oLock;

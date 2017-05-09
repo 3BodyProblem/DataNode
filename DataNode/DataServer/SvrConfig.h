@@ -60,6 +60,11 @@ public:
 	const std::string&					GetHolidayFilePath() const;
 
 	/**
+	 * @brief							取得对应的节假日节点名称
+	 */
+	const std::string&					GetHolidayNodeName() const;
+
+	/**
 	 * @brief							内存插件模块路径
 	 */
 	const std::string&					GetMemPluginPath() const;
@@ -84,6 +89,7 @@ protected:
 
 protected:
 	bool								m_bTestFlag;					///< 测试标识
+	std::string							m_sNodeInHolidayFile;			///< 当前模块在holiday.ini文件里读的描述节点的名称
 	std::string							m_sHolidayFilePath;				///< 节假日文件路径
 	std::string							m_sMemPluginPath;				///< 数据内存块插件所在路径
 	std::string							m_sCompressPluginPath;			///< 数据压缩插件所在路径

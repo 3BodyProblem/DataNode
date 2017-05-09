@@ -153,11 +153,37 @@ int Configuration::Load()
 		m_oStartInParam.uiPageCount = 10;
 	}
 
+	///< [trading periods configuration]
+	int	nTradingPeriodsCount = oIniFile.getIntValue( std::string("TradingPeriods"), std::string("count"), nErrCode );
+	if( nTradingPeriodsCount <= 0 )
+	{
+		::printf( "Configuration::Load() : missing trading periods node, size = 0 \n" );
+		return -100;
+	}
+
+	for( int n = 0; n < nTradingPeriodsCount; n++ )
+	{
+		int					nRet1, nRet2;
+		T_TRADING_PERIOD	tagPeriodPair;
+		char				pszBeginTime[32] = { 0 };
+		char				pszEndTime[32] = { 0 };
+
+		::sprintf( pszBeginTime, "%d_begintime", n );
+		::sprintf( pszEndTime, "%d_endtime", n );
+		tagPeriodPair.first = oIniFile.getIntValue(std::string("TradingPeriods"), std::string(pszBeginTime), nRet1 );
+		tagPeriodPair.second = oIniFile.getIntValue(std::string("TradingPeriods"), std::string(pszEndTime), nRet2 );
+		if( 0 != nRet1 || 0 != nRet2 ) {
+			::printf( "Configuration::Load() : failed 2 load trading periods, %s~%s [%d:%d]\n", pszBeginTime, pszEndTime, nRet1, nRet2 );
+			return -101;
+		}
+		m_vctTradingPeriods.push_back( tagPeriodPair );
+	}
+
 	///< ---------- initialize framework -------------------------
 	if( 0 != SvrFramework::GetFramework().Initialize() )
 	{
 		::printf( "Configuration::Load() : failed 2 initialize server framework\n" );
-		return -100;
+		return -102;
 	}
 
 	return 0;
@@ -188,6 +214,11 @@ const std::string& Configuration::GetRecoveryFolderPath() const
 const std::string& Configuration::GetHolidayFilePath() const
 {
 	return m_sHolidayFilePath;
+}
+
+const std::string& Configuration::GetHolidayNodeName() const
+{
+	return m_sNodeInHolidayFile;
 }
 
 const std::string& Configuration::GetMemPluginPath() const
