@@ -4,6 +4,7 @@
 
 #include <string>
 #include "../Interface.h"
+#include "../Infrastructure/Dll.h"
 #include "../Infrastructure/Lock.h"
 
 
@@ -11,6 +12,7 @@
  * @class				CollectorStatus
  * @brief				当前行情会话的状态
  * @detail				服务框架需要通过这个判断（组合初始化策略实例）来判断是否需要重新初始化等动作
+ * @author				barry
  */
 class CollectorStatus
 {
@@ -85,6 +87,7 @@ public:///< 数据采集模块事件定义
 	int						OnOverTime( int nReaseon );
 
 private:
+	Dll						m_oDllPlugin;					///< 插件加载类
 	I_DataHandle*			m_pIDataCallBack;				///< 数据回调接口
 };
 

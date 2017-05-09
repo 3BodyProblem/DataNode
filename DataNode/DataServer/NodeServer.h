@@ -113,13 +113,9 @@ protected:
 	virtual int				Execute();
 
 private:
+	DatabaseIO				m_oDatabaseIO;					///< 内存数据插件管理
 	DataCollector			m_oDataCollector;				///< 行情采集模块接口
-
-//	IMemDatabase*			m_pIQueryMemDatabase;			///< 行情数据保护数据块接口,对外提供查询功能
-
-private:
 //	XXXCompress				m_oCompressObj;					///< 行情压缩模块
-//	pthread					m_oWorkFlowThread;				///< 行情会话管理线程句柄
 };
 
 

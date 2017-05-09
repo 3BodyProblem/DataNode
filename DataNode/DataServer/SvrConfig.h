@@ -8,6 +8,9 @@
 #include "ServiceIO/MServicePlug.hpp"
 
 
+std::string GetModulePath( void* hModule );
+
+
 /**
  * @class						Configuration
  * @brief						节点服务器的配置信息管理类

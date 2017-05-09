@@ -1,58 +1,8 @@
-#include "MDll.h"
-#include "MTypeDefine.h"
+#include "Dll.h"
 #include <exception>
 
 
-char*	__BasePath(char *in)
-{
-	if( !in )
-		return NULL;
-
-	int	len = strlen(in);
-	for( int i = len-1; i >= 0; i-- )
-	{
-		if( in[i] == '\\' || in[i] == '/' )
-		{
-			in[i + 1] = 0;
-			break;
-		}
-	}
-
-	return in;
-}
-
-std::string GetApplicationPath(void * hModule)
-{
-	char					szPath[MAX_PATH] = { 0 };
-#ifndef LINUXCODE
-		int	iRet = ::GetModuleFileName( (HMODULE)hModule, szPath, MAX_PATH );
-		if( iRet <= 0 )	{
-			return "";
-		} else {
-			return __BasePath( szPath );
-		}
-#else
-		if( !hModule ) {
-			int iRet =  readlink( "/proc/self/exe", szPath, MAX_PATH );
-			if( iRet <= 0 ) {
-				return "";
-			} else {
-				return __BasePath( szPath );
-			}
-		} else {
-			class MDll	*pModule = (class MDll *)hModule;
-			strncpy( szPath, pModule->GetDllSelfPath(), sizeof(szPath) );
-			if( strlen(szPath) == 0 ) {
-				return "";
-			} else {
-				return __BasePath(szPath);
-			}
-		}
-#endif
-}
-
-
-MDll::MDll(void)
+Dll::Dll(void)
 {
 	#ifndef LINUXCODE
 		m_hDll = NULL;
@@ -62,17 +12,18 @@ MDll::MDll(void)
 	#endif
 }
 
-MDll::~MDll()
+Dll::~Dll()
 {
 	CloseDll();
 }
+
 #ifdef LINUXCODE
-char	*MDll::GetDllSelfPath()
+char	*Dll::GetDllSelfPath()
 {
 	return m_szDllSelfPath;
 }
 
-void	MDll::MergeDllSelfPath(const char *in, void *hModule)
+void	Dll::MergeDllSelfPath(const char *in, void *hModule)
 {
 	int		iRet, i, n, n1;
 	char	szProcessPath[MAX_PATH];
@@ -171,17 +122,16 @@ void	MDll::MergeDllSelfPath(const char *in, void *hModule)
 #endif
 }
 #endif
-//..............................................................................................................................
-// modify by yuanjj for DllMain call 2014-03-12
-int MDll::LoadDll( std::string strFileName, void *hModule /* = NULL */, BOOL bdllmain /* = TRUE */ )
+
+int Dll::LoadDll( std::string strFileName, void *hModule /* = NULL */, BOOL bdllmain /* = TRUE */ )
 {
 	#ifndef LINUXCODE
 		if ( (m_hDll = ::LoadLibrary(strFileName.c_str())) == NULL )
 		{
-			return(MErrorCode::GetSysErr());
+			return -1;
 		}
 
-		return(1);
+		return 0;
 	#else
 		if ( (m_lpDll = dlopen(strFileName.c_str(),RTLD_LAZY)) == NULL )
 		{
@@ -205,12 +155,12 @@ int MDll::LoadDll( std::string strFileName, void *hModule /* = NULL */, BOOL bdl
 			pfnDllMain(this, 0, NULL);
 		}
 
-		return(1);
+		return 0;
 
 	#endif
 }
-//..............................................................................................................................
-void * MDll::GetDllFunction( std::string strFunctionName )
+
+void* Dll::GetDllFunction( std::string strFunctionName )
 {
 	#ifndef LINUXCODE
 
@@ -231,8 +181,8 @@ void * MDll::GetDllFunction( std::string strFunctionName )
 		return pFunc;
 	#endif
 }
-//..............................................................................................................................
-void MDll::CloseDll(void)
+
+void Dll::CloseDll(void)
 {
 #ifndef LINUXCODE
 
@@ -267,8 +217,7 @@ void MDll::CloseDll(void)
 #endif
 }
 
-//------------------------------------------------------------------------------------------------------------------------------
-void * MDll::GetDllHand()
+void* Dll::GetDllHand()
 {
 #ifndef LINUXCODE
 	return reinterpret_cast< void * >(m_hDll);
@@ -277,4 +226,7 @@ void * MDll::GetDllHand()
 #endif
 
 }
-//------------------------------------------------------------------------------------------------------------------------------
+
+
+
+

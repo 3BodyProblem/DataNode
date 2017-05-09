@@ -3,28 +3,20 @@
 
 
 #include <string>
+#include <assert.h>
+#include <windows.h>
 
 
-std::string GetApplicationPath(void * hModule);
-
-
-class MDll
+class Dll
 {
-protected:
-	#ifndef LINUXCODE
-		HINSTANCE					m_hDll;
-	#else
-		void					*	m_lpDll;
-		char						m_szDllSelfPath[MAX_PATH];
-	#endif
 public:
-	MDll(void);
-	virtual ~MDll();
+	Dll(void);
+	virtual ~Dll();
 
 public:
 	//装载动态连接库
 	// modify by yuanjj for dllmain call 2014-03-12
-	int  LoadDll(std::string strFileName, void *hModule = NULL, BOOL bdllmain = TRUE );
+	int  LoadDll( std::string strFileName, void *hModule = NULL, BOOL bdllmain = TRUE );
 	// modify end
 	//获取函数指针
 	void * GetDllFunction(std::string strFunctionName);
@@ -36,6 +28,15 @@ public:
 private:
 	void	MergeDllSelfPath(const char *, void *);
 #endif
+
+protected:
+	#ifndef LINUXCODE
+		HINSTANCE					m_hDll;
+	#else
+		void					*	m_lpDll;
+		char						m_szDllSelfPath[MAX_PATH];
+	#endif
+
 };
 
 

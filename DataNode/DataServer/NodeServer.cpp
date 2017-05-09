@@ -54,15 +54,41 @@ int DataEngine::Initialize( const std::string& sDataCollectorPluginPath, const s
 {
 	int			nErrorCode = 0;
 
-	nErrorCode = m_oDataCollector.Initialize( NULL );
-	nErrorCode = SimpleTask::Activate();
+	Release();
+	SvrFramework::GetFramework().WriteInfo( "DataEngine::Initialize() : DataNode Engine is initializing ......" );
+
+	if( 0 != (nErrorCode = m_oDatabaseIO.Initialize()) )
+	{
+		SvrFramework::GetFramework().WriteError( "DataEngine::Initialize() : failed 2 initialize memory database plugin, errorcode=%d", nErrorCode );
+		return nErrorCode;
+	}
+
+	if( 0 != (nErrorCode = m_oDataCollector.Initialize( this )) )
+	{
+		SvrFramework::GetFramework().WriteError( "DataEngine::Initialize() : failed 2 initialize data collector plugin, errorcode=%d", nErrorCode );
+		return nErrorCode;
+	}
+
+	if( 0 != (nErrorCode = SimpleTask::Activate()) )
+	{
+		SvrFramework::GetFramework().WriteError( "DataEngine::Initialize() : failed 2 initialize task thread, errorcode=%d", nErrorCode );
+		return nErrorCode;
+	}
+
+	SvrFramework::GetFramework().WriteInfo( "DataEngine::Initialize() : DataNode Engine is initialized ......" );
 
 	return nErrorCode;
 }
 
 void DataEngine::Release()
 {
+	SvrFramework::GetFramework().WriteInfo( "DataEngine::Release() : DataNode Engine is releasing ......" );
 
+	m_oDataCollector.Release();
+	m_oDatabaseIO.Release();
+	SimpleTask::StopThread();
+
+	SvrFramework::GetFramework().WriteInfo( "DataEngine::Release() : DataNode Engine is released ......" );
 }
 
 int DataEngine::Execute()

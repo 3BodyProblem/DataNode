@@ -23,7 +23,6 @@ bool CollectorStatus::Set( enum E_QS_STATUS eNewStatus )
 }
 
 
-
 DataCollector::DataCollector()
  : m_pIDataCallBack( NULL )
 {
@@ -31,13 +30,15 @@ DataCollector::DataCollector()
 
 int DataCollector::Initialize( I_DataHandle* pIDataCallBack )
 {
+	Release();
 
-	return -1;
+
+	return 0;
 }
 
 void DataCollector::Release()
 {
-
+	m_oDllPlugin.CloseDll();
 }
 
 int DataCollector::OnReInitializeDriver()

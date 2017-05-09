@@ -175,6 +175,14 @@
 			Name="Infrastructure"
 			>
 			<File
+				RelativePath=".\Infrastructure\Dll.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\Infrastructure\Dll.h"
+				>
+			</File>
+			<File
 				RelativePath=".\Infrastructure\Hash.cpp"
 				>
 			</File>
