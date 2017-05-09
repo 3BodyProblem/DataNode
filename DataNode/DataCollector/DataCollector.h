@@ -88,7 +88,6 @@ public:///< 数据采集模块事件定义
 
 private:
 	Dll						m_oDllPlugin;					///< 插件加载类
-	I_DataHandle*			m_pIDataCallBack;				///< 数据回调接口
 };
 
 

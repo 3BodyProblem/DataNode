@@ -9,6 +9,7 @@
 #include "../Infrastructure/Thread.h"
 #include "ServiceIO/MServicePlug.h"
 #include "ServiceIO/MServicePlug.hpp"
+#include "../InitializeFlag/InitFlag.h"
 #include "../MemoryDB/MemoryDatabase.h"
 #include "../DataCollector/DataCollector.h"
 
@@ -113,6 +114,7 @@ protected:
 	virtual int				Execute();
 
 private:
+	InitializerFlag			m_oInitFlag;					///< 重新初始化的标识
 	DatabaseIO				m_oDatabaseIO;					///< 内存数据插件管理
 	DataCollector			m_oDataCollector;				///< 行情采集模块接口
 //	XXXCompress				m_oCompressObj;					///< 行情压缩模块

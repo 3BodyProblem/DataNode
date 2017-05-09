@@ -175,6 +175,14 @@
 			Name="Infrastructure"
 			>
 			<File
+				RelativePath=".\Infrastructure\DateTime.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\Infrastructure\DateTime.h"
+				>
+			</File>
+			<File
 				RelativePath=".\Infrastructure\Dll.cpp"
 				>
 			</File>
@@ -294,6 +302,18 @@
 					>
 				</File>
 			</Filter>
+		</Filter>
+		<Filter
+			Name="InitializeFlag"
+			>
+			<File
+				RelativePath=".\InitializeFlag\InitFlag.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\InitializeFlag\InitFlag.h"
+				>
+			</File>
 		</Filter>
 		<File
 			RelativePath=".\DataNode.cpp"

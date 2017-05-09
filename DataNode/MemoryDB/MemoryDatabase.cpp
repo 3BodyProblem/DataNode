@@ -24,7 +24,6 @@ int DatabaseIO::Initialize()
 	SvrFramework::GetFramework().WriteInfo( "DatabaseIO::Initialize() : initializing memory database plugin ......" );
 
 	TFunc_GetFactoryObject*	m_funcFactory = NULL;
-	std::string				sPluginPath = GetModulePath( NULL ) + "srvunit\\DataNode\\" + "MemDatabase.dll";
 	int						nErrorCode = m_oDllPlugin.LoadDll( Configuration::GetConfigObj().GetMemPluginPath() );
 
 	if( 0 != nErrorCode )
@@ -56,7 +55,7 @@ void DatabaseIO::Release()
 
 		if( m_pIDatabase )
 		{
-			m_pIDatabase->SaveToDisk( "./path" );
+			m_pIDatabase->SaveToDisk( Configuration::GetConfigObj().GetRecoveryFolderPath().c_str() );
 			m_pIDatabase = NULL;
 		}
 

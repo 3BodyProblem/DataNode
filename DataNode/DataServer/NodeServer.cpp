@@ -57,6 +57,13 @@ int DataEngine::Initialize( const std::string& sDataCollectorPluginPath, const s
 	Release();
 	SvrFramework::GetFramework().WriteInfo( "DataEngine::Initialize() : DataNode Engine is initializing ......" );
 
+	if( 0 != (nErrorCode = m_oInitFlag.Initialize( Configuration::GetConfigObj().GetTradingPeriods()
+												, sHolidayPath, Configuration::GetConfigObj().GetTestFlag())) )
+	{
+		SvrFramework::GetFramework().WriteError( "DataEngine::Initialize() : failed 2 initialize initialize policy flag, errorcode=%d", nErrorCode );
+		return nErrorCode;
+	}
+
 	if( 0 != (nErrorCode = m_oDatabaseIO.Initialize()) )
 	{
 		SvrFramework::GetFramework().WriteError( "DataEngine::Initialize() : failed 2 initialize memory database plugin, errorcode=%d", nErrorCode );

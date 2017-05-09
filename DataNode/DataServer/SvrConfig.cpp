@@ -104,6 +104,10 @@ int Configuration::Load()
 	m_bTestFlag = nTestFlag==1?true:false;
 
 	///< [service framework configuration]
+	m_sRecoveryFolder = oIniFile.getStringValue( std::string("ServerIO"), std::string("dumpfolder"), nErrCode );
+	if( false == m_sRecoveryFolder.empty() )	{
+		::printf( "Configuration::Load() : dump folder = %s\n", m_sRecoveryFolder.c_str() );
+	}
 	m_oStartInParam.uiMaxLinkCount = oIniFile.getIntValue( std::string("ServerIO"), std::string("maxlinkcount"), nErrCode );
 	if( 0 == m_oStartInParam.uiMaxLinkCount )	{
 		m_oStartInParam.uiMaxLinkCount = 8;
@@ -169,6 +173,16 @@ Configuration& Configuration::GetConfigObj()
 bool Configuration::GetTestFlag() const
 {
 	return m_bTestFlag;
+}
+
+const T_VECTOR_PERIODS& Configuration::GetTradingPeriods() const
+{
+	return m_vctTradingPeriods;
+}
+
+const std::string& Configuration::GetRecoveryFolderPath() const
+{
+	return m_sRecoveryFolder;
 }
 
 const std::string& Configuration::GetHolidayFilePath() const
