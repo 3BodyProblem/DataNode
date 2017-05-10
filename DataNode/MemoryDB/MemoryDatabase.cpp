@@ -17,6 +17,18 @@ DatabaseIO::~DatabaseIO()
 	Release();
 }
 
+int DatabaseIO::RecoverDatabase()
+{
+
+	return 0;
+}
+
+int DatabaseIO::BackupDatabase()
+{
+
+	return 0;
+}
+
 int DatabaseIO::Initialize()
 {
 	Release();

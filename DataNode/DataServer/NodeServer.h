@@ -25,9 +25,10 @@ class SvrFramework : public MServicePlug
 {
 private:
 	SvrFramework();
-	~SvrFramework();
 
 public:
+	~SvrFramework();
+
 	/**
 	 * @brief				取得服务框架插件
 	 * @return				返回服务框架插件的对象引用

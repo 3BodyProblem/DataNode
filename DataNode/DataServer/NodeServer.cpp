@@ -100,23 +100,48 @@ void DataEngine::Release()
 
 int DataEngine::Execute()
 {
+	SvrFramework::GetFramework().WriteInfo( "DataEngine::Execute() : enter into thread func ..." );
+
+	int					nErrorCode = 0;
+
 	while( true == IsAlive() )
 	{
 		try
 		{
 			SimpleTask::Sleep( 1000 );
 
+			if( true == m_oInitFlag.GetFlag() )
+			{
+				SvrFramework::GetFramework().WriteInfo( "InitializerFlag::Execute() : [NOTICE] Enter Service Initializing Time ......" );
 
+				if( 0 != (nErrorCode=m_oDatabaseIO.RecoverDatabase()) )
+				{
+					SvrFramework::GetFramework().WriteWarning( "DataEngine::Execute() : failed 2 recover quotations data from disk ..., errorcode=%d", nErrorCode );
+					m_oInitFlag.RedoInitialize();
+					continue;
+				}
+
+				if( 0 != (nErrorCode=m_oDataCollector.ReInitializeDriver()) )
+				{
+					SvrFramework::GetFramework().WriteWarning( "DataEngine::Execute() : failed 2 initialize data collector module, errorcode=%d", nErrorCode );
+					m_oInitFlag.RedoInitialize();
+					continue;
+				}
+
+				SvrFramework::GetFramework().WriteInfo( "InitializerFlag::Execute() : [NOTICE] Service is Initialized ......" );
+			}
 		}
 		catch( std::exception& err )
 		{
-			::printf( "DataEngine::Execute() : exception : %s\n", err.what() );
+			SvrFramework::GetFramework().WriteWarning( "DataEngine::Execute() : exception : %s", err.what() );
 		}
 		catch( ... )
 		{
-			::printf( "DataEngine::Execute() : unknow exception\n" );
+			SvrFramework::GetFramework().WriteWarning( "DataEngine::Execute() : unknow exception" );
 		}
 	}
+
+	SvrFramework::GetFramework().WriteInfo( "DataEngine::Execute() : exit thread func ..." );
 
 	return 0;
 }
@@ -147,13 +172,13 @@ int DataNodeService::Activate()
 {
 	try
 	{
-		::printf( "DataNodeService::Activate() : activating service..............\n" );
+		SvrFramework::GetFramework().WriteInfo( "DataNodeService::Activate() : activating service..............\n" );
 
 		int			nErrorCode = Configuration::GetConfigObj().Load();	///< ¼ÓÔØÅäÖÃÐÅÏ¢
 
 		if( 0 != nErrorCode )
 		{
-			::printf( "DataNodeService::Activate() : invalid configuration file, errorcode=%d", nErrorCode );
+			SvrFramework::GetFramework().WriteWarning( "DataNodeService::Activate() : invalid configuration file, errorcode=%d", nErrorCode );
 			return nErrorCode;
 		}
 
@@ -162,21 +187,21 @@ int DataNodeService::Activate()
 											, Configuration::GetConfigObj().GetHolidayFilePath() );
 		if( 0 != nErrorCode )
 		{
-			::printf( "DataNodeService::Activate() : failed 2 initialize service engine, errorcode=%d", nErrorCode );
+			SvrFramework::GetFramework().WriteWarning( "DataNodeService::Activate() : failed 2 initialize service engine, errorcode=%d", nErrorCode );
 			return nErrorCode;
 		}
 
-		::printf( "DataNodeService::Activate() : service activated..............\n" );
+		SvrFramework::GetFramework().WriteInfo( "DataNodeService::Activate() : service activated..............\n" );
 
 		return 0;
 	}
 	catch( std::exception& err )
 	{
-		::printf( "DataNodeService::Activate() : exception : %s\n", err.what() );
+		SvrFramework::GetFramework().WriteWarning( "DataNodeService::Activate() : exception : %s\n", err.what() );
 	}
 	catch( ... )
 	{
-		::printf( "DataNodeService::Activate() : unknow exception\n" );
+		SvrFramework::GetFramework().WriteWarning( "DataNodeService::Activate() : unknow exception\n" );
 	}
 
 	return -100;
@@ -186,7 +211,11 @@ void DataNodeService::Destroy()
 {
 	try
 	{
+		SvrFramework::GetFramework().WriteInfo( "DataNodeService::Destroy() : destroying service..............\n" );
+
 		DataEngine::Release();
+
+		SvrFramework::GetFramework().WriteInfo( "DataNodeService::Destroy() : service destroyed ..............\n" );
 	}
 	catch( std::exception& err )
 	{

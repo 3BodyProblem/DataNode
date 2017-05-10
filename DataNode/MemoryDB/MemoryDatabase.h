@@ -30,6 +30,21 @@ public:
 	 */
 	void							Release();
 
+public:
+	/**
+	 * @brief						从磁盘恢复行情数据到内存插件
+	 * @return						==0				成功
+									!=0				失败
+	 */
+	int								RecoverDatabase();
+
+	/**
+	 * @brief						将内存插件中的行情数据进行备份
+	 * @return						==0				成功
+									!=0				失败
+	 */
+	int								BackupDatabase();
+
 protected:
 	Dll								m_oDllPlugin;					///< 插件加载类
 	IDBFactory*						m_pIDBFactoryPtr;				///< 工厂类

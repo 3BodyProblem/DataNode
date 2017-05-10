@@ -57,6 +57,8 @@ public:
 	/**
 	 * @brief				数据采集模块初始化
 	 * @param[in]			pIDataCallBack				行情回调接口
+	 * @return				==0							成功
+							!=0							错误
 	 */
 	int						Initialize( I_DataHandle* pIDataCallBack );
 
@@ -68,23 +70,15 @@ public:
 public:///< 数据采集模块事件定义
 	/**
  	 * @brief				初始化/重新初始化回调
+	 * @return				==0							成功
+							!=0							错误
 	 */
-	int						OnReInitializeDriver();
+	int						ReInitializeDriver();
 
 	/**
 	 * @biref				取得当前数据采集模块状态
 	 */
-	const CollectorStatus&	OnInquireDriverStatus();
-
-	/**
- 	 * @brief				空闲事件回调
-	 */
-	int						OnIdle();
-
-	/**
-	 * @brief				行情推送超时
-	 */
-	int						OnOverTime( int nReaseon );
+	const CollectorStatus&	InquireDriverStatus();
 
 private:
 	Dll						m_oDllPlugin;					///< 插件加载类

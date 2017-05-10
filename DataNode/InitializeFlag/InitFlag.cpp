@@ -1,3 +1,4 @@
+#pragma warning(disable : 4996)
 #include <time.h>
 #include "InitFlag.h"
 #include "../DataServer/SvrConfig.h"
@@ -141,6 +142,7 @@ int MkHoliday::ReloadHoliday()
 
 
 InitializerFlag::InitializerFlag()
+ : m_nLastTradingTimeStatus( -1 )
 {
 }
 
@@ -148,7 +150,8 @@ int InitializerFlag::Initialize( const T_VECTOR_PERIODS& refTradingPeriods, std:
 {
 	SvrFramework::GetFramework().WriteInfo( "InitializerFlag::Initialize() : initializing policy module : TradingPeriods Num=%d, TestFlag=%d", refTradingPeriods.size(), bTestFlag );
 
-	int			nErrorCode = 0;
+	int					nErrorCode = 0;
+	CriticalLock		guard( m_oLock );
 
 	m_vctTradingPeriod = refTradingPeriods;
 	if( 0 != (nErrorCode=m_oHoliday.Initialize( sHolidayFilePath, bTestFlag )) )
@@ -162,83 +165,124 @@ int InitializerFlag::Initialize( const T_VECTOR_PERIODS& refTradingPeriods, std:
 	return 0;
 }
 
-bool InitializerFlag::InTradingPeriod() const
+void InitializerFlag::RedoInitialize()
 {
+	CriticalLock		guard( m_oLock );
+
+	m_nLastTradingTimeStatus = -1;
+}
+
+bool InitializerFlag::GetFlag()
+{
+	CriticalLock		guard( m_oLock );
+	bool				bInitFlag = false;
+	int					nTradingTimeStatus = InTradingPeriod( bInitFlag );
+
+	if( nTradingTimeStatus < 0 )									///< 不在交易时段内
+	{
+		return false;
+	}
+
+	if( m_nLastTradingTimeStatus != nTradingTimeStatus )			///< 本轮时间循环中，首次进入该时段 & 为需要做重新初始化的时段
+	{
+		m_nLastTradingTimeStatus = nTradingTimeStatus;
+
+		return bInitFlag;
+	}
+
+	return false;													///< 已经非首次判断本轮交易时段, 不需要重新初始化
+}
+
+int InitializerFlag::InTradingPeriod( bool& bInitPoint )
+{
+	unsigned int	nPeriodsIndex = 0;
 	unsigned int	nTime = DateTime::Now().TimeToLong();
 	unsigned int	nToday = DateTime::Now().DateToLong();
 	bool			bTodayIsHoliday = m_oHoliday.IsHoliday( nToday );
 
-    if( nTime >= nBeginTimeDay && nTime <= nEndTimeDay )
-	{	///< 在日盘交易时段
-		if( true == bTodayIsHoliday )
-		{
-			return false;
+	bInitPoint = false;
+	for( T_VECTOR_PERIODS::iterator it = m_vctTradingPeriod.begin(); it != m_vctTradingPeriod.end(); it++, nPeriodsIndex++ )
+	{
+		unsigned int			nBeginTime = it->nBeginTime;
+		unsigned int			nEndTime = it->nEndTime;
+
+		///< 起止交易时间都在24:00:00前的情况
+		if( nBeginTime < nEndTime && nTime >= nBeginTime && nTime <= nEndTime )
+		{	///< 在日盘交易时段
+			if( true == bTodayIsHoliday )	{
+				return -1;
+			}
+
+			bInitPoint = it->bInitializePoint;
+			return nPeriodsIndex;
 		}
 
-		return true;
-    }
-	else if( nTime >= nBeginTimeNite && nTime <= (nEndTimeNite+1200000) )
-	{	///< 在夜盘时段(前半段)
-		if( true == m_oHoliday.IsBeforeLongHoliday( nToday, false ) )		///< 后面是长假
+		///< 起止交易时间在24:00:00前后,即跨天的情况
+		if( nBeginTime > nEndTime )
 		{
-			return false;
-		}
+			if( nTime >= nBeginTime )	///< 跨天之前
+			{
+				if( true == m_oHoliday.IsBeforeLongHoliday( nToday, false ) )	{	///< 后面是长假
+					return -1;
+				}
 
-		if( true == bTodayIsHoliday )
-		{
-			return false;
-		}
+				if( true == bTodayIsHoliday )	{
+					return -1;
+				}
 
-		return true;
-	}
-	else if( nTime >= 0 && nTime <= nEndTimeNite )
-	{	///< 在夜盘时段(后半段)
-		if( true == m_oHoliday.IsBeforeLongHoliday( nToday, true ) )		///< 前面是长假
-		{
-			return false;
-		}
-		else
-		{
-			if( true == bTodayIsHoliday )	{			///< 非长假，周六零晨有夜盘
-				tm t = { 0 };
-				t.tm_year = nToday / 10000 - 1900;
-				t.tm_mon = nToday % 10000 / 100 - 1;
-				t.tm_mday = nToday % 100;
-				mktime( &t );
+				bInitPoint = it->bInitializePoint;
+				return nPeriodsIndex;
+			}
 
-				if( (t.tm_wday == 6) )	{
-					MDateTime		mDate( nToday/10000, nToday%10000/100, nToday%100 );
-					mDate -= 24*60*60;		///< 一天是24*60*60
-					if( true == m_oHoliday.IsBeforeLongHoliday( mDate.DateToLong(), false ) )	///< 往前推一天，计算当天(周六)是否为长假内
+			if( nTime <= nEndTime )		///< 跨天之后
+			{
+				if( true == m_oHoliday.IsBeforeLongHoliday( nToday, true ) )	{	///< 前面是长假
+					return -1;
+				}
+				else
+				{
+					if( true == bTodayIsHoliday )	{			///< 非长假，周六零晨有夜盘
+						tm t = { 0 };
+						t.tm_year = nToday / 10000 - 1900;
+						t.tm_mon = nToday % 10000 / 100 - 1;
+						t.tm_mday = nToday % 100;
+						mktime( &t );
+
+						if( (t.tm_wday == 6) )	{
+							DateTime		mDate( nToday/10000, nToday%10000/100, nToday%100 );
+							mDate -= 24*60*60;		///< 一天是24*60*60
+							if( true == m_oHoliday.IsBeforeLongHoliday( mDate.DateToLong(), false ) )	///< 往前推一天，计算当天(周六)是否为长假内
+							{
+								return -1;
+							}
+
+							bInitPoint = it->bInitializePoint;
+							return nPeriodsIndex;
+						}
+
+						return -1;
+					}
+					else
 					{
-						return false;
+						tm t = { 0 };							///< 非长假，周一零晨无夜盘
+						t.tm_year = nToday / 10000 - 1900;
+						t.tm_mon = nToday % 10000 / 100 - 1;
+						t.tm_mday = nToday % 100;
+						mktime( &t );
+
+						if( (t.tm_wday == 1) )	{
+							return false;
+						}
 					}
 
-					return true;
-				}
-
-				return false;
-			}
-			else
-			{
-				tm t = { 0 };							///< 非长假，周一零晨无夜盘
-				t.tm_year = nToday / 10000 - 1900;
-				t.tm_mon = nToday % 10000 / 100 - 1;
-				t.tm_mday = nToday % 100;
-				mktime( &t );
-
-				if( (t.tm_wday == 1) )	{
-					return false;
+					bInitPoint = it->bInitializePoint;
+					return nPeriodsIndex;
 				}
 			}
-
-			return true;
 		}
 	}
-	else
-	{
-        return false;///< (非交易时段)
-    }
+
+	return -1;
 }
 
 

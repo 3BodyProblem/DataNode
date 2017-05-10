@@ -1,3 +1,4 @@
+#pragma warning(disable : 4996)
 #include "IniFile.h"
 #include <stdlib.h>
 #include <stdio.h>

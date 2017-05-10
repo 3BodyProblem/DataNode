@@ -1,3 +1,4 @@
+#pragma warning(disable : 4996)
 #include <exception>
 #include <algorithm>
 #include <functional>
@@ -163,15 +164,19 @@ int Configuration::Load()
 
 	for( int n = 0; n < nTradingPeriodsCount; n++ )
 	{
-		int					nRet1, nRet2;
+		int					nRet1, nRet2, nRet3;
 		T_TRADING_PERIOD	tagPeriodPair;
 		char				pszBeginTime[32] = { 0 };
 		char				pszEndTime[32] = { 0 };
+		char				pszInitPoint[32] = { 0 };
 
 		::sprintf( pszBeginTime, "%d_begintime", n );
 		::sprintf( pszEndTime, "%d_endtime", n );
-		tagPeriodPair.first = oIniFile.getIntValue(std::string("TradingPeriods"), std::string(pszBeginTime), nRet1 );
-		tagPeriodPair.second = oIniFile.getIntValue(std::string("TradingPeriods"), std::string(pszEndTime), nRet2 );
+		::sprintf( pszInitPoint, "%d_initflag", n );
+		tagPeriodPair.nBeginTime = oIniFile.getIntValue(std::string("TradingPeriods"), std::string(pszBeginTime), nRet1 );
+		tagPeriodPair.nEndTime = oIniFile.getIntValue(std::string("TradingPeriods"), std::string(pszEndTime), nRet2 );
+		int	nInitPoint = oIniFile.getIntValue(std::string("TradingPeriods"), std::string(pszInitPoint), nRet3 );
+		tagPeriodPair.bInitializePoint = (0!=nInitPoint)?true:false;
 		if( 0 != nRet1 || 0 != nRet2 ) {
 			::printf( "Configuration::Load() : failed 2 load trading periods, %s~%s [%d:%d]\n", pszBeginTime, pszEndTime, nRet1, nRet2 );
 			return -101;

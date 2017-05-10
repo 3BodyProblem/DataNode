@@ -1,3 +1,4 @@
+#pragma warning(disable : 4996)
 #include <time.h>
 #include <assert.h>
 #include "DateTime.h"
