@@ -114,8 +114,13 @@ protected:
 	 */
 	virtual int				Execute();
 
-private:
-	InitializerFlag			m_oInitFlag;					///< 重新初始化的标识
+	/**
+	 * @brief				空闲状态任务: 内存数据落盘/行情超时等...
+	 * @note				所以，关于内存数据落盘文件的存取，需要内存数据插件的标识接口支持
+	 */
+	virtual int				OnIdle() = 0;
+
+protected:
 	DatabaseIO				m_oDatabaseIO;					///< 内存数据插件管理
 	DataCollector			m_oDataCollector;				///< 行情采集模块接口
 //	XXXCompress				m_oCompressObj;					///< 行情压缩模块
@@ -157,7 +162,17 @@ public:
 	 * @brief				空闲状态任务: 内存数据落盘/行情超时等...
 	 * @note				所以，关于内存数据落盘文件的存取，需要内存数据插件的标识接口支持
 	 */
-	int						OnIdle();
+	virtual int				OnIdle();
+
+	/**
+	 * @brief				备份内存插件中的行情数据
+	 */
+	void					OnBackupDatabase();
+
+	/**
+	 * @brief				询问数据采集模块的状态
+	 */
+	void					OnInquireStatus();
 
 	/**
 	 * @brief				本引擎的版本序列

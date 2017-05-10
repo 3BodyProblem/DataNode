@@ -57,13 +57,17 @@ void DataCollector::Release()
 	SvrFramework::GetFramework().WriteInfo( "DataCollector::Release() : memory database plugin is released ......" );
 }
 
-int DataCollector::ReInitializeDriver()
+int DataCollector::ReInitializeDataCollector()
 {
+	SvrFramework::GetFramework().WriteInfo( "DataCollector::ReInitializeDataCollector() : initializeing data collector ......" );
+
+
+	SvrFramework::GetFramework().WriteInfo( "DataCollector::ReInitializeDataCollector() : data collector initialized ......" );
 
 	return 0;
 }
 
-const CollectorStatus& DataCollector::InquireDriverStatus()
+const CollectorStatus& DataCollector::InquireDataCollectorStatus()
 {
 	static CollectorStatus	obj;
 

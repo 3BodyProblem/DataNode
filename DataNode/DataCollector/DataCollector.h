@@ -73,12 +73,12 @@ public:///< 数据采集模块事件定义
 	 * @return				==0							成功
 							!=0							错误
 	 */
-	int						ReInitializeDriver();
+	int						ReInitializeDataCollector();
 
 	/**
 	 * @biref				取得当前数据采集模块状态
 	 */
-	const CollectorStatus&	InquireDriverStatus();
+	const CollectorStatus&	InquireDataCollectorStatus();
 
 private:
 	Dll						m_oDllPlugin;					///< 插件加载类

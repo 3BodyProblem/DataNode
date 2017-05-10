@@ -78,10 +78,15 @@ typedef std::vector<T_TRADING_PERIOD>			T_VECTOR_PERIODS;		///< 所有交易时段信息
  */
 class InitializerFlag
 {
-public:
+private:
 	InitializerFlag();
 
 public:
+	/**
+	 * @brief						获取单键对象的引用
+	 */
+	static InitializerFlag&			GetFlagObject();
+
 	/**
 	 * @brief						初始化交易时间段，节假日表，测试标识
 	 * @param[in]					refTradingPeriods	市场交易时段信息表
@@ -92,6 +97,7 @@ public:
 	 */
 	int								Initialize( const T_VECTOR_PERIODS& refTradingPeriods, std::string sHolidayFilePath, bool bTestFlag );
 
+public:
 	/**
 	 * @brief						判断当前时间是否需要初始化
 	 * @return						true				需要初始化
@@ -103,7 +109,6 @@ public:
 	 */
 	void							RedoInitialize();
 
-private:
 	/**
 	 * @brief						判断是否在交易时段内
 	 * @param[out]					bInitPoint			需要重新初始化标识

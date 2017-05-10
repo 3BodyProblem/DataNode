@@ -146,6 +146,13 @@ InitializerFlag::InitializerFlag()
 {
 }
 
+InitializerFlag& InitializerFlag::GetFlagObject()
+{
+	static InitializerFlag	obj;
+
+	return obj;
+}
+
 int InitializerFlag::Initialize( const T_VECTOR_PERIODS& refTradingPeriods, std::string sHolidayFilePath, bool bTestFlag )
 {
 	SvrFramework::GetFramework().WriteInfo( "InitializerFlag::Initialize() : initializing policy module : TradingPeriods Num=%d, TestFlag=%d", refTradingPeriods.size(), bTestFlag );
@@ -195,10 +202,11 @@ bool InitializerFlag::GetFlag()
 
 int InitializerFlag::InTradingPeriod( bool& bInitPoint )
 {
-	unsigned int	nPeriodsIndex = 0;
-	unsigned int	nTime = DateTime::Now().TimeToLong();
-	unsigned int	nToday = DateTime::Now().DateToLong();
-	bool			bTodayIsHoliday = m_oHoliday.IsHoliday( nToday );
+	CriticalLock		guard( m_oLock );
+	unsigned int		nPeriodsIndex = 0;
+	unsigned int		nTime = DateTime::Now().TimeToLong();
+	unsigned int		nToday = DateTime::Now().DateToLong();
+	bool				bTodayIsHoliday = m_oHoliday.IsHoliday( nToday );
 
 	bInitPoint = false;
 	for( T_VECTOR_PERIODS::iterator it = m_vctTradingPeriod.begin(); it != m_vctTradingPeriod.end(); it++, nPeriodsIndex++ )

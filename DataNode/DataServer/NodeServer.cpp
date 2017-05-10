@@ -1,3 +1,4 @@
+#include <time.h>
 #include "../targetver.h"
 #include <exception>
 #include <algorithm>
@@ -57,8 +58,8 @@ int DataEngine::Initialize( const std::string& sDataCollectorPluginPath, const s
 	Release();
 	SvrFramework::GetFramework().WriteInfo( "DataEngine::Initialize() : DataNode Engine is initializing ......" );
 
-	if( 0 != (nErrorCode = m_oInitFlag.Initialize( Configuration::GetConfigObj().GetTradingPeriods()
-												, sHolidayPath, Configuration::GetConfigObj().GetTestFlag())) )
+	if( 0 != (nErrorCode = InitializerFlag::GetFlagObject().Initialize( Configuration::GetConfigObj().GetTradingPeriods()
+																		, sHolidayPath, Configuration::GetConfigObj().GetTestFlag())) )
 	{
 		SvrFramework::GetFramework().WriteError( "DataEngine::Initialize() : failed 2 initialize initialize policy flag, errorcode=%d", nErrorCode );
 		return nErrorCode;
@@ -102,7 +103,7 @@ int DataEngine::Execute()
 {
 	SvrFramework::GetFramework().WriteInfo( "DataEngine::Execute() : enter into thread func ..." );
 
-	int					nErrorCode = 0;
+	int			nErrorCode = 0;
 
 	while( true == IsAlive() )
 	{
@@ -110,26 +111,31 @@ int DataEngine::Execute()
 		{
 			SimpleTask::Sleep( 1000 );
 
-			if( true == m_oInitFlag.GetFlag() )
+			///< 初始化业务顺序的逻辑
+			if( true == InitializerFlag::GetFlagObject().GetFlag() )
 			{
 				SvrFramework::GetFramework().WriteInfo( "InitializerFlag::Execute() : [NOTICE] Enter Service Initializing Time ......" );
 
 				if( 0 != (nErrorCode=m_oDatabaseIO.RecoverDatabase()) )
 				{
 					SvrFramework::GetFramework().WriteWarning( "DataEngine::Execute() : failed 2 recover quotations data from disk ..., errorcode=%d", nErrorCode );
-					m_oInitFlag.RedoInitialize();
+					InitializerFlag::GetFlagObject().RedoInitialize();
 					continue;
 				}
 
-				if( 0 != (nErrorCode=m_oDataCollector.ReInitializeDriver()) )
+				if( 0 != (nErrorCode=m_oDataCollector.ReInitializeDataCollector()) )
 				{
 					SvrFramework::GetFramework().WriteWarning( "DataEngine::Execute() : failed 2 initialize data collector module, errorcode=%d", nErrorCode );
-					m_oInitFlag.RedoInitialize();
+					InitializerFlag::GetFlagObject().RedoInitialize();
 					continue;
 				}
 
 				SvrFramework::GetFramework().WriteInfo( "InitializerFlag::Execute() : [NOTICE] Service is Initialized ......" );
+				continue;
 			}
+
+			///< 空闲处理函数
+			OnIdle();
 		}
 		catch( std::exception& err )
 		{
@@ -148,14 +154,19 @@ int DataEngine::Execute()
 
 int DataEngine::OnImage( unsigned int nDataID, char* pData, unsigned int nDataLen, bool bLastFlag )
 {
-
-	return -1;
+	return m_oDatabaseIO.BuildMessageTable( nDataID, pData, nDataLen, bLastFlag );
 }
 
 int DataEngine::OnData( unsigned int nDataID, char* pData, unsigned int nDataLen )
 {
+	int		nErrorCode = m_oDatabaseIO.UpdateQuotation( nDataID, pData, nDataLen );
 
-	return -1;
+	if( 0 != nErrorCode )
+	{
+		return nErrorCode;
+	}
+
+	return nErrorCode;
 }
 
 bool DataEngine::OnQuery( unsigned int nDataID, char* pData, unsigned int nDataLen )
@@ -191,7 +202,7 @@ int DataNodeService::Activate()
 			return nErrorCode;
 		}
 
-		SvrFramework::GetFramework().WriteInfo( "DataNodeService::Activate() : service activated..............\n" );
+		SvrFramework::GetFramework().WriteInfo( "DataNodeService::Activate() : service activated.............." );
 
 		return 0;
 	}
@@ -201,7 +212,7 @@ int DataNodeService::Activate()
 	}
 	catch( ... )
 	{
-		SvrFramework::GetFramework().WriteWarning( "DataNodeService::Activate() : unknow exception\n" );
+		SvrFramework::GetFramework().WriteWarning( "DataNodeService::Activate() : unknow exception" );
 	}
 
 	return -100;
@@ -211,30 +222,66 @@ void DataNodeService::Destroy()
 {
 	try
 	{
-		SvrFramework::GetFramework().WriteInfo( "DataNodeService::Destroy() : destroying service..............\n" );
+		SvrFramework::GetFramework().WriteInfo( "DataNodeService::Destroy() : destroying service.............." );
 
 		DataEngine::Release();
 
-		SvrFramework::GetFramework().WriteInfo( "DataNodeService::Destroy() : service destroyed ..............\n" );
+		SvrFramework::GetFramework().WriteInfo( "DataNodeService::Destroy() : service destroyed .............." );
 	}
 	catch( std::exception& err )
 	{
-		::printf( "DataNodeService::Destroy() : exception : %s\n", err.what() );
+		SvrFramework::GetFramework().WriteWarning( "DataNodeService::Destroy() : exception : %s", err.what() );
 	}
 	catch( ... )
 	{
-		::printf( "DataNodeService::Destroy() : unknow exception\n" );
+		SvrFramework::GetFramework().WriteWarning( "DataNodeService::Destroy() : unknow exception" );
 	}
 }
 
 int DataNodeService::OnIdle()
 {
-	return -1;
+	bool			bInitPoint = false;
+
+	///< 在非交易时段，进行内存插件中的行情数据落盘
+	if( -1 == InitializerFlag::GetFlagObject().InTradingPeriod( bInitPoint ) && true == m_oDatabaseIO.IsBuilded() )	{
+		OnBackupDatabase();
+	}
+
+	///< 轮询行情采集模块的状态
+	OnInquireStatus();
+
+	return 0;
+}
+
+void DataNodeService::OnInquireStatus()
+{
+	const CollectorStatus&	refDataCollectorStatus = m_oDataCollector.InquireDataCollectorStatus();
+}
+
+void DataNodeService::OnBackupDatabase()
+{
+	static time_t	nLastTimeT = ::time( NULL );
+	time_t			nTimeNowT = ::time( NULL );
+
+	///< 每十分钟落盘一次
+	if( nTimeNowT - nLastTimeT < 60 * 10 )
+	{
+		return;
+	}
+
+	///< 开始落盘备份操作
+	if( 0 != m_oDatabaseIO.BackupDatabase() )
+	{
+		SvrFramework::GetFramework().WriteWarning( "DataNodeService::BackupDatabase() : failed 2 backup quotation data" );
+		return;
+	}
+
+	nLastTimeT = nTimeNowT;
 }
 
 unsigned long DataNodeService::VersionOfEngine()
 {
-	return 123;
+	return Configuration::GetConfigObj().GetStartInParam().uiVersion;
 }
 
 bool DataNodeService::IsAvailable()
