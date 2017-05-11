@@ -173,6 +173,8 @@ int DataEngine::OnData( unsigned int nDataID, char* pData, unsigned int nDataLen
 		return nErrorCode;
 	}
 
+///<	LinkSessionSet::GetSessionSet().PushData();
+
 	return nErrorCode;
 }
 
