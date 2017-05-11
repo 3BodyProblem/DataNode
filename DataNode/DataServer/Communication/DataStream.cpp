@@ -17,6 +17,10 @@ void QuotationStream::Release()
 {
 	CriticalLock	guard( m_oLock );
 
+	SimpleTask::StopThread();	///< 停止线程
+	SimpleTask::Join();			///< 退出等待
+
+	///< 释放所有资源
 	if( NULL != m_pszBuffer )
 	{
 		delete [] m_pszBuffer;
