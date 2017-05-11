@@ -3,21 +3,22 @@
 
 
 #include <set>
+#include "DataStream.h"
 #include "../../Infrastructure/Lock.h"
 #include "../ServiceIO/MServicePlug.h"
 #include "../ServiceIO/MServicePlug.hpp"
 
 
 /**
- * @class						LinkIDHolder
+ * @class						LinkIDSet
  * @brief						管理/维护各链路的ID号
  * @detail						新连接到达时添加新ID，删除失效的链路ID
  * @author						barry
  */
-class LinkIDHolder
+class LinkIDSet
 {
 private:
-	LinkIDHolder();
+	LinkIDSet();
 
 public:
 	#define						MAX_LINKID_NUM			32
@@ -26,14 +27,14 @@ public:
 	/**
 	 * @brief					获取对单键的引用
 	 */
-	static LinkIDHolder&		GetLinkHolder();
+	static LinkIDSet&			GetSetObject();
 
 	/**
 	 * @brief					添加一个新到的链路ID
 	 * @detail					只需要添加新ID，不需要关心是否有重复，内部有作防预性判断
 	 * @param[in]				nNewLinkID			新链路ID
 	 */
-	void						NewLinkID( unsigned int nNewLinkID );
+	int							NewLinkID( unsigned int nNewLinkID );
 
 	/**
 	 * @brief					移除一个失效的链路ID
@@ -71,6 +72,26 @@ public:
 	 */
 	static LinkSessionSet&		GetSessionSet();
 
+	/**
+	 * @brief					发送数据
+	 */
+	int							SendData( unsigned int uiLinkNo, unsigned short usMessageNo, unsigned short usFunctionID, const char* lpInBuf, unsigned int uiInSize );
+
+	/**
+	 * @brief					发送错误信息
+	 */
+	int							SendError( unsigned int uiLinkNo, unsigned short usMessageNo, unsigned short usFunctionID, const char* lpErrorInfo );
+
+	/**
+	 * @brief					推送数据
+	 */
+	void						PushData( const unsigned int* lpLinkNoSet, unsigned int uiLinkNoCount, unsigned short usMessageNo, unsigned short usFunctionID, const char* lpInBuf, unsigned int uiInSize );
+
+	/**
+	 * @brief					关闭连接
+	 */
+	int							CloseLink( unsigned int uiLinkNo );
+
 public:
 	/**
 	 * @brief					本进程状态响应函数，报告状态时回调
@@ -80,7 +101,7 @@ public:
 	 *							其中 服务单元信息 = “服务单元名称:属性1,属性2,属性3,属性4,属性5,...”，逗号分割
 	 *							其中 属性 = “[分组名]” 或 属性 = “working = true” 或 属性 = "keyname = value" 或 属性 = "(n)keyname = value" ，其中n表示所需单元格数量，默认1个
 	 */
-	virtual void OnReportStatus( char* szStatusInfo, unsigned int uiSize );
+	virtual void				OnReportStatus( char* szStatusInfo, unsigned int uiSize );
 
 	/**
 	 * @brief					本服务进程command响应函数(用于控制运行/监视数据)
@@ -90,7 +111,7 @@ public:
 	 * @param[in]				uiSize					命令返回缓存最大长度
 	 * @return					true					执行成功
 	 */
-	virtual bool OnCommand( const char* szSrvUnitName, const char* szCommand, char* szResult, unsigned int uiSize );
+	virtual bool				OnCommand( const char* szSrvUnitName, const char* szCommand, char* szResult, unsigned int uiSize );
 
 	/**
 	 * @brief					新连接到达响应函数，返回false表示不接受该连接，服务器会断开该连接
@@ -99,14 +120,14 @@ public:
 	 * @param[in]				uiPort					端口
 	 * @return					false					返回false表示不接受该连接，服务器会断开该连接
 	 */
-	virtual bool OnNewLink( unsigned int uiLinkNo, unsigned int uiIpAddr, unsigned int uiPort );
+	virtual bool				OnNewLink( unsigned int uiLinkNo, unsigned int uiIpAddr, unsigned int uiPort );
 
 	/**
 	 * @brief					连接关闭响应函数
 	 * @param[in]				uiLinkNo				链路描述号
 	 * @param[in]				iCloseType				关闭类型: 0 结束通讯服务 1 WSARECV发生错误 2 服务端主动关闭 3 客户端主动关闭 4 处理数据错误而关闭
 	 */
-	virtual void OnCloseLink( unsigned int uiLinkNo, int iCloseType );
+	virtual void				OnCloseLink( unsigned int uiLinkNo, int iCloseType );
 
 	/**
 	 * @brief					接收到数据响应函数
@@ -119,13 +140,18 @@ public:
 	 * @param[in,out]			uiAddtionData			附加数据
 	 * @return					返回false表示处理数据错误，服务器会断开该链接
 	 */
-	virtual bool OnRecvData( unsigned int uiLinkNo, unsigned short usMessageNo, unsigned short usFunctionID, bool bErrorFlag, const char* lpData, unsigned int uiSize, unsigned int& uiAddtionData );
+	virtual bool				OnRecvData( unsigned int uiLinkNo, unsigned short usMessageNo, unsigned short usFunctionID, bool bErrorFlag, const char* lpData, unsigned int uiSize, unsigned int& uiAddtionData );
+
+protected:
+	QuotationStream				m_oQuotationBuffer;		///< 实时行情推送缓存
 };
 
 
 
 
+
 #endif
+
 
 
 

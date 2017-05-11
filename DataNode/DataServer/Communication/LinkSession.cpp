@@ -2,16 +2,16 @@
 #include "../NodeServer.h"
 
 
-LinkIDHolder::LinkIDHolder()
+LinkIDSet::LinkIDSet()
 {}
 
-LinkIDHolder& LinkIDHolder::GetLinkHolder()
+LinkIDSet& LinkIDSet::GetSetObject()
 {
-	static	LinkIDHolder	obj;
+	static	LinkIDSet	obj;
 	return obj;
 }
 
-void LinkIDHolder::NewLinkID( unsigned int nNewLinkID )
+int LinkIDSet::NewLinkID( unsigned int nNewLinkID )
 {
 	CriticalLock	guard( m_oLock );
 
@@ -19,10 +19,13 @@ void LinkIDHolder::NewLinkID( unsigned int nNewLinkID )
 	if( m_setLinkID.find( nNewLinkID ) == m_setLinkID.end() )
 	{
 		m_setLinkID.insert( nNewLinkID );
+		return 1;
 	}
+
+	return 0;
 }
 
-void LinkIDHolder::RemoveLinkID( unsigned int nRemoveLinkID )
+void LinkIDSet::RemoveLinkID( unsigned int nRemoveLinkID )
 {
 	CriticalLock	guard( m_oLock );
 
@@ -33,7 +36,7 @@ void LinkIDHolder::RemoveLinkID( unsigned int nRemoveLinkID )
 	}
 }
 
-int LinkIDHolder::FetchLinkIDList( unsigned int * lpLinkNoArray, unsigned int uiArraySize )
+int LinkIDSet::FetchLinkIDList( unsigned int * lpLinkNoArray, unsigned int uiArraySize )
 {
 	unsigned int	nLinkNum = 0;				///< 有效链路数量
 	static	int		s_nLastLinkNoNum = 0;		///< 上一次的链路数量
@@ -65,6 +68,30 @@ LinkSessionSet& LinkSessionSet::GetSessionSet()
 	return obj;
 }
 
+int LinkSessionSet::SendData( unsigned int uiLinkNo, unsigned short usMessageNo, unsigned short usFunctionID, const char* lpInBuf, unsigned int uiInSize )
+{
+
+	return 0;
+}
+
+int LinkSessionSet::SendError( unsigned int uiLinkNo, unsigned short usMessageNo, unsigned short usFunctionID, const char* lpErrorInfo )
+{
+
+	return 0;
+}
+
+void LinkSessionSet::PushData( const unsigned int* lpLinkNoSet, unsigned int uiLinkNoCount, unsigned short usMessageNo, unsigned short usFunctionID, const char* lpInBuf, unsigned int uiInSize )
+{
+
+}
+
+int LinkSessionSet::CloseLink( unsigned int uiLinkNo )
+{
+	LinkIDSet::GetSetObject().RemoveLinkID( uiLinkNo );
+
+	return 0;
+}
+
 void LinkSessionSet::OnReportStatus( char* szStatusInfo, unsigned int uiSize )
 {
 //	cs_format(szStatusInfo,uiSize, _T( ":[API/SPI 总数],(2)API/SPI 创建数目=%d,(2)API/SPI 验证数目=%d,[API 调用计数],下单频率=%.2f,撤单频率=%.2f,查询频率=%.2f"), spi_total, spi_auth, freq_insertOrder, freq_cancelOrder, freq_queryOrder);
@@ -78,13 +105,19 @@ bool LinkSessionSet::OnCommand( const char* szSrvUnitName, const char* szCommand
 
 bool LinkSessionSet::OnNewLink( unsigned int uiLinkNo, unsigned int uiIpAddr, unsigned int uiPort )
 {
+	if( 1 == LinkIDSet::GetSetObject().NewLinkID( uiLinkNo ) )
+	{
+		return true;
+	}
+
+	SvrFramework::GetFramework().WriteInfo( "LinkSessionSet::OnNewLink() : [WARNING] duplicate link number & new link will be disconnected..." );
 
 	return false;
 }
 
 void LinkSessionSet::OnCloseLink( unsigned int uiLinkNo, int iCloseType )
 {
-
+	LinkIDSet::GetSetObject().RemoveLinkID( uiLinkNo );
 }
 
 bool LinkSessionSet::OnRecvData( unsigned int uiLinkNo, unsigned short usMessageNo, unsigned short usFunctionID, bool bErrorFlag, const char* lpData, unsigned int uiSize, unsigned int& uiAddtionData )
