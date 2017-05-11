@@ -31,19 +31,21 @@ public:
 	 * @param[in]			nDataID				消息ID
 	 * @param[in]			pData				数据内容
 	 * @param[in]			nDataLen			长度
+	 * @param[in]			bPushFlag			推送标识
 	 * @return				==0					成功
 							!=0					错误
 	 */
-	virtual int				OnData( unsigned int nDataID, char* pData, unsigned int nDataLen ) = 0;
+	virtual int				OnData( unsigned int nDataID, char* pData, unsigned int nDataLen, bool bPushFlag ) = 0;
 
 	/**
 	 * @brief				根据消息ID/Code查询某数据内容(通过内存数据插件接口)
 	 * @param[in]			nDataID				消息ID
 	 * @param[in,out]		pData				商品Code[in],数据查询返回[out]
 	 * @param[in]			nDataLen			缓存长度
+ 	 * @param[in]			bLastFlag			是否所有初始化数据已经发完，本条为最后一条的，标识
 	 * @return				true				查询成功
 	 */
-	virtual bool			OnQuery( unsigned int nDataID, char* pData, unsigned int nDataLen ) = 0;
+	virtual bool			OnQuery( unsigned int nDataID, char* pData, unsigned int nDataLen, bool bLastFlag ) = 0;
 };
 
 

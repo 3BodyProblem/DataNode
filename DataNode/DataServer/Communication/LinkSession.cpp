@@ -98,7 +98,7 @@ int LinkSessionSet::SendError( unsigned int uiLinkNo, unsigned short usMessageNo
 	return 0;
 }
 
-void LinkSessionSet::PushData( const unsigned int* lpLinkNoSet, unsigned int uiLinkNoCount, unsigned short usMessageNo, unsigned short usFunctionID, const char* lpInBuf, unsigned int uiInSize )
+void LinkSessionSet::PushData( unsigned short usMessageNo, unsigned short usFunctionID, const char* lpInBuf, unsigned int uiInSize, bool bPushFlag )
 {
 
 }

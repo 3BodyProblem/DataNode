@@ -60,7 +60,7 @@ int QuotationStream::Execute()
 	return 0;
 }
 
-int QuotationStream::EncodeMessage( unsigned short nMsgID, const char *pData, unsigned int nLen )
+int QuotationStream::PutMessage( unsigned short nMsgID, const char *pData, unsigned int nLen )
 {
 	if( NULL == pData || 0 == nLen )
 	{

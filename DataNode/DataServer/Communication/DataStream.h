@@ -49,7 +49,7 @@ public:
 	 * @return					> 0					成功，返回历次调用累积的序列化的长度
 								<= 0				失败
 	 */
-	int							EncodeMessage( unsigned short nMsgID, const char *pData, unsigned int nLen );
+	int							PutMessage( unsigned short nMsgID, const char *pData, unsigned int nLen );
 
 	/**
 	 * @brief					返回请求数据

@@ -164,7 +164,7 @@ int DataEngine::OnImage( unsigned int nDataID, char* pData, unsigned int nDataLe
 	return m_oDatabaseIO.BuildMessageTable( nDataID, pData, nDataLen, bLastFlag );
 }
 
-int DataEngine::OnData( unsigned int nDataID, char* pData, unsigned int nDataLen )
+int DataEngine::OnData( unsigned int nDataID, char* pData, unsigned int nDataLen, bool bPushFlag )
 {
 	int		nErrorCode = m_oDatabaseIO.UpdateQuotation( nDataID, pData, nDataLen );
 
@@ -173,12 +173,12 @@ int DataEngine::OnData( unsigned int nDataID, char* pData, unsigned int nDataLen
 		return nErrorCode;
 	}
 
-///<	LinkSessionSet::GetSessionSet().PushData();
+	LinkSessionSet::GetSessionSet().PushData( nDataID, 0, pData, nDataLen, bPushFlag );
 
 	return nErrorCode;
 }
 
-bool DataEngine::OnQuery( unsigned int nDataID, char* pData, unsigned int nDataLen )
+bool DataEngine::OnQuery( unsigned int nDataID, char* pData, unsigned int nDataLen, bool bLastFlag )
 {
 
 	return true;
@@ -188,13 +188,22 @@ bool DataEngine::OnQuery( unsigned int nDataID, char* pData, unsigned int nDataL
 ///< ----------------------------------------------------------------------------
 
 
+DataNodeService::DataNodeService()
+{
+}
+
+DataNodeService::~DataNodeService()
+{
+	Destroy();
+}
+
 int DataNodeService::Activate()
 {
 	try
 	{
 		SvrFramework::GetFramework().WriteInfo( "DataNodeService::Activate() : activating service..............\n" );
 
-		int			nErrorCode = Configuration::GetConfigObj().Load();	///< 加载配置信息
+		int			nErrorCode = Configuration::GetConfigObj().Load();		///< 加载配置信息
 
 		if( 0 != nErrorCode )
 		{
@@ -202,10 +211,16 @@ int DataNodeService::Activate()
 			return nErrorCode;
 		}
 
-		nErrorCode = DataEngine::Initialize( Configuration::GetConfigObj().GetDataCollectorPluginPath()
-											, Configuration::GetConfigObj().GetMemPluginPath()
-											, Configuration::GetConfigObj().GetHolidayFilePath() );
-		if( 0 != nErrorCode )
+		if( 0 != (nErrorCode = SvrFramework::GetFramework().Initialize()) )	///< 使用配置信息启动服务框架插件
+		{
+			SvrFramework::GetFramework().WriteWarning( "Configuration::Load() : failed 2 initialize server framework, errorcode=%d", nErrorCode );
+			return nErrorCode;
+		}
+
+		///< ........................ 开始启动本节点引擎 .............................
+		if( 0 != (nErrorCode = DataEngine::Initialize( Configuration::GetConfigObj().GetDataCollectorPluginPath()
+													, Configuration::GetConfigObj().GetMemPluginPath()
+													, Configuration::GetConfigObj().GetHolidayFilePath() )) )
 		{
 			SvrFramework::GetFramework().WriteWarning( "DataNodeService::Activate() : failed 2 initialize service engine, errorcode=%d", nErrorCode );
 			return nErrorCode;
@@ -289,14 +304,9 @@ void DataNodeService::OnBackupDatabase()
 	nLastTimeT = nTimeNowT;
 }
 
-unsigned long DataNodeService::VersionOfEngine()
-{
-	return Configuration::GetConfigObj().GetStartInParam().uiVersion;
-}
-
 bool DataNodeService::IsAvailable()
 {
-	return true;
+	return m_oDatabaseIO.IsBuilded();
 }
 
 

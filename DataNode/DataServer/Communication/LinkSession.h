@@ -92,7 +92,7 @@ public:
 	/**
 	 * @brief					推送数据
 	 */
-	void						PushData( const unsigned int* lpLinkNoSet, unsigned int uiLinkNoCount, unsigned short usMessageNo, unsigned short usFunctionID, const char* lpInBuf, unsigned int uiInSize );
+	void						PushData( unsigned short usMessageNo, unsigned short usFunctionID, const char* lpInBuf, unsigned int uiInSize, bool bPushFlag );
 
 	/**
 	 * @brief					关闭连接

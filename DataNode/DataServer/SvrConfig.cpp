@@ -184,13 +184,6 @@ int Configuration::Load()
 		m_vctTradingPeriods.push_back( tagPeriodPair );
 	}
 
-	///< ---------- initialize framework -------------------------
-	if( 0 != SvrFramework::GetFramework().Initialize() )
-	{
-		::printf( "Configuration::Load() : failed 2 initialize server framework\n" );
-		return -102;
-	}
-
 	return 0;
 }
 
