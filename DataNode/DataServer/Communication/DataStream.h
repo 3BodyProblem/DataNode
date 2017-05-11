@@ -25,7 +25,7 @@ public:
 	 * @param[in]				nNewBuffSize		要分配的缓存大小
 	 * @return					!= 0				失败
 	 */
-	int							Instance( unsigned int nNewBuffSize = 1024*1024*10 );
+	int							Initialize( unsigned int nNewBuffSize = 1024*1024*10 );
 
 	/**
 	 * @brief					释放各资源

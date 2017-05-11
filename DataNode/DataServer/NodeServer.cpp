@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <functional>
 #include "NodeServer.h"
+#include "Communication/LinkSession.h"
 
 
 SvrFramework::SvrFramework()
@@ -24,14 +25,20 @@ SvrFramework& SvrFramework::GetFramework()
 
 int SvrFramework::Initialize()
 {
+	int									nErrorCode = 0;
 	const tagServicePlug_StartInParam&	refStartInParam = Configuration::GetConfigObj().GetStartInParam();
-	int									nErrorCode = MServicePlug::Instance( &refStartInParam );
-
-	if( nErrorCode < 0 )
-	{
+	
+	if( (nErrorCode=MServicePlug::Instance( &refStartInParam )) < 0 )	{			///< 初始化服务框架
 		::printf( "SvrFramework::Initialize() : failed 2 initialize serviceIO framework, errorcode=%d", nErrorCode );
 		return -1;
 	}
+
+	if( 0 != (nErrorCode=LinkSessionSet::GetSessionSet().Instance()) )	{			///< 初始化会话链路管理
+		::printf( "SvrFramework::Initialize() : failed 2 initialize link session set, errorcode=%d", nErrorCode );
+		return -2;
+	}
+
+	MServicePlug::RegisterSpi( &(LinkSessionSet::GetSessionSet()) );				///< 注册服务框架的回调对象
 
 	MServicePlug::WriteInfo( "SvrFramework::Initialize() : serviceIO framework initialized!" );
 	MServicePlug::WriteInfo( "SvrFramework::Initialize() : Configuration As Follow:\n\
@@ -225,6 +232,7 @@ void DataNodeService::Destroy()
 		SvrFramework::GetFramework().WriteInfo( "DataNodeService::Destroy() : destroying service.............." );
 
 		DataEngine::Release();
+		SvrFramework::GetFramework().Release();
 
 		SvrFramework::GetFramework().WriteInfo( "DataNodeService::Destroy() : service destroyed .............." );
 	}

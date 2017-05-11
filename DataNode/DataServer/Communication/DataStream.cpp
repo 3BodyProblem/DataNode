@@ -27,7 +27,7 @@ void QuotationStream::Release()
 	m_nCurrSize = 0;
 }
 
-int QuotationStream::Instance( unsigned int nNewBuffSize )
+int QuotationStream::Initialize( unsigned int nNewBuffSize )
 {
 	Release();
 
@@ -48,6 +48,10 @@ int QuotationStream::Instance( unsigned int nNewBuffSize )
 
 int QuotationStream::Execute()
 {
+//	while( true )
+	{
+
+	}
 
 	return 0;
 }

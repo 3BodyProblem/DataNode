@@ -302,6 +302,26 @@
 					>
 				</File>
 			</Filter>
+			<Filter
+				Name="Communication"
+				>
+				<File
+					RelativePath=".\DataServer\Communication\DataStream.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\DataServer\Communication\DataStream.h"
+					>
+				</File>
+				<File
+					RelativePath=".\DataServer\Communication\LinkSession.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\DataServer\Communication\LinkSession.h"
+					>
+				</File>
+			</Filter>
 		</Filter>
 		<Filter
 			Name="InitializeFlag"

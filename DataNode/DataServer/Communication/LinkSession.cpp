@@ -44,7 +44,7 @@ int LinkIDSet::FetchLinkIDList( unsigned int * lpLinkNoArray, unsigned int uiArr
 
 	if( m_setLinkID.size() != s_nLastLinkNoNum )
 	{
-		SvrFramework::GetFramework().WriteInfo( "LinkIDHolder::FetchLinkIDList() : TCP connection number of QServer fluctuated! new no. = %d, old no. = %d", m_setLinkID.size(), s_nLastLinkNoNum );
+		SvrFramework::GetFramework().WriteInfo( "LinkIDSet::FetchLinkIDList() : TCP connection number of QServer fluctuated! new no. = %d, old no. = %d", m_setLinkID.size(), s_nLastLinkNoNum );
 		s_nLastLinkNoNum = m_setLinkID.size();
 	}
 
@@ -66,6 +66,24 @@ LinkSessionSet& LinkSessionSet::GetSessionSet()
 	static	LinkSessionSet	obj;
 
 	return obj;
+}
+
+int LinkSessionSet::Instance()
+{
+	SvrFramework::GetFramework().WriteInfo( "LinkSessionSet::Instance() : initializing ......" );
+
+	int		nErrCode = m_oQuotationBuffer.Initialize();
+
+	if( 0 == nErrCode )
+	{
+		SvrFramework::GetFramework().WriteInfo( "LinkSessionSet::Instance() : initialized ......" );
+	}
+	else
+	{
+		SvrFramework::GetFramework().WriteError( "LinkSessionSet::Instance() : failed 2 initialize ..." );
+	}
+
+	return nErrCode;
 }
 
 int LinkSessionSet::SendData( unsigned int uiLinkNo, unsigned short usMessageNo, unsigned short usFunctionID, const char* lpInBuf, unsigned int uiInSize )

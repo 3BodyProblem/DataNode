@@ -73,6 +73,13 @@ public:
 	static LinkSessionSet&		GetSessionSet();
 
 	/**
+	 * @brief					初始化
+	 * @return					!= 0				失败
+	 */
+	int							Instance();
+
+public:
+	/**
 	 * @brief					发送数据
 	 */
 	int							SendData( unsigned int uiLinkNo, unsigned short usMessageNo, unsigned short usFunctionID, const char* lpInBuf, unsigned int uiInSize );
