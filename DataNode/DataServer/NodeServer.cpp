@@ -106,6 +106,11 @@ void DataEngine::Release()
 	SvrFramework::GetFramework().WriteInfo( "DataEngine::Release() : DataNode Engine is released ......" );
 }
 
+DatabaseIO& DataEngine::GetDatabaseIO()
+{
+	return m_oDatabaseIO;
+}
+
 int DataEngine::Execute()
 {
 	SvrFramework::GetFramework().WriteInfo( "DataEngine::Execute() : enter into thread func ..." );
@@ -180,8 +185,7 @@ int DataEngine::OnData( unsigned int nDataID, char* pData, unsigned int nDataLen
 
 bool DataEngine::OnQuery( unsigned int nDataID, char* pData, unsigned int nDataLen, bool bLastFlag )
 {
-
-	return true;
+	return false;
 }
 
 
@@ -195,6 +199,13 @@ DataNodeService::DataNodeService()
 DataNodeService::~DataNodeService()
 {
 	Destroy();
+}
+
+DataNodeService& DataNodeService::GetSerivceObj()
+{
+	static DataNodeService	obj;
+
+	return obj;
 }
 
 int DataNodeService::Activate()

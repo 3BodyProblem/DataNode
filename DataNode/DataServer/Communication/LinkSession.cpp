@@ -58,6 +58,7 @@ unsigned int LinkIDSet::FetchLinkIDList( unsigned int * lpLinkNoArray, unsigned 
 
 
 LinkSessionSet::LinkSessionSet()
+ : m_pDatabase( NULL )
 {
 }
 
@@ -100,7 +101,7 @@ int LinkSessionSet::SendError( unsigned int uiLinkNo, unsigned short usMessageNo
 
 void LinkSessionSet::PushData( unsigned short usMessageNo, unsigned short usFunctionID, const char* lpInBuf, unsigned int uiInSize, bool bPushFlag )
 {
-
+	m_oQuotationBuffer.PutMessage( usMessageNo, lpInBuf, uiInSize );
 }
 
 int LinkSessionSet::CloseLink( unsigned int uiLinkNo )
@@ -125,6 +126,11 @@ bool LinkSessionSet::OnNewLink( unsigned int uiLinkNo, unsigned int uiIpAddr, un
 {
 	if( 1 == LinkIDSet::GetSetObject().NewLinkID( uiLinkNo ) )
 	{
+		///< to do : send snap table ......
+		DatabaseIO&			refDatabaseIO = DataNodeService::GetSerivceObj().GetDatabaseIO();
+
+
+
 		return true;
 	}
 

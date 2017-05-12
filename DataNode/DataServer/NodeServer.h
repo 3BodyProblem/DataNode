@@ -73,6 +73,11 @@ public:
 	 */
 	void					Release();
 
+	/**
+	 * @brief				获取数据库操作对象
+	 */
+	DatabaseIO&				GetDatabaseIO();
+
 public:///< I_DataHandle接口实现: 用于给数据采集模块提供行情数据的回调方法
 	/**
  	 * @brief				初始化性质的行情数据回调
@@ -146,11 +151,17 @@ protected:
  */
 class DataNodeService : public DataEngine
 {
-public:
+private:
 	DataNodeService();
+public:
 	~DataNodeService();
 
 public:
+	/**
+	 * @brief				取得服务对象的单键引用
+	 */
+	static DataNodeService&	GetSerivceObj();
+
 	/**
 	 * @brief				初始化&启动行情服务
 	 * @return				==0				启动成功

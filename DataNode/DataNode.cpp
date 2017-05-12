@@ -18,8 +18,7 @@ extern "C"
 
 	int		RunNodeServer()
 	{
-		DataNodeService		objService;								///< 节点服务器对象
-		int					nErrorCode = objService.Activate();		///< 启动服务器
+		int	nErrorCode = DataNodeService::GetSerivceObj().Activate();	///< 启动服务器
 
 		if( 0 != nErrorCode )
 		{
@@ -27,14 +26,14 @@ extern "C"
 			return nErrorCode;
 		}
 
-		while( true == objService.IsAlive() )
+		while( true == DataNodeService::GetSerivceObj().IsAlive() )
 		{
 			SimpleThread::Sleep( 1000*2 );
 		}
 
 		::printf( "RunNodeServer() : joining thread..... \n" );
-		objService.Join();											///< 等待退出服务
-		objService.Destroy();										///< 释放所有资源
+		DataNodeService::GetSerivceObj().Join();						///< 等待退出服务
+		DataNodeService::GetSerivceObj().Destroy();						///< 释放所有资源
 		::printf( "RunNodeServer() : thread ended....... \n" );
 
 		return nErrorCode;
