@@ -415,7 +415,7 @@ public:
 	int							PutMessage( unsigned short nMsgID, const char *pData, unsigned int nLen );
 
 	/**
-	 * @brief					推送行情数据
+	 * @brief					从缓存中取数据 & 推送给下级客户端
 	 * @param[in]				lpLinkNoSet				链路号队列地址，需要被广播的所有链路的ID集合
 	 * @param[in]				uiLinkNoCount			链路号队列长度
 	 */
