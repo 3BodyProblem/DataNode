@@ -1,10 +1,11 @@
 #include "DataStream.h"
+#include "LinkSession.h"
 #include "../NodeServer.h"
 #pragma warning(disable:4244)
 
 
 QuotationStream::QuotationStream()
- : m_pszBuffer( NULL ), m_nBuffSize( 0 ), m_nCurrSize( 0 )
+ : m_pSendBuffer( NULL ), m_nMaxSendBufSize( 0 )
 {
 }
 
@@ -19,16 +20,15 @@ void QuotationStream::Release()
 
 	SimpleTask::StopThread();	///< 停止线程
 	SimpleTask::Join();			///< 退出等待
+	m_oDataBuffer.Release();	///< 释放所有资源
 
-	///< 释放所有资源
-	if( NULL != m_pszBuffer )
+	if( NULL != m_pSendBuffer )
 	{
-		delete [] m_pszBuffer;
-		m_pszBuffer = NULL;
+		delete []m_pSendBuffer;
+		m_pSendBuffer = NULL;
 	}
 
-	m_nBuffSize = 0;
-	m_nCurrSize = 0;
+	m_nMaxSendBufSize = 0;
 }
 
 int QuotationStream::Initialize( unsigned int nNewBuffSize )
@@ -37,24 +37,31 @@ int QuotationStream::Initialize( unsigned int nNewBuffSize )
 
 	CriticalLock	guard( m_oLock );
 
-	m_pszBuffer = new char[nNewBuffSize];			///< 从内存池申请一块缓存
-	if( NULL == m_pszBuffer )
+	if( NULL == (m_pSendBuffer = new char[nNewBuffSize]) )
 	{
-		SvrFramework::GetFramework().WriteError( "QuotationStream::Instance() : failed 2 allocate cache, size = %d", nNewBuffSize );
+		SvrFramework::GetFramework().WriteError( "QuotationStream::Instance() : failed 2 initialize send data buffer, size = %d", nNewBuffSize );
 		return -1;
 	}
+	m_nMaxSendBufSize = nNewBuffSize;
 
-	m_nCurrSize = 0;
-	m_nBuffSize = nNewBuffSize;						///< 缓存空间的大小
+	if( 0 != m_oDataBuffer.Initialize( nNewBuffSize ) )	///< 从内存池申请一块缓存
+	{
+		SvrFramework::GetFramework().WriteError( "QuotationStream::Instance() : failed 2 allocate cache, size = %d", nNewBuffSize );
+		return -2;
+	}
 
 	return 0;
 }
 
 int QuotationStream::Execute()
 {
-//	while( true )
+	while( true )
 	{
+		if( true == m_oDataBuffer.IsEmpty() )	{
+			m_oWaitEvent.Wait();
+		}
 
+		FlushQuotation2Client();		///< 循环发送缓存中的数据
 	}
 
 	return 0;
@@ -67,33 +74,29 @@ int QuotationStream::PutMessage( unsigned short nMsgID, const char *pData, unsig
 		return -12345;
 	}
 
-//	m_nCurrSize = sizeof(m_cMarketID) + m_oEncoder->EncodeMessage( nMsgID, pData, nLen );
+	CriticalLock	guard( m_oLock );
+	bool			bNeedActivateEvent = m_oDataBuffer.IsEmpty();			///< 是否需要激活事件对象
+	int				nErrorCode = m_oDataBuffer.PutData( pData, nLen );		///< 缓存数据
 
-	return m_nCurrSize;
-}
-
-void QuotationStream::ResponseData2Platform( unsigned int uiLinkNo, enum QuotationFunctionID eFuncID )
-{
-/*	if( m_nCurrSize > 0 )
+	if( true == bNeedActivateEvent )
 	{
-		Global_mCommIO.SendData( uiLinkNo, 0, eFuncID, m_pszBuffer, m_nCurrSize );
+		m_oWaitEvent.Active();
 	}
 
-	*m_pszBuffer = m_cMarketID;
-	m_oEncoder->Attach2Buffer( m_pszBuffer + sizeof m_cMarketID, m_nBuffSize - sizeof m_cMarketID );
-	m_nCurrSize = sizeof m_cMarketID;*/
+	return nErrorCode;
 }
 
-void QuotationStream::FlushData2Platform( const unsigned int * lpLinkNoSet, unsigned int uiLinkNoCount )
+void QuotationStream::FlushQuotation2Client()
 {
-/*	if( m_nCurrSize > 0 && uiLinkNoCount > 0 )
-	{
-		Global_mCommIO.PushData( lpLinkNoSet, uiLinkNoCount, 0, FUNCTIONID_PUSH_QUOTATION, m_pszBuffer, m_nCurrSize );
-	}
+	CriticalLock				guard( m_oLock );
+	LinkIDSet::LINKID_VECTOR	vctLinkID;
+	unsigned int				nLinkCount = LinkIDSet::GetSetObject().FetchLinkIDList( vctLinkID+0, 32 );
 
-	*m_pszBuffer = m_cMarketID;
-	m_oEncoder->Attach2Buffer( m_pszBuffer + sizeof m_cMarketID, m_nBuffSize - sizeof m_cMarketID );
-	m_nCurrSize = sizeof m_cMarketID;*/
+	if( false == m_oDataBuffer.IsEmpty() && nLinkCount > 0 )
+	{
+		int	nDataSize = m_oDataBuffer.GetData( m_pSendBuffer, m_nMaxSendBufSize );
+		SvrFramework::GetFramework().PushData( vctLinkID+0, nLinkCount, 0, 0, m_pSendBuffer, nDataSize );
+	}
 }
 
 

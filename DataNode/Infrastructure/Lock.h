@@ -55,6 +55,36 @@ protected:
 };
 
 
+/**
+ * @class			WaitEvent
+ * @brief			等待事件，虽然可以用在多个进程（必须加入事件名称）
+ * @note			主要处理激活和非激活，可以用它来替代sleep函数，它能够提早响应。
+ */
+class WaitEvent
+{
+protected:
+	volatile int							m_lInWaitCount;
+	volatile	bool						m_blRunFlag;
+	#ifndef LINUXCODE
+		HANDLE								m_hRecordData;
+	#else
+		int									m_IsStartWait;
+		int									m_nCount;	//	安全计数,避免thread_signal空唤醒,以及保持thread_wait被信号唤醒的处理
+		pthread_cond_t						m_hRecordData;
+		pthread_mutex_t						m_hMutex;
+	#endif
+public:
+	WaitEvent();
+	virtual ~WaitEvent();
+public:
+	//激活事件
+	void Active();
+	//等待事件
+	void Wait( unsigned long lMSec = 0xFFFFFFFF );
+	long GetInWaitCount() {return m_lInWaitCount;}
+};
+
+
 
 #endif
 

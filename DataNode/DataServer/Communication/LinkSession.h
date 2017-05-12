@@ -48,7 +48,7 @@ public:
 	 * @param[in]				uiArraySize			列表长度
 	 * @return					返回链路号数量
 	 */
-	int							FetchLinkIDList( unsigned int * lpLinkNoArray, unsigned int uiArraySize );
+	unsigned int				FetchLinkIDList( unsigned int* lpLinkNoArray, unsigned int uiArraySize );
 
 private:
 	CriticalObject				m_oLock;				///< 锁

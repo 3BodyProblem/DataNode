@@ -36,7 +36,7 @@ void LinkIDSet::RemoveLinkID( unsigned int nRemoveLinkID )
 	}
 }
 
-int LinkIDSet::FetchLinkIDList( unsigned int * lpLinkNoArray, unsigned int uiArraySize )
+unsigned int LinkIDSet::FetchLinkIDList( unsigned int * lpLinkNoArray, unsigned int uiArraySize )
 {
 	unsigned int	nLinkNum = 0;				///< 有效链路数量
 	static	int		s_nLastLinkNoNum = 0;		///< 上一次的链路数量
