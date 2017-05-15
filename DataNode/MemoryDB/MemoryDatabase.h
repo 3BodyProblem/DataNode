@@ -8,7 +8,23 @@
 #include "../Infrastructure/Lock.h"
 
 
-#define		MAX_CODE_LENGTH		32
+/**
+ * @class							DataSequence
+ * @brief							数据序号维持表
+ * @author							barry
+ */
+class DataSequence
+{
+public:
+	typedef
+public:
+
+protected:
+	std::map<>
+};
+
+
+#define		MAX_CODE_LENGTH		32	///< 最大代码长度
 
 
 /**

@@ -138,6 +138,7 @@ bool LinkSessionSet::OnNewLink( unsigned int uiLinkNo, unsigned int uiIpAddr, un
 		unsigned int		lstTableID[64] = { 0 };
 		DatabaseIO&			refDatabaseIO = DataNodeService::GetSerivceObj().GetDatabaseIO();
 		unsigned int		nTableCount = refDatabaseIO.GetTablesID( lstTableID, 64 );
+		CriticalLock		lock( m_oBuffLock );
 
 		for( int n = 0; n < nTableCount; n++ )
 		{
@@ -146,7 +147,7 @@ bool LinkSessionSet::OnNewLink( unsigned int uiLinkNo, unsigned int uiIpAddr, un
 
 			if( nDataLen < 0 )
 			{
-				SvrFramework::GetFramework().WriteWarning( "LinkSessionSet::OnNewLink() : failed 2 fetch records of table, errorcode=%d", nDataLen );
+				SvrFramework::GetFramework().WriteWarning( "LinkSessionSet::OnNewLink() : failed 2 fetch image of table, errorcode=%d", nDataLen );
 				return false;
 			}
 

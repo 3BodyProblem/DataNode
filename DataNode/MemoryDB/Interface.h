@@ -145,6 +145,11 @@ public:
 	 * @brief						将所有数据存盘
 	 */
 	virtual bool					SaveToDisk( const char* pszDataFile ) = 0;
+
+	/**
+	 * @brief						取得数据更新自增流水号
+	 */
+	virtual unsigned __int64		GetUpdateSequence() = 0;
 };
 
 
