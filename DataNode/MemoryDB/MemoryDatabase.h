@@ -2,8 +2,10 @@
 #define	__MEMORYDB_MEMORYDATABASE_H__
 
 
+#include <set>
 #include "Interface.h"
 #include "../Infrastructure/Dll.h"
+#include "../Infrastructure/Lock.h"
 
 
 #define		MAX_CODE_LENGTH		32
@@ -32,6 +34,25 @@ public:
 	 * @brief						释放所有资源
 	 */
 	void							Release();
+
+public:
+	/**
+	 * @brief						取得存在的数据表id列表
+	 * @param[in]					pIDList			数据表id列表指针
+	 * @param[in]					nMaxListSize	数据表的长度
+	 * @return						返回实际的数据表数量
+	 */
+	unsigned int					GetTablesID( unsigned int* pIDList, unsigned int nMaxListSize );
+
+	/**
+	 * @brief						将数据表的数据原样copy到缓存
+	 * @param[in]					nDataID					数据表ID
+	 * @param[in]					pBuffer					缓存地址
+	 * @param[in]					nBufferSize				缓存长度
+	 * @return						>=0						返回数据长度
+									<						出错
+	 */
+	int								FetchDataBlockByID( unsigned int nDataID, char* pBuffer, unsigned int nBufferSize );
 
 	/**
 	 * @brief						判断数据表是否已经建立完成
@@ -77,6 +98,8 @@ public:
 	int								BackupDatabase();
 
 protected:
+	CriticalObject					m_oLock;						///< 锁
+	std::set<unsigned int>			m_setTableID;					///< 数据表ID集合表
 	bool							m_bBuilded;						///< 数据表是否已经初始化完成
 	Dll								m_oDllPlugin;					///< 插件加载类
 	IDBFactory*						m_pIDBFactoryPtr;				///< 内存数据插件库的工厂类

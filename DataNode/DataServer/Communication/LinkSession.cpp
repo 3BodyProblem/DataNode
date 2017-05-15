@@ -57,6 +57,9 @@ unsigned int LinkIDSet::FetchLinkIDList( unsigned int * lpLinkNoArray, unsigned 
 }
 
 
+#define		MAX_IMAGE_BUFFER_SIZE			(1024*1024*10)
+
+
 LinkSessionSet::LinkSessionSet()
  : m_pDatabase( NULL )
 {
@@ -82,21 +85,27 @@ int LinkSessionSet::Instance()
 	else
 	{
 		SvrFramework::GetFramework().WriteError( "LinkSessionSet::Instance() : failed 2 initialize ..." );
+		return nErrCode;
 	}
 
-	return nErrCode;
+	m_pImageDataBuffer = new char[MAX_IMAGE_BUFFER_SIZE];	///< 分配10M的快照数据缓存(用于对下初始化)
+	if( NULL == m_pImageDataBuffer )
+	{
+		SvrFramework::GetFramework().WriteError( "LinkSessionSet::Instance() : failed 2 initialize Image buffer ..." );
+		return -10;
+	}
+
+	return 0;
 }
 
 int LinkSessionSet::SendData( unsigned int uiLinkNo, unsigned short usMessageNo, unsigned short usFunctionID, const char* lpInBuf, unsigned int uiInSize )
 {
-
-	return 0;
+	return SvrFramework::GetFramework().SendData( uiLinkNo, usMessageNo, usFunctionID, lpInBuf, uiInSize );
 }
 
 int LinkSessionSet::SendError( unsigned int uiLinkNo, unsigned short usMessageNo, unsigned short usFunctionID, const char* lpErrorInfo )
 {
-
-	return 0;
+	return SvrFramework::GetFramework().SendError( uiLinkNo, usMessageNo, usFunctionID, lpErrorInfo );
 }
 
 void LinkSessionSet::PushData( unsigned short usMessageNo, unsigned short usFunctionID, const char* lpInBuf, unsigned int uiInSize, bool bPushFlag )
@@ -126,10 +135,28 @@ bool LinkSessionSet::OnNewLink( unsigned int uiLinkNo, unsigned int uiIpAddr, un
 {
 	if( 1 == LinkIDSet::GetSetObject().NewLinkID( uiLinkNo ) )
 	{
-		///< to do : send snap table ......
+		unsigned int		lstTableID[64] = { 0 };
 		DatabaseIO&			refDatabaseIO = DataNodeService::GetSerivceObj().GetDatabaseIO();
+		unsigned int		nTableCount = refDatabaseIO.GetTablesID( lstTableID, 64 );
 
+		for( int n = 0; n < nTableCount; n++ )
+		{
+			unsigned int	nTableID = lstTableID[n];
+			int				nDataLen = refDatabaseIO.FetchDataBlockByID( nTableID, m_pImageDataBuffer, MAX_IMAGE_BUFFER_SIZE );
 
+			if( nDataLen < 0 )
+			{
+				SvrFramework::GetFramework().WriteWarning( "LinkSessionSet::OnNewLink() : failed 2 fetch records of table, errorcode=%d", nDataLen );
+				return false;
+			}
+
+			nDataLen = SendData( uiLinkNo, 0, 0, m_pImageDataBuffer, nDataLen );
+			if( nDataLen < 0 )
+			{
+				SvrFramework::GetFramework().WriteWarning( "LinkSessionSet::OnNewLink() : failed 2 send image data, errorcode=%d", nDataLen );
+				return false;
+			}
+		}
 
 		return true;
 	}

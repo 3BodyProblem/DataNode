@@ -151,6 +151,7 @@ public:
 	virtual bool				OnRecvData( unsigned int uiLinkNo, unsigned short usMessageNo, unsigned short usFunctionID, bool bErrorFlag, const char* lpData, unsigned int uiSize, unsigned int& uiAddtionData );
 
 protected:
+	char*						m_pImageDataBuffer;		///< 快照缓存
 	DatabaseIO*					m_pDatabase;			///< 数据操作对象指针
 	QuotationStream				m_oQuotationBuffer;		///< 实时行情推送缓存
 };

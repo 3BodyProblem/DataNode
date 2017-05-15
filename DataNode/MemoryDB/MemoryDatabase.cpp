@@ -22,10 +22,54 @@ bool DatabaseIO::IsBuilded()
 	return m_bBuilded;
 }
 
+unsigned int DatabaseIO::GetTablesID( unsigned int* pIDList, unsigned int nMaxListSize )
+{
+	unsigned int			nIndex = 0;
+	unsigned int*			pIDListPtr = pIDList;
+	CriticalLock			lock( m_oLock );
+
+	for( std::set<unsigned int>::iterator it = m_setTableID.begin(); it != m_setTableID.end() && nIndex < nMaxListSize; it++ )
+	{
+		*(pIDListPtr+nIndex) = *it;
+		nIndex++;
+	}
+
+	return nIndex;
+}
+
+int DatabaseIO::FetchDataBlockByID( unsigned int nDataID, char* pBuffer, unsigned int nBufferSize )
+{
+	I_Table*				pTable = NULL;
+	int						nAffectNum = 0;
+	CriticalLock			lock( m_oLock );
+
+	if( NULL == pBuffer )
+	{
+		SvrFramework::GetFramework().WriteError( "DatabaseIO::FetchDataBlockByID() : invalid buffer pointer(NULL)" );
+		return -1;
+	}
+
+	if( NULL == ((pTable = m_pIDatabase->QueryTable( nDataID ))) )
+	{
+		SvrFramework::GetFramework().WriteError( "DatabaseIO::FetchDataBlockByID() : failed 2 locate data table 4 message, message id=%d", nDataID );
+		return -2;
+	}
+
+	nAffectNum = pTable->CopyToBuffer( pBuffer, nBufferSize );
+	if( nAffectNum < 0 )
+	{
+		SvrFramework::GetFramework().WriteError( "DatabaseIO::FetchDataBlockByID() : failed 2 copy data from table, errorcode = %d", nAffectNum );
+		return -3;
+	}
+
+	return nAffectNum;
+}
+
 int DatabaseIO::BuildMessageTable( unsigned int nDataID, char* pData, unsigned int nDataLen, bool bLastFlag )
 {
-	I_Table*		pTable = NULL;
-	int				nAffectNum = 0;
+	I_Table*				pTable = NULL;
+	int						nAffectNum = 0;
+	CriticalLock			lock( m_oLock );
 
 	m_bBuilded = bLastFlag;
 	if( false == m_pIDatabase->CreateTable( nDataID, nDataLen, MAX_CODE_LENGTH ) )
@@ -45,6 +89,8 @@ int DatabaseIO::BuildMessageTable( unsigned int nDataID, char* pData, unsigned i
 		SvrFramework::GetFramework().WriteError( "DatabaseIO::BuildMessageTable() : failed 2 insert into data table 4 message, message id=%d, affectnum=%d", nDataID, nAffectNum );
 		return -3;
 	}
+
+	m_setTableID.insert( nDataID );		///< 数据表ID集合，添加
 
 	return 0;
 }
@@ -177,6 +223,7 @@ void DatabaseIO::Release()
 	{
 		SvrFramework::GetFramework().WriteInfo( "DatabaseIO::Release() : releasing memory database plugin ......" );
 
+		m_setTableID.clear();				///< 清空数据表ID集合
 		BackupDatabase();					///< 备份行情数据到磁盘
 		m_pIDatabase->DeleteTables();		///< 清理内存插件中的数据表
 		m_pIDatabase = NULL;				///< 重置内存插件数据库指针

@@ -183,11 +183,6 @@ int DataEngine::OnData( unsigned int nDataID, char* pData, unsigned int nDataLen
 	return nErrorCode;
 }
 
-bool DataEngine::OnQuery( unsigned int nDataID, char* pData, unsigned int nDataLen, bool bLastFlag )
-{
-	return false;
-}
-
 
 ///< ----------------------------------------------------------------------------
 
@@ -212,7 +207,7 @@ int DataNodeService::Activate()
 {
 	try
 	{
-		SvrFramework::GetFramework().WriteInfo( "DataNodeService::Activate() : activating service..............\n" );
+		SvrFramework::GetFramework().WriteInfo( "DataNodeService::Activate() : activating service.............." );
 
 		int			nErrorCode = Configuration::GetConfigObj().Load();		///< ¼ÓÔØÅäÖÃÐÅÏ¢
 

@@ -103,16 +103,6 @@ public:///< I_DataHandle接口实现: 用于给数据采集模块提供行情数据的回调方法
 	 */
 	virtual int				OnData( unsigned int nDataID, char* pData, unsigned int nDataLen, bool bPushFlag );
 
-	/**
-	 * @brief				根据消息ID/Code查询某数据内容(通过内存数据插件接口)
-	 * @param[in]			nDataID				消息ID
-	 * @param[in,out]		pData				商品Code[in],数据查询返回[out]
-	 * @param[in]			nDataLen			缓存长度
-	 * @param[in]			bLastFlag			是否所有初始化数据已经发完，本条为最后一条的，标识
-	 * @return				true				查询成功
-	 */
-	virtual bool			OnQuery( unsigned int nDataID, char* pData, unsigned int nDataLen, bool bLastFlag );
-
 protected:
 	/**
 	 * @brief				任务函数(内循环)

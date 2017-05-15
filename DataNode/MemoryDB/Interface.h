@@ -90,6 +90,15 @@ public:
 	 * @return						返回记录对象
 	 */
 	virtual RecordBlock				SelectRecord( char* pKeyStr, unsigned int nKeyLen ) = 0;
+
+	/**
+	 * @brief						将数据表的数据原样copy到缓存
+	 * @param[in]					pBuffer					缓存地址
+	 * @param[in]					nBufferSize				缓存长度
+	 * @return						>=0						返回数据长度
+									<						出错
+	 */
+	virtual int						CopyToBuffer( char* pBuffer, unsigned int nBufferSize ) = 0;
 };
 
 
