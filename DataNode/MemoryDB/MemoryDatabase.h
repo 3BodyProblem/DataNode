@@ -49,11 +49,11 @@ public:
 	 * @param[in]					nDataID					数据表ID
 	 * @param[in]					pBuffer					缓存地址
 	 * @param[in]					nBufferSize				缓存长度
-	 * @param[out]					nDbSerialNo				数据库新增，更新操作流水号
+	 * @param[in,out]				nDbSerialNo				取出>nDbSerialNo的数据(若为0,则全部取出) & 将回填最新的流水号
 	 * @return						>=0						返回数据长度
 									<						出错
 	 */
-	int								FetchDataBlockByID( unsigned int nDataID, char* pBuffer, unsigned int nBufferSize, unsigned __int64& nSerialNo );
+	int								FetchRecordsByID( unsigned int nDataID, char* pBuffer, unsigned int nBufferSize, unsigned __int64& nSerialNo );
 
 	/**
 	 * @brief						判断数据表是否已经建立完成

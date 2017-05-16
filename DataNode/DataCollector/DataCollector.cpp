@@ -33,36 +33,36 @@ int DataCollector::Initialize( I_DataHandle* pIDataCallBack )
 {
 	Release();
 
-	SvrFramework::GetFramework().WriteInfo( "DataCollector::Initialize() : initializing data collector plugin ......" );
+	DataNodeService::GetSerivceObj().WriteInfo( "DataCollector::Initialize() : initializing data collector plugin ......" );
 
 	int						nErrorCode = m_oDllPlugin.LoadDll( Configuration::GetConfigObj().GetDataCollectorPluginPath() );
 
 	if( 0 != nErrorCode )
 	{
-		SvrFramework::GetFramework().WriteError( "DataCollector::Initialize() : failed 2 load data collector module, errorcode=%d", nErrorCode );
+		DataNodeService::GetSerivceObj().WriteError( "DataCollector::Initialize() : failed 2 load data collector module, errorcode=%d", nErrorCode );
 		return nErrorCode;
 	}
 
-	SvrFramework::GetFramework().WriteInfo( "DataCollector::Initialize() : data collector plugin is initialized ......" );
+	DataNodeService::GetSerivceObj().WriteInfo( "DataCollector::Initialize() : data collector plugin is initialized ......" );
 
 	return 0;
 }
 
 void DataCollector::Release()
 {
-	SvrFramework::GetFramework().WriteInfo( "DataCollector::Release() : releasing memory database plugin ......" );
+	DataNodeService::GetSerivceObj().WriteInfo( "DataCollector::Release() : releasing memory database plugin ......" );
 
 	m_oDllPlugin.CloseDll();
 
-	SvrFramework::GetFramework().WriteInfo( "DataCollector::Release() : memory database plugin is released ......" );
+	DataNodeService::GetSerivceObj().WriteInfo( "DataCollector::Release() : memory database plugin is released ......" );
 }
 
 int DataCollector::ReInitializeDataCollector()
 {
-	SvrFramework::GetFramework().WriteInfo( "DataCollector::ReInitializeDataCollector() : initializeing data collector ......" );
+	DataNodeService::GetSerivceObj().WriteInfo( "DataCollector::ReInitializeDataCollector() : initializeing data collector ......" );
 
 
-	SvrFramework::GetFramework().WriteInfo( "DataCollector::ReInitializeDataCollector() : data collector initialized ......" );
+	DataNodeService::GetSerivceObj().WriteInfo( "DataCollector::ReInitializeDataCollector() : data collector initialized ......" );
 
 	return 0;
 }

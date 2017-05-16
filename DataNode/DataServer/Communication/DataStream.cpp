@@ -39,14 +39,14 @@ int QuotationStream::Initialize( unsigned int nNewBuffSize )
 
 	if( NULL == (m_pSendBuffer = new char[nNewBuffSize]) )
 	{
-		SvrFramework::GetFramework().WriteError( "QuotationStream::Instance() : failed 2 initialize send data buffer, size = %d", nNewBuffSize );
+		DataNodeService::GetSerivceObj().WriteError( "QuotationStream::Instance() : failed 2 initialize send data buffer, size = %d", nNewBuffSize );
 		return -1;
 	}
 	m_nMaxSendBufSize = nNewBuffSize;
 
 	if( 0 != m_oDataBuffer.Initialize( nNewBuffSize ) )	///< 从内存池申请一块缓存
 	{
-		SvrFramework::GetFramework().WriteError( "QuotationStream::Instance() : failed 2 allocate cache, size = %d", nNewBuffSize );
+		DataNodeService::GetSerivceObj().WriteError( "QuotationStream::Instance() : failed 2 allocate cache, size = %d", nNewBuffSize );
 		return -2;
 	}
 
@@ -88,16 +88,73 @@ int QuotationStream::PutMessage( unsigned short nMsgID, const char *pData, unsig
 
 void QuotationStream::FlushQuotation2Client()
 {
-	CriticalLock				guard( m_oLock );
 	LinkIDSet::LINKID_VECTOR	vctLinkID;
+	CriticalLock				guard( m_oLock );
 	unsigned int				nLinkCount = LinkIDSet::GetSetObject().FetchLinkIDList( vctLinkID+0, 32 );
 
 	if( false == m_oDataBuffer.IsEmpty() && nLinkCount > 0 )
 	{
 		int	nDataSize = m_oDataBuffer.GetData( m_pSendBuffer, m_nMaxSendBufSize );
-		SvrFramework::GetFramework().PushData( vctLinkID+0, nLinkCount, 0, 0, m_pSendBuffer, nDataSize );
+		DataNodeService::GetSerivceObj().PushData( vctLinkID+0, nLinkCount, 0, 0, m_pSendBuffer, nDataSize );
 	}
 }
+
+
+#define		MAX_IMAGE_BUFFER_SIZE			(1024*1024*10)
+
+
+QuotationResponse::QuotationResponse()
+ : m_pImageDataBuffer( NULL )
+{
+}
+
+void QuotationResponse::Release()
+{
+	if( NULL != m_pImageDataBuffer )
+	{
+		delete [] m_pImageDataBuffer;
+		m_pImageDataBuffer = NULL;
+	}
+}
+
+int QuotationResponse::Initialize()
+{
+	Release();
+	m_pImageDataBuffer = new char[MAX_IMAGE_BUFFER_SIZE];	///< 分配10M的快照数据缓存(用于对下初始化)
+
+	if( NULL == m_pImageDataBuffer )
+	{
+		DataNodeService::GetSerivceObj().WriteError( "QuotationResponse::Initialize() : failed 2 initialize Image buffer ..." );
+		return -1;
+	}
+
+	return 0;
+}
+
+unsigned int QuotationResponse::GetReqSessionCount()
+{
+	CriticalLock		lock( m_oBuffLock );
+
+	return m_setNewReqLinkID.size();
+}
+
+bool QuotationResponse::AddNewReqSession( unsigned int nLinkNo )
+{
+	CriticalLock		lock( m_oBuffLock );
+
+	if( m_setNewReqLinkID.find( nLinkNo ) == m_setNewReqLinkID.end() )
+	{
+		DataNodeService::GetSerivceObj().WriteInfo( "QuotationResponse::AddNewReqSession() : [WARNING] duplicate link number & new link will be disconnected..." );
+
+		return false;
+	}
+
+	m_setNewReqLinkID.insert( nLinkNo );
+
+	return true;
+}
+
+
 
 
 

@@ -3,6 +3,7 @@
 
 
 #pragma warning(disable:4018)
+#include <set>
 #include "../../Infrastructure/Lock.h"
 #include "../../Infrastructure/Thread.h"
 
@@ -428,6 +429,49 @@ protected:
 	char*						m_pSendBuffer;			///< 数据发送缓存
 	unsigned int				m_nMaxSendBufSize;		///< 发送缓存最大长度
 };
+
+
+/**
+ * @class						QuotationResponse
+ * @brief						初始化行情流缓存
+ * @author						barry
+ */
+class QuotationResponse
+{
+public:
+	QuotationResponse();
+
+	/**
+	 * @brief					初始化行情初始化流缓存
+	 * @return					!= 0					失败
+	 */
+	int							Initialize();
+
+	/**
+	 * @brief					释放各资源
+	 */
+	void						Release();
+
+public:
+	/**
+	 * @brief					获取待初始化的新链路数量
+	 */
+	unsigned int				GetReqSessionCount();
+
+	/**
+	 * @brief					增加一个新的待初始化推送的链路号
+	 * @param[in]				nLinkNo					链路号
+	 * @return					true					增加成功
+								false					失败，有重复项
+	 */
+	bool						AddNewReqSession( unsigned int nLinkNo );
+
+protected:
+	CriticalObject				m_oBuffLock;			///< 初始化数据推送缓存锁
+	std::set<unsigned int>		m_setNewReqLinkID;		///< 待初始化链路ID集合
+	char*						m_pImageDataBuffer;		///< 初始化数据缓存
+};
+
 
 
 

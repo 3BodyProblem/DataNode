@@ -37,31 +37,33 @@ unsigned int DatabaseIO::GetTablesID( unsigned int* pIDList, unsigned int nMaxLi
 	return nIndex;
 }
 
-int DatabaseIO::FetchDataBlockByID( unsigned int nDataID, char* pBuffer, unsigned int nBufferSize, unsigned __int64& nSerialNo )
+int DatabaseIO::FetchRecordsByID( unsigned int nDataID, char* pBuffer, unsigned int nBufferSize, unsigned __int64& nSerialNo )
 {
 	unsigned __int64		nTmpVal = 0;
 	I_Table*				pTable = NULL;
 	int						nAffectNum = 0;
 	CriticalLock			lock( m_oLock );
 
-	nSerialNo = 0;
 	if( NULL == pBuffer )
 	{
-		SvrFramework::GetFramework().WriteError( "DatabaseIO::FetchDataBlockByID() : invalid buffer pointer(NULL)" );
+		nSerialNo = 0;
+		DataNodeService::GetSerivceObj().WriteError( "DatabaseIO::FetchRecordsByID() : invalid buffer pointer(NULL)" );
 		return -1;
 	}
 
 	if( NULL == ((pTable = m_pIDatabase->QueryTable( nDataID ))) )
 	{
-		SvrFramework::GetFramework().WriteError( "DatabaseIO::FetchDataBlockByID() : failed 2 locate data table 4 message, message id=%d", nDataID );
+		nSerialNo = 0;
+		DataNodeService::GetSerivceObj().WriteError( "DatabaseIO::FetchRecordsByID() : failed 2 locate data table 4 message, message id=%d", nDataID );
 		return -2;
 	}
 
 	nTmpVal = m_pIDatabase->GetUpdateSequence();
-	nAffectNum = pTable->CopyToBuffer( pBuffer, nBufferSize );
+	nAffectNum = pTable->CopyToBuffer( pBuffer, nBufferSize, nSerialNo );
 	if( nAffectNum < 0 )
 	{
-		SvrFramework::GetFramework().WriteError( "DatabaseIO::FetchDataBlockByID() : failed 2 copy data from table, errorcode = %d", nAffectNum );
+		nSerialNo = 0;
+		DataNodeService::GetSerivceObj().WriteError( "DatabaseIO::FetchRecordsByID() : failed 2 copy data from table, errorcode = %d", nAffectNum );
 		return -3;
 	}
 
@@ -79,19 +81,19 @@ int DatabaseIO::BuildMessageTable( unsigned int nDataID, char* pData, unsigned i
 	m_bBuilded = bLastFlag;
 	if( false == m_pIDatabase->CreateTable( nDataID, nDataLen, MAX_CODE_LENGTH ) )
 	{
-		SvrFramework::GetFramework().WriteError( "DatabaseIO::BuildMessageTable() : failed 2 create data table 4 message, message id=%d", nDataID );
+		DataNodeService::GetSerivceObj().WriteError( "DatabaseIO::BuildMessageTable() : failed 2 create data table 4 message, message id=%d", nDataID );
 		return -1;
 	}
 
 	if( NULL == ((pTable = m_pIDatabase->QueryTable( nDataID ))) )
 	{
-		SvrFramework::GetFramework().WriteError( "DatabaseIO::BuildMessageTable() : failed 2 locate data table 4 message, message id=%d", nDataID );
+		DataNodeService::GetSerivceObj().WriteError( "DatabaseIO::BuildMessageTable() : failed 2 locate data table 4 message, message id=%d", nDataID );
 		return -2;
 	}
 
 	if( 0 > (nAffectNum = pTable->InsertRecord( pData, nDataLen, nDbSerialNo )) )
 	{
-		SvrFramework::GetFramework().WriteError( "DatabaseIO::BuildMessageTable() : failed 2 insert into data table 4 message, message id=%d, affectnum=%d", nDataID, nAffectNum );
+		DataNodeService::GetSerivceObj().WriteError( "DatabaseIO::BuildMessageTable() : failed 2 insert into data table 4 message, message id=%d, affectnum=%d", nDataID, nAffectNum );
 		return -3;
 	}
 
@@ -108,19 +110,19 @@ int DatabaseIO::UpdateQuotation( unsigned int nDataID, char* pData, unsigned int
 	nDbSerialNo = 0;
 	if( false == m_bBuilded )
 	{
-		SvrFramework::GetFramework().WriteError( "DatabaseIO::UpdateQuotation() : failed 2 update quotation before initialization, message id=%d" );
+		DataNodeService::GetSerivceObj().WriteError( "DatabaseIO::UpdateQuotation() : failed 2 update quotation before initialization, message id=%d" );
 		return -1;
 	}
 
 	if( NULL == ((pTable = m_pIDatabase->QueryTable( nDataID ))) )
 	{
-		SvrFramework::GetFramework().WriteError( "DatabaseIO::UpdateQuotation() : failed 2 locate data table 4 message, message id=%d", nDataID );
+		DataNodeService::GetSerivceObj().WriteError( "DatabaseIO::UpdateQuotation() : failed 2 locate data table 4 message, message id=%d", nDataID );
 		return -2;
 	}
 
 	if( 0 > (nAffectNum = pTable->UpdateRecord( pData, nDataLen, nDbSerialNo )) )
 	{
-		SvrFramework::GetFramework().WriteError( "DatabaseIO::UpdateQuotation() : failed 2 insert into data table 4 message, message id=%d, affectnum=%d", nDataID, nAffectNum );
+		DataNodeService::GetSerivceObj().WriteError( "DatabaseIO::UpdateQuotation() : failed 2 insert into data table 4 message, message id=%d, affectnum=%d", nDataID, nAffectNum );
 		return -3;
 	}
 
@@ -133,16 +135,16 @@ int DatabaseIO::RecoverDatabase()
 	{
 		if( m_pIDatabase )
 		{
-			SvrFramework::GetFramework().WriteInfo( "DatabaseIO::RecoverDatabase() : recovering ......" );
+			DataNodeService::GetSerivceObj().WriteInfo( "DatabaseIO::RecoverDatabase() : recovering ......" );
 
 			if( true == m_pIDatabase->LoadFromDisk( Configuration::GetConfigObj().GetRecoveryFolderPath().c_str() ) )
 			{
-				SvrFramework::GetFramework().WriteInfo( "DatabaseIO::RecoverDatabase() : recovered ......" );
+				DataNodeService::GetSerivceObj().WriteInfo( "DatabaseIO::RecoverDatabase() : recovered ......" );
 				return 0;
 			}
 			else
 			{
-				SvrFramework::GetFramework().WriteWarning( "DatabaseIO::RecoverDatabase() : failed 2 recover quotation data ......" );
+				DataNodeService::GetSerivceObj().WriteWarning( "DatabaseIO::RecoverDatabase() : failed 2 recover quotation data ......" );
 				return -1;
 			}
 		}
@@ -151,11 +153,11 @@ int DatabaseIO::RecoverDatabase()
 	}
 	catch( std::exception& err )
 	{
-		SvrFramework::GetFramework().WriteWarning( "DatabaseIO::BackupDatabase() : exception : %s", err.what() );
+		DataNodeService::GetSerivceObj().WriteWarning( "DatabaseIO::BackupDatabase() : exception : %s", err.what() );
 	}
 	catch( ... )
 	{
-		SvrFramework::GetFramework().WriteWarning( "DatabaseIO::BackupDatabase() : unknow exception" );
+		DataNodeService::GetSerivceObj().WriteWarning( "DatabaseIO::BackupDatabase() : unknow exception" );
 	}
 
 	return -1;
@@ -167,27 +169,27 @@ int DatabaseIO::BackupDatabase()
 	{
 		if( m_pIDatabase )
 		{
-			SvrFramework::GetFramework().WriteInfo( "DatabaseIO::BackupDatabase() : making backup ......" );
+			DataNodeService::GetSerivceObj().WriteInfo( "DatabaseIO::BackupDatabase() : making backup ......" );
 
 			if( true == m_pIDatabase->SaveToDisk( Configuration::GetConfigObj().GetRecoveryFolderPath().c_str() ) )
 			{
-				SvrFramework::GetFramework().WriteInfo( "DatabaseIO::BackupDatabase() : backup completed ......" );
+				DataNodeService::GetSerivceObj().WriteInfo( "DatabaseIO::BackupDatabase() : backup completed ......" );
 				return 0;
 			}
 			else
 			{
-				SvrFramework::GetFramework().WriteWarning( "DatabaseIO::BackupDatabase() : miss backup ......" );
+				DataNodeService::GetSerivceObj().WriteWarning( "DatabaseIO::BackupDatabase() : miss backup ......" );
 				return -2;
 			}
 		}
 	}
 	catch( std::exception& err )
 	{
-		SvrFramework::GetFramework().WriteWarning( "DatabaseIO::BackupDatabase() : exception : %s", err.what() );
+		DataNodeService::GetSerivceObj().WriteWarning( "DatabaseIO::BackupDatabase() : exception : %s", err.what() );
 	}
 	catch( ... )
 	{
-		SvrFramework::GetFramework().WriteWarning( "DatabaseIO::BackupDatabase() : unknow exception" );
+		DataNodeService::GetSerivceObj().WriteWarning( "DatabaseIO::BackupDatabase() : unknow exception" );
 	}
 
 	return -1;
@@ -197,14 +199,14 @@ int DatabaseIO::Initialize()
 {
 	Release();
 
-	SvrFramework::GetFramework().WriteInfo( "DatabaseIO::Initialize() : initializing memory database plugin ......" );
+	DataNodeService::GetSerivceObj().WriteInfo( "DatabaseIO::Initialize() : initializing memory database plugin ......" );
 
 	TFunc_GetFactoryObject*	m_funcFactory = NULL;
 	int						nErrorCode = m_oDllPlugin.LoadDll( Configuration::GetConfigObj().GetMemPluginPath() );
 
 	if( 0 != nErrorCode )
 	{
-		SvrFramework::GetFramework().WriteError( "DatabaseIO::Initialize() : failed 2 load memoryplugin module, errorcode=%d", nErrorCode );
+		DataNodeService::GetSerivceObj().WriteError( "DatabaseIO::Initialize() : failed 2 load memoryplugin module, errorcode=%d", nErrorCode );
 		return nErrorCode;
 	}
 
@@ -213,12 +215,12 @@ int DatabaseIO::Initialize()
 	m_pIDatabase = m_pIDBFactoryPtr->GrapDatabaseInterface();
 	if( NULL == m_pIDatabase )
 	{
-		SvrFramework::GetFramework().WriteError( "DatabaseIO::Initialize() : invalid database interface pointer(NULL)" );
+		DataNodeService::GetSerivceObj().WriteError( "DatabaseIO::Initialize() : invalid database interface pointer(NULL)" );
 		Release();
 		return -100;
 	}
 
-	SvrFramework::GetFramework().WriteInfo( "DatabaseIO::Initialize() : memory database plugin is initialized ......" );
+	DataNodeService::GetSerivceObj().WriteInfo( "DatabaseIO::Initialize() : memory database plugin is initialized ......" );
 
 	return 0;
 }
@@ -227,7 +229,7 @@ void DatabaseIO::Release()
 {
 	if( NULL != m_pIDatabase || NULL != m_pIDBFactoryPtr )
 	{
-		SvrFramework::GetFramework().WriteInfo( "DatabaseIO::Release() : releasing memory database plugin ......" );
+		DataNodeService::GetSerivceObj().WriteInfo( "DatabaseIO::Release() : releasing memory database plugin ......" );
 
 		m_setTableID.clear();				///< 清空数据表ID集合
 		BackupDatabase();					///< 备份行情数据到磁盘
@@ -242,7 +244,7 @@ void DatabaseIO::Release()
 
 		m_oDllPlugin.CloseDll();			///< 卸载内存库插件的DLL
 
-		SvrFramework::GetFramework().WriteInfo( "DatabaseIO::Release() : memory database plugin is released ......" );
+		DataNodeService::GetSerivceObj().WriteInfo( "DatabaseIO::Release() : memory database plugin is released ......" );
 	}
 }
 

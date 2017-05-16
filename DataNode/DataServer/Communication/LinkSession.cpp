@@ -44,7 +44,7 @@ unsigned int LinkIDSet::FetchLinkIDList( unsigned int * lpLinkNoArray, unsigned 
 
 	if( m_setLinkID.size() != s_nLastLinkNoNum )
 	{
-		SvrFramework::GetFramework().WriteInfo( "LinkIDSet::FetchLinkIDList() : TCP connection number of QServer fluctuated! new no. = %d, old no. = %d", m_setLinkID.size(), s_nLastLinkNoNum );
+		DataNodeService::GetSerivceObj().WriteInfo( "LinkIDSet::FetchLinkIDList() : TCP connection number of QServer fluctuated! new no. = %d, old no. = %d", m_setLinkID.size(), s_nLastLinkNoNum );
 		s_nLastLinkNoNum = m_setLinkID.size();
 	}
 
@@ -57,123 +57,119 @@ unsigned int LinkIDSet::FetchLinkIDList( unsigned int * lpLinkNoArray, unsigned 
 }
 
 
-#define		MAX_IMAGE_BUFFER_SIZE			(1024*1024*10)
-
-
-LinkSessionSet::LinkSessionSet()
+LinkSessions::LinkSessions()
  : m_pDatabase( NULL )
 {
 }
 
-LinkSessionSet& LinkSessionSet::GetSessionSet()
+int LinkSessions::Instance()
 {
-	static	LinkSessionSet	obj;
-
-	return obj;
-}
-
-int LinkSessionSet::Instance()
-{
-	SvrFramework::GetFramework().WriteInfo( "LinkSessionSet::Instance() : initializing ......" );
+	DataNodeService::GetSerivceObj().WriteInfo( "LinkSessions::Instance() : initializing ......" );
 
 	int		nErrCode = m_oQuotationBuffer.Initialize();
 
 	if( 0 == nErrCode )
 	{
-		SvrFramework::GetFramework().WriteInfo( "LinkSessionSet::Instance() : initialized ......" );
+		DataNodeService::GetSerivceObj().WriteInfo( "LinkSessions::Instance() : initialized ......" );
 	}
 	else
 	{
-		SvrFramework::GetFramework().WriteError( "LinkSessionSet::Instance() : failed 2 initialize ..." );
+		DataNodeService::GetSerivceObj().WriteError( "LinkSessions::Instance() : failed 2 initialize ..." );
 		return nErrCode;
 	}
 
-	m_pImageDataBuffer = new char[MAX_IMAGE_BUFFER_SIZE];	///< 分配10M的快照数据缓存(用于对下初始化)
-	if( NULL == m_pImageDataBuffer )
+	if( 0 != (nErrCode = m_oResponseBuffer.Initialize()) )	///< 分配10M的快照数据缓存(用于对下初始化)
 	{
-		SvrFramework::GetFramework().WriteError( "LinkSessionSet::Instance() : failed 2 initialize Image buffer ..." );
-		return -10;
+		DataNodeService::GetSerivceObj().WriteError( "LinkSessions::Instance() : failed 2 initialize Image buffer ..." );
+		return -100;
 	}
 
 	return 0;
 }
 
-int LinkSessionSet::SendData( unsigned int uiLinkNo, unsigned short usMessageNo, unsigned short usFunctionID, const char* lpInBuf, unsigned int uiInSize, unsigned __int64	nSerialNo )
+int LinkSessions::SendData( unsigned int uiLinkNo, unsigned short usMessageNo, unsigned short usFunctionID, const char* lpInBuf, unsigned int uiInSize, unsigned __int64	nSerialNo )
 {
-	return SvrFramework::GetFramework().SendData( uiLinkNo, usMessageNo, usFunctionID, lpInBuf, uiInSize );
+	return DataNodeService::GetSerivceObj().SendData( uiLinkNo, usMessageNo, usFunctionID, lpInBuf, uiInSize );
 }
 
-int LinkSessionSet::SendError( unsigned int uiLinkNo, unsigned short usMessageNo, unsigned short usFunctionID, const char* lpErrorInfo )
+int LinkSessions::SendError( unsigned int uiLinkNo, unsigned short usMessageNo, unsigned short usFunctionID, const char* lpErrorInfo )
 {
-	return SvrFramework::GetFramework().SendError( uiLinkNo, usMessageNo, usFunctionID, lpErrorInfo );
+	return DataNodeService::GetSerivceObj().SendError( uiLinkNo, usMessageNo, usFunctionID, lpErrorInfo );
 }
 
-void LinkSessionSet::PushData( unsigned short usMessageNo, unsigned short usFunctionID, const char* lpInBuf, unsigned int uiInSize, bool bPushFlag, unsigned __int64	nSerialNo )
+void LinkSessions::PushData( unsigned short usMessageNo, unsigned short usFunctionID, const char* lpInBuf, unsigned int uiInSize, bool bPushFlag, unsigned __int64	nSerialNo )
 {
 	m_oQuotationBuffer.PutMessage( usMessageNo, lpInBuf, uiInSize );
 }
 
-int LinkSessionSet::CloseLink( unsigned int uiLinkNo )
+int LinkSessions::CloseLink( unsigned int uiLinkNo )
 {
 	LinkIDSet::GetSetObject().RemoveLinkID( uiLinkNo );
 
 	return 0;
 }
 
-void LinkSessionSet::OnReportStatus( char* szStatusInfo, unsigned int uiSize )
+void LinkSessions::OnReportStatus( char* szStatusInfo, unsigned int uiSize )
 {
 //	cs_format(szStatusInfo,uiSize, _T( ":[API/SPI 总数],(2)API/SPI 创建数目=%d,(2)API/SPI 验证数目=%d,[API 调用计数],下单频率=%.2f,撤单频率=%.2f,查询频率=%.2f"), spi_total, spi_auth, freq_insertOrder, freq_cancelOrder, freq_queryOrder);
 }
 
-bool LinkSessionSet::OnCommand( const char* szSrvUnitName, const char* szCommand, char* szResult, unsigned int uiSize )
+bool LinkSessions::OnCommand( const char* szSrvUnitName, const char* szCommand, char* szResult, unsigned int uiSize )
 {
 
 	return false;
 }
 
-bool LinkSessionSet::OnNewLink( unsigned int uiLinkNo, unsigned int uiIpAddr, unsigned int uiPort )
+int LinkSessions::SyncQuot2ReqSessions( DatabaseIO& refDatabaseIO, unsigned __int64 nSerialNo )
 {
-	if( 1 == LinkIDSet::GetSetObject().NewLinkID( uiLinkNo ) )
+	unsigned int		lstTableID[64] = { 0 };
+	unsigned int		nTableCount = refDatabaseIO.GetTablesID( lstTableID, 64 );
+	int					nSetSize = m_oResponseBuffer.GetReqSessionCount();
+/*
+	for( int n = 0; n < nTableCount && nSetSize > 0; n++ )
 	{
-		unsigned int		lstTableID[64] = { 0 };
-		DatabaseIO&			refDatabaseIO = DataNodeService::GetSerivceObj().GetDatabaseIO();
-		unsigned int		nTableCount = refDatabaseIO.GetTablesID( lstTableID, 64 );
-		CriticalLock		lock( m_oBuffLock );
+		unsigned __int64	nQueryID = nSerialNo;
+		unsigned int		nTableID = lstTableID[n];
+		int					nDataLen = refDatabaseIO.FetchRecordsByID( nTableID, m_pImageDataBuffer, MAX_IMAGE_BUFFER_SIZE, nQueryID );
 
-		for( int n = 0; n < nTableCount; n++ )
+		if( nDataLen < 0 )
 		{
-			unsigned __int64	nSerialNo = 0;
-			unsigned int		nTableID = lstTableID[n];
-			int					nDataLen = refDatabaseIO.FetchDataBlockByID( nTableID, m_pImageDataBuffer, MAX_IMAGE_BUFFER_SIZE, nSerialNo );
-
-			if( nDataLen < 0 )
-			{
-				SvrFramework::GetFramework().WriteWarning( "LinkSessionSet::OnNewLink() : failed 2 fetch image of table, errorcode=%d", nDataLen );
-				return false;
-			}
-
-			nDataLen = SendData( uiLinkNo, 0, 0, m_pImageDataBuffer, nDataLen, nSerialNo );
-			if( nDataLen < 0 )
-			{
-				SvrFramework::GetFramework().WriteWarning( "LinkSessionSet::OnNewLink() : failed 2 send image data, errorcode=%d", nDataLen );
-				return false;
-			}
+			DataNodeService::GetSerivceObj().WriteWarning( "LinkSessions::OnNewLink() : failed 2 fetch image of table, errorcode=%d", nDataLen );
+			return -1 * (n*100);
 		}
 
-		return true;
+		for( std::set<unsigned int>::iterator it = m_setNewReqLinkID.begin(); it != m_setNewReqLinkID.end(); it++ )
+		{
+			nDataLen = SendData( *it, 0, 0, m_pImageDataBuffer, nDataLen, nSerialNo );
+			if( nDataLen < 0 )
+			{
+				DataNodeService::GetSerivceObj().WriteWarning( "LinkSessions::OnNewLink() : failed 2 send image data, errorcode=%d", nDataLen );
+				return -2 * (n*100);
+			}
+		}
 	}
 
-	SvrFramework::GetFramework().WriteInfo( "LinkSessionSet::OnNewLink() : [WARNING] duplicate link number & new link will be disconnected..." );
+	for( std::set<unsigned int>::iterator it = m_setNewReqLinkID.begin(); it != m_setNewReqLinkID.end(); it++ )
+	{
+		LinkIDSet::GetSetObject().NewLinkID( *it );
+	}
 
-	return false;
+	m_setNewReqLinkID.clear();
+*/
+	return nSetSize;
 }
 
-void LinkSessionSet::OnCloseLink( unsigned int uiLinkNo, int iCloseType )
+bool LinkSessions::OnNewLink( unsigned int uiLinkNo, unsigned int uiIpAddr, unsigned int uiPort )
+{
+	return m_oResponseBuffer.AddNewReqSession( uiLinkNo );
+}
+
+void LinkSessions::OnCloseLink( unsigned int uiLinkNo, int iCloseType )
 {
 	LinkIDSet::GetSetObject().RemoveLinkID( uiLinkNo );
 }
 
-bool LinkSessionSet::OnRecvData( unsigned int uiLinkNo, unsigned short usMessageNo, unsigned short usFunctionID, bool bErrorFlag, const char* lpData, unsigned int uiSize, unsigned int& uiAddtionData )
+bool LinkSessions::OnRecvData( unsigned int uiLinkNo, unsigned short usMessageNo, unsigned short usFunctionID, bool bErrorFlag, const char* lpData, unsigned int uiSize, unsigned int& uiAddtionData )
 {
 
 	return false;

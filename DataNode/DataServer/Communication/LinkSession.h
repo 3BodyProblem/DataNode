@@ -58,26 +58,29 @@ private:
 
 
 /**
- * @class						LinkSessionSet
+ * @class						LinkSessions
  * @brief						通讯链路会话集合类
  * @author						barry
  */
-class LinkSessionSet : public MServicePlug_Spi
+class LinkSessions : public MServicePlug_Spi
 {
-private:
-	LinkSessionSet();
-
 public:
-	/**
-	 * @brief					取得会话集合对象的单键引用
-	 */
-	static LinkSessionSet&		GetSessionSet();
+	LinkSessions();
 
 	/**
 	 * @brief					初始化
 	 * @return					!= 0				失败
 	 */
 	int							Instance();
+
+	/**
+	 * @brief					将所有数据同步/初始化到所有客户端链路
+	 * @param[in]				refDatabaseIO		数据库插件引用
+	 * @param[in]				nSerialNo			推送查询序号(需要>nSerialNo)
+	 * @return					>=0					同步的链路数
+								<0					出错
+	 */
+	int							SyncQuot2ReqSessions( DatabaseIO& refDatabaseIO, unsigned __int64 nSerialNo = 0 );
 
 public:
 	/**
@@ -150,9 +153,9 @@ public:
 	 */
 	virtual bool				OnRecvData( unsigned int uiLinkNo, unsigned short usMessageNo, unsigned short usFunctionID, bool bErrorFlag, const char* lpData, unsigned int uiSize, unsigned int& uiAddtionData );
 
+public:
+	QuotationResponse			m_oResponseBuffer;		///< 初始化流缓存
 protected:
-	CriticalObject				m_oBuffLock;			///< 缓存锁
-	char*						m_pImageDataBuffer;		///< 快照缓存
 	DatabaseIO*					m_pDatabase;			///< 数据操作对象指针
 	QuotationStream				m_oQuotationBuffer;		///< 实时行情推送缓存
 };

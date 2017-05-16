@@ -9,53 +9,26 @@
 #include "../Infrastructure/Thread.h"
 #include "ServiceIO/MServicePlug.h"
 #include "ServiceIO/MServicePlug.hpp"
+#include "Communication/LinkSession.h"
 #include "../InitializeFlag/InitFlag.h"
 #include "../MemoryDB/MemoryDatabase.h"
 #include "../DataCollector/DataCollector.h"
 
 
 /**
- * @class					SvrFramework
- * @brief					服务框架类
- * @detail					封装了服务注册、数据收发、状态通知等基础功能
- * @date					2017/5/2
- * @author					barry
- */
-class SvrFramework : public MServicePlug
-{
-private:
-	SvrFramework();
-
-public:
-	~SvrFramework();
-
-	/**
-	 * @brief				取得服务框架插件
-	 * @return				返回服务框架插件的对象引用
-	 */
-	static SvrFramework&	GetFramework();
-
-	/**
-	 * @brief				初始化服务框架
-	 * @note				在加载完配置文件后，将马上被调用
-	 * @return				==0					成功
-							!=0					失败
-	 */
-	int						Initialize();
-};
-
-
-/**
- * @class					DataEngine
- * @brief					全数据会话管理引擎
+ * @class					DataIOEngine
+ * @brief					行情数据更新管理引擎(主要封装数据初始化和更新/推送的业务)
  * @detail					集成/协调各子模块(数据采集插件+数据内存插件+数据压缩插件)
+ * @note					主要提供三块行情数据相关的基础功能: 采集进来的行情更新到内存 + 行情数据初始化控制逻辑 + 行情数据对下级的网络框架封装
+							&
+							其中行情的每日初始化已经考虑了节假日的情况
  * @date					2017/5/3
  * @author					barry
  */
-class DataEngine : public I_DataHandle, public SimpleTask
+class DataIOEngine : public I_DataHandle, public SimpleTask, public MServicePlug
 {
 public:
-	DataEngine();
+	DataIOEngine();
 
 	/**
  	 * @brief				初始化行情各参数，准备工作
@@ -72,11 +45,6 @@ public:
 	 * @brief				释放行情模块各资源
 	 */
 	void					Release();
-
-	/**
-	 * @brief				获取数据库操作对象
-	 */
-	DatabaseIO&				GetDatabaseIO();
 
 public:///< I_DataHandle接口实现: 用于给数据采集模块提供行情数据的回调方法
 	/**
@@ -118,6 +86,10 @@ protected:
 	virtual int				OnIdle() = 0;
 
 protected:
+	InitializerFlag			m_oInitFlag;					///< 重新初始化标识
+	LinkSessions			m_oLinkSessions;				///< 下级的链路会话
+
+protected:
 	DatabaseIO				m_oDatabaseIO;					///< 内存数据插件管理
 	DataCollector			m_oDataCollector;				///< 行情采集模块接口
 //	XXXCompress				m_oCompressObj;					///< 行情压缩模块
@@ -127,31 +99,26 @@ protected:
 /**
  * @class					DataNodeService
  * @brief					行情服务器引擎	(主干类)
- * @detail					涉及的业务方向：
-							a) 数据采集插件的每天自动初始化
-							b) 数据采集插件通知回调方式，将初始化数据+行情数据通知给Engine对象
-							c) Engine对象维持好各阶段的行情业务状态，并对状态作出正确的反应(如重连，重新初始化,空闲...)
-							d) Engine对象自动将内存中的行情数据落盘
-							e) Engine对象初始化时自动将行情落盘数据更新到内存对象(注：落盘数据无差别载入，即内存中保存的一定是最后一次可以拿到的行情数据)
-							f) Engine对象提供对Dll导出接口的支持
-							g) 需要有节假日逻辑支持
-							h) 服务除了初始化阶段，其他时间都应该为可服务状态
+ * @detail					扩展作为行情服务需要的一些数据更新功能以外的逻辑功能：
+							a) 服务器启/停控制
+							b) 行情服务器的数据定时落盘备份
+							c) 行情服务器状态定时通报
  * @date					2017/5/3
  * @author					barry
  */
-class DataNodeService : public DataEngine
+class DataNodeService : public DataIOEngine
 {
 private:
 	DataNodeService();
 public:
 	~DataNodeService();
 
-public:
 	/**
 	 * @brief				取得服务对象的单键引用
 	 */
 	static DataNodeService&	GetSerivceObj();
 
+public:
 	/**
 	 * @brief				初始化&启动行情服务
 	 * @return				==0				启动成功
@@ -180,13 +147,6 @@ public:
 	 * @brief				询问数据采集模块的状态
 	 */
 	void					OnInquireStatus();
-
-	/**
-	 * @brief				行情引擎是否可提供对下服务
-	 * @return				true		行情初始化成功，可服务
-							false		未初始化/正初始化中，不可服务
-	 */
-	bool					IsAvailable();
 };
 
 

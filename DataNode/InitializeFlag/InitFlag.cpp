@@ -12,8 +12,8 @@ int MkHoliday::Initialize( std::string sHolidayFilePath, bool bTestFlag )
 	m_bHolidayTestFlag = bTestFlag;
 	m_sHolidayPath = sHolidayFilePath.c_str();
 
-	SvrFramework::GetFramework().WriteInfo( "MkHoliday::Initialize()", "holiday configuration path : %s", m_sHolidayPath.c_str() );
-	SvrFramework::GetFramework().WriteInfo( "MkHoliday::Initialize()", true==m_bHolidayTestFlag?"------ Test Model -----":"----------------" );
+	DataNodeService::GetSerivceObj().WriteInfo( "MkHoliday::Initialize()", "holiday configuration path : %s", m_sHolidayPath.c_str() );
+	DataNodeService::GetSerivceObj().WriteInfo( "MkHoliday::Initialize()", true==m_bHolidayTestFlag?"------ Test Model -----":"----------------" );
 
 	return ReloadHoliday();
 }
@@ -96,7 +96,7 @@ int MkHoliday::ReloadHoliday()
 
 	if( ini_file.load( m_sHolidayPath ) <= 0 )
 	{
-        SvrFramework::GetFramework().WriteInfo( "MOptionIO", "打开holiday.ini失败:%d", errno );
+        DataNodeService::GetSerivceObj().WriteInfo( "MOptionIO", "打开holiday.ini失败:%d", errno );
         return -1;
     }
 
@@ -116,7 +116,7 @@ int MkHoliday::ReloadHoliday()
             continue;
         }
 
-		SvrFramework::GetFramework().WriteInfo( "MkHoliday::ReloadHoliday() : loading holiday: [%d]", year );
+		DataNodeService::GetSerivceObj().WriteInfo( "MkHoliday::ReloadHoliday() : loading holiday: [%d]", year );
 
         for (int j = 1; j <= 12; ++j) {
             char month[3];
@@ -146,16 +146,9 @@ InitializerFlag::InitializerFlag()
 {
 }
 
-InitializerFlag& InitializerFlag::GetFlagObject()
-{
-	static InitializerFlag	obj;
-
-	return obj;
-}
-
 int InitializerFlag::Initialize( const T_VECTOR_PERIODS& refTradingPeriods, std::string sHolidayFilePath, bool bTestFlag )
 {
-	SvrFramework::GetFramework().WriteInfo( "InitializerFlag::Initialize() : initializing policy module : TradingPeriods Num=%d, TestFlag=%d", refTradingPeriods.size(), bTestFlag );
+	DataNodeService::GetSerivceObj().WriteInfo( "InitializerFlag::Initialize() : initializing policy module : TradingPeriods Num=%d, TestFlag=%d", refTradingPeriods.size(), bTestFlag );
 
 	int					nErrorCode = 0;
 	CriticalLock		guard( m_oLock );
@@ -163,11 +156,11 @@ int InitializerFlag::Initialize( const T_VECTOR_PERIODS& refTradingPeriods, std:
 	m_vctTradingPeriod = refTradingPeriods;
 	if( 0 != (nErrorCode=m_oHoliday.Initialize( sHolidayFilePath, bTestFlag )) )
 	{
-		SvrFramework::GetFramework().WriteError( "InitializerFlag::Initialize() : failed 2 initialize holiday table : %s", sHolidayFilePath.c_str() );
+		DataNodeService::GetSerivceObj().WriteError( "InitializerFlag::Initialize() : failed 2 initialize holiday table : %s", sHolidayFilePath.c_str() );
 		return -1;
 	}
 
-	SvrFramework::GetFramework().WriteInfo( "InitializerFlag::Initialize() : policy module is initialized" );
+	DataNodeService::GetSerivceObj().WriteInfo( "InitializerFlag::Initialize() : policy module is initialized" );
 
 	return 0;
 }

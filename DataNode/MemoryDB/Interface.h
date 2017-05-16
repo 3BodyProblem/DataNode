@@ -97,10 +97,11 @@ public:
 	 * @brief						将数据表的数据原样copy到缓存
 	 * @param[in]					pBuffer					缓存地址
 	 * @param[in]					nBufferSize				缓存长度
+	 * @param[in,out]				nDbSerialNo				取出>nDbSerialNo的数据(若为0,则全部取出) & 将回填最新的流水号
 	 * @return						>=0						返回数据长度
 									<						出错
 	 */
-	virtual int						CopyToBuffer( char* pBuffer, unsigned int nBufferSize ) = 0;
+	virtual int						CopyToBuffer( char* pBuffer, unsigned int nBufferSize, unsigned __int64& nDbSerialNo ) = 0;
 };
 
 

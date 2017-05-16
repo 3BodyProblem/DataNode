@@ -78,14 +78,8 @@ typedef std::vector<T_TRADING_PERIOD>			T_VECTOR_PERIODS;		///< 所有交易时段信息
  */
 class InitializerFlag
 {
-private:
-	InitializerFlag();
-
 public:
-	/**
-	 * @brief						获取单键对象的引用
-	 */
-	static InitializerFlag&			GetFlagObject();
+	InitializerFlag();
 
 	/**
 	 * @brief						初始化交易时间段，节假日表，测试标识
