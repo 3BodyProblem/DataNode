@@ -98,7 +98,7 @@ int LinkSessionSet::Instance()
 	return 0;
 }
 
-int LinkSessionSet::SendData( unsigned int uiLinkNo, unsigned short usMessageNo, unsigned short usFunctionID, const char* lpInBuf, unsigned int uiInSize )
+int LinkSessionSet::SendData( unsigned int uiLinkNo, unsigned short usMessageNo, unsigned short usFunctionID, const char* lpInBuf, unsigned int uiInSize, unsigned __int64	nSerialNo )
 {
 	return SvrFramework::GetFramework().SendData( uiLinkNo, usMessageNo, usFunctionID, lpInBuf, uiInSize );
 }
@@ -108,7 +108,7 @@ int LinkSessionSet::SendError( unsigned int uiLinkNo, unsigned short usMessageNo
 	return SvrFramework::GetFramework().SendError( uiLinkNo, usMessageNo, usFunctionID, lpErrorInfo );
 }
 
-void LinkSessionSet::PushData( unsigned short usMessageNo, unsigned short usFunctionID, const char* lpInBuf, unsigned int uiInSize, bool bPushFlag )
+void LinkSessionSet::PushData( unsigned short usMessageNo, unsigned short usFunctionID, const char* lpInBuf, unsigned int uiInSize, bool bPushFlag, unsigned __int64	nSerialNo )
 {
 	m_oQuotationBuffer.PutMessage( usMessageNo, lpInBuf, uiInSize );
 }
@@ -142,8 +142,9 @@ bool LinkSessionSet::OnNewLink( unsigned int uiLinkNo, unsigned int uiIpAddr, un
 
 		for( int n = 0; n < nTableCount; n++ )
 		{
-			unsigned int	nTableID = lstTableID[n];
-			int				nDataLen = refDatabaseIO.FetchDataBlockByID( nTableID, m_pImageDataBuffer, MAX_IMAGE_BUFFER_SIZE );
+			unsigned __int64	nSerialNo = 0;
+			unsigned int		nTableID = lstTableID[n];
+			int					nDataLen = refDatabaseIO.FetchDataBlockByID( nTableID, m_pImageDataBuffer, MAX_IMAGE_BUFFER_SIZE, nSerialNo );
 
 			if( nDataLen < 0 )
 			{
@@ -151,7 +152,7 @@ bool LinkSessionSet::OnNewLink( unsigned int uiLinkNo, unsigned int uiIpAddr, un
 				return false;
 			}
 
-			nDataLen = SendData( uiLinkNo, 0, 0, m_pImageDataBuffer, nDataLen );
+			nDataLen = SendData( uiLinkNo, 0, 0, m_pImageDataBuffer, nDataLen, nSerialNo );
 			if( nDataLen < 0 )
 			{
 				SvrFramework::GetFramework().WriteWarning( "LinkSessionSet::OnNewLink() : failed 2 send image data, errorcode=%d", nDataLen );

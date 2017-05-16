@@ -166,19 +166,22 @@ int DataEngine::Execute()
 
 int DataEngine::OnImage( unsigned int nDataID, char* pData, unsigned int nDataLen, bool bLastFlag )
 {
-	return m_oDatabaseIO.BuildMessageTable( nDataID, pData, nDataLen, bLastFlag );
+	unsigned __int64	nSerialNo = 0;
+
+	return m_oDatabaseIO.BuildMessageTable( nDataID, pData, nDataLen, bLastFlag, nSerialNo );
 }
 
 int DataEngine::OnData( unsigned int nDataID, char* pData, unsigned int nDataLen, bool bPushFlag )
 {
-	int		nErrorCode = m_oDatabaseIO.UpdateQuotation( nDataID, pData, nDataLen );
+	unsigned __int64	nSerialNo = 0;
+	int					nErrorCode = m_oDatabaseIO.UpdateQuotation( nDataID, pData, nDataLen, nSerialNo );
 
 	if( 0 != nErrorCode )
 	{
 		return nErrorCode;
 	}
 
-	LinkSessionSet::GetSessionSet().PushData( nDataID, 0, pData, nDataLen, bPushFlag );
+	LinkSessionSet::GetSessionSet().PushData( nDataID, 0, pData, nDataLen, bPushFlag, nSerialNo );
 
 	return nErrorCode;
 }

@@ -37,12 +37,14 @@ unsigned int DatabaseIO::GetTablesID( unsigned int* pIDList, unsigned int nMaxLi
 	return nIndex;
 }
 
-int DatabaseIO::FetchDataBlockByID( unsigned int nDataID, char* pBuffer, unsigned int nBufferSize )
+int DatabaseIO::FetchDataBlockByID( unsigned int nDataID, char* pBuffer, unsigned int nBufferSize, unsigned __int64& nSerialNo )
 {
+	unsigned __int64		nTmpVal = 0;
 	I_Table*				pTable = NULL;
 	int						nAffectNum = 0;
 	CriticalLock			lock( m_oLock );
 
+	nSerialNo = 0;
 	if( NULL == pBuffer )
 	{
 		SvrFramework::GetFramework().WriteError( "DatabaseIO::FetchDataBlockByID() : invalid buffer pointer(NULL)" );
@@ -55,6 +57,7 @@ int DatabaseIO::FetchDataBlockByID( unsigned int nDataID, char* pBuffer, unsigne
 		return -2;
 	}
 
+	nTmpVal = m_pIDatabase->GetUpdateSequence();
 	nAffectNum = pTable->CopyToBuffer( pBuffer, nBufferSize );
 	if( nAffectNum < 0 )
 	{
@@ -62,15 +65,17 @@ int DatabaseIO::FetchDataBlockByID( unsigned int nDataID, char* pBuffer, unsigne
 		return -3;
 	}
 
+	nSerialNo = nTmpVal;
 	return nAffectNum;
 }
 
-int DatabaseIO::BuildMessageTable( unsigned int nDataID, char* pData, unsigned int nDataLen, bool bLastFlag )
+int DatabaseIO::BuildMessageTable( unsigned int nDataID, char* pData, unsigned int nDataLen, bool bLastFlag, unsigned __int64& nDbSerialNo )
 {
 	I_Table*				pTable = NULL;
 	int						nAffectNum = 0;
 	CriticalLock			lock( m_oLock );
 
+	nDbSerialNo = 0;
 	m_bBuilded = bLastFlag;
 	if( false == m_pIDatabase->CreateTable( nDataID, nDataLen, MAX_CODE_LENGTH ) )
 	{
@@ -84,7 +89,7 @@ int DatabaseIO::BuildMessageTable( unsigned int nDataID, char* pData, unsigned i
 		return -2;
 	}
 
-	if( 0 > (nAffectNum = pTable->InsertRecord( pData, nDataLen )) )
+	if( 0 > (nAffectNum = pTable->InsertRecord( pData, nDataLen, nDbSerialNo )) )
 	{
 		SvrFramework::GetFramework().WriteError( "DatabaseIO::BuildMessageTable() : failed 2 insert into data table 4 message, message id=%d, affectnum=%d", nDataID, nAffectNum );
 		return -3;
@@ -95,11 +100,12 @@ int DatabaseIO::BuildMessageTable( unsigned int nDataID, char* pData, unsigned i
 	return 0;
 }
 
-int DatabaseIO::UpdateQuotation( unsigned int nDataID, char* pData, unsigned int nDataLen )
+int DatabaseIO::UpdateQuotation( unsigned int nDataID, char* pData, unsigned int nDataLen, unsigned __int64& nDbSerialNo )
 {
 	I_Table*		pTable = NULL;
 	int				nAffectNum = 0;
 
+	nDbSerialNo = 0;
 	if( false == m_bBuilded )
 	{
 		SvrFramework::GetFramework().WriteError( "DatabaseIO::UpdateQuotation() : failed 2 update quotation before initialization, message id=%d" );
@@ -112,7 +118,7 @@ int DatabaseIO::UpdateQuotation( unsigned int nDataID, char* pData, unsigned int
 		return -2;
 	}
 
-	if( 0 > (nAffectNum = pTable->UpdateRecord( pData, nDataLen )) )
+	if( 0 > (nAffectNum = pTable->UpdateRecord( pData, nDataLen, nDbSerialNo )) )
 	{
 		SvrFramework::GetFramework().WriteError( "DatabaseIO::UpdateQuotation() : failed 2 insert into data table 4 message, message id=%d, affectnum=%d", nDataID, nAffectNum );
 		return -3;

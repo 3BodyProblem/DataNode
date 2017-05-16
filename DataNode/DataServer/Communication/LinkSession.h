@@ -83,7 +83,7 @@ public:
 	/**
 	 * @brief					发送数据
 	 */
-	int							SendData( unsigned int uiLinkNo, unsigned short usMessageNo, unsigned short usFunctionID, const char* lpInBuf, unsigned int uiInSize );
+	int							SendData( unsigned int uiLinkNo, unsigned short usMessageNo, unsigned short usFunctionID, const char* lpInBuf, unsigned int uiInSize, unsigned __int64	nSerialNo );
 
 	/**
 	 * @brief					发送错误信息
@@ -93,7 +93,7 @@ public:
 	/**
 	 * @brief					推送数据
 	 */
-	void						PushData( unsigned short usMessageNo, unsigned short usFunctionID, const char* lpInBuf, unsigned int uiInSize, bool bPushFlag );
+	void						PushData( unsigned short usMessageNo, unsigned short usFunctionID, const char* lpInBuf, unsigned int uiInSize, bool bPushFlag, unsigned __int64	nSerialNo );
 
 	/**
 	 * @brief					关闭连接
