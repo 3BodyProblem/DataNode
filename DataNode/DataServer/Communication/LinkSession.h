@@ -73,15 +73,6 @@ public:
 	 */
 	int							Instance();
 
-	/**
-	 * @brief					将所有数据同步/初始化到所有客户端链路
-	 * @param[in]				refDatabaseIO		数据库插件引用
-	 * @param[in]				nSerialNo			推送查询序号(需要>nSerialNo)
-	 * @return					>=0					同步的链路数
-								<0					出错
-	 */
-	int							SyncQuot2ReqSessions( DatabaseIO& refDatabaseIO, unsigned __int64 nSerialNo = 0 );
-
 public:
 	/**
 	 * @brief					发送数据
@@ -153,8 +144,6 @@ public:
 	 */
 	virtual bool				OnRecvData( unsigned int uiLinkNo, unsigned short usMessageNo, unsigned short usFunctionID, bool bErrorFlag, const char* lpData, unsigned int uiSize, unsigned int& uiAddtionData );
 
-public:
-	QuotationResponse			m_oResponseBuffer;		///< 初始化流缓存
 protected:
 	DatabaseIO*					m_pDatabase;			///< 数据操作对象指针
 	QuotationStream				m_oQuotationBuffer;		///< 实时行情推送缓存

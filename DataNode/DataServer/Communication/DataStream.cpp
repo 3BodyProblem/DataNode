@@ -103,12 +103,19 @@ void QuotationStream::FlushQuotation2Client()
 #define		MAX_IMAGE_BUFFER_SIZE			(1024*1024*10)
 
 
-QuotationResponse::QuotationResponse()
+ImageRebuilder::ImageRebuilder()
  : m_pImageDataBuffer( NULL )
 {
 }
 
-void QuotationResponse::Release()
+ImageRebuilder& ImageRebuilder::GetObj()
+{
+	static ImageRebuilder		obj;
+
+	return obj;
+}
+
+void ImageRebuilder::Release()
 {
 	if( NULL != m_pImageDataBuffer )
 	{
@@ -117,34 +124,73 @@ void QuotationResponse::Release()
 	}
 }
 
-int QuotationResponse::Initialize()
+int ImageRebuilder::Initialize()
 {
 	Release();
 	m_pImageDataBuffer = new char[MAX_IMAGE_BUFFER_SIZE];	///< 分配10M的快照数据缓存(用于对下初始化)
 
 	if( NULL == m_pImageDataBuffer )
 	{
-		DataNodeService::GetSerivceObj().WriteError( "QuotationResponse::Initialize() : failed 2 initialize Image buffer ..." );
+		DataNodeService::GetSerivceObj().WriteError( "ImageRebuilder::Initialize() : failed 2 initialize Image buffer ..." );
 		return -1;
 	}
 
 	return 0;
 }
 
-unsigned int QuotationResponse::GetReqSessionCount()
+int ImageRebuilder::Flush2ReqSessions( DatabaseIO& refDatabaseIO, unsigned __int64 nSerialNo )
+{
+	unsigned int		lstTableID[64] = { 0 };
+	unsigned int		nTableCount = refDatabaseIO.GetTablesID( lstTableID, 64 );
+	int					nSetSize = ImageRebuilder::GetObj().GetReqSessionCount();
+
+	for( int n = 0; n < nTableCount && nSetSize > 0; n++ )
+	{
+		unsigned __int64	nQueryID = nSerialNo;
+		unsigned int		nTableID = lstTableID[n];
+		int					nDataLen = refDatabaseIO.FetchRecordsByID( nTableID, m_pImageDataBuffer, MAX_IMAGE_BUFFER_SIZE, nQueryID );
+
+		if( nDataLen < 0 )
+		{
+			DataNodeService::GetSerivceObj().WriteWarning( "LinkSessions::OnNewLink() : failed 2 fetch image of table, errorcode=%d", nDataLen );
+			return -1 * (n*100);
+		}
+
+		for( std::set<unsigned int>::iterator it = m_setNewReqLinkID.begin(); it != m_setNewReqLinkID.end(); it++ )
+		{
+			nDataLen = DataNodeService::GetSerivceObj().SendData( *it, 0, 0, m_pImageDataBuffer, nDataLen/*, nSerialNo*/ );
+			if( nDataLen < 0 )
+			{
+				DataNodeService::GetSerivceObj().WriteWarning( "LinkSessions::OnNewLink() : failed 2 send image data, errorcode=%d", nDataLen );
+				return -2 * (n*100);
+			}
+		}
+	}
+
+	for( std::set<unsigned int>::iterator it = m_setNewReqLinkID.begin(); it != m_setNewReqLinkID.end(); it++ )
+	{
+		LinkIDSet::GetSetObject().NewLinkID( *it );
+	}
+
+	m_setNewReqLinkID.clear();
+
+	return nSetSize;
+}
+
+unsigned int ImageRebuilder::GetReqSessionCount()
 {
 	CriticalLock		lock( m_oBuffLock );
 
 	return m_setNewReqLinkID.size();
 }
 
-bool QuotationResponse::AddNewReqSession( unsigned int nLinkNo )
+bool ImageRebuilder::AddNewReqSession( unsigned int nLinkNo )
 {
 	CriticalLock		lock( m_oBuffLock );
 
 	if( m_setNewReqLinkID.find( nLinkNo ) == m_setNewReqLinkID.end() )
 	{
-		DataNodeService::GetSerivceObj().WriteInfo( "QuotationResponse::AddNewReqSession() : [WARNING] duplicate link number & new link will be disconnected..." );
+		DataNodeService::GetSerivceObj().WriteInfo( "ImageRebuilder::AddNewReqSession() : [WARNING] duplicate link number & new link will be disconnected..." );
 
 		return false;
 	}

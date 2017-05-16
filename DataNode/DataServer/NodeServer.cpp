@@ -238,12 +238,12 @@ int DataNodeService::OnIdle()
 {
 	bool			bInitPoint = false;
 
-	if( 0 == m_oLinkSessions.m_oResponseBuffer.GetReqSessionCount() )	{
+	if( 0 == ImageRebuilder::GetObj().GetReqSessionCount() )	{
 		SimpleTask::Sleep( 1000 );
 	}
 
 	///< 检查是否有新的链接到来请求初始化行情数据推送的
-	m_oLinkSessions.SyncQuot2ReqSessions( m_oDatabaseIO, 0 );
+	ImageRebuilder::GetObj().Flush2ReqSessions( m_oDatabaseIO, 0 );
 
 	///< 在非交易时段，进行内存插件中的行情数据落盘
 	if( -1 == m_oInitFlag.InTradingPeriod( bInitPoint ) && true == m_oDatabaseIO.IsBuilded() )	{

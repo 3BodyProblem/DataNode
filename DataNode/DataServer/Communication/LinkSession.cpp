@@ -78,7 +78,7 @@ int LinkSessions::Instance()
 		return nErrCode;
 	}
 
-	if( 0 != (nErrCode = m_oResponseBuffer.Initialize()) )	///< 分配10M的快照数据缓存(用于对下初始化)
+	if( 0 != (nErrCode = ImageRebuilder::GetObj().Initialize()) )	///< 分配10M的快照数据缓存(用于对下初始化)
 	{
 		DataNodeService::GetSerivceObj().WriteError( "LinkSessions::Instance() : failed 2 initialize Image buffer ..." );
 		return -100;
@@ -120,48 +120,9 @@ bool LinkSessions::OnCommand( const char* szSrvUnitName, const char* szCommand, 
 	return false;
 }
 
-int LinkSessions::SyncQuot2ReqSessions( DatabaseIO& refDatabaseIO, unsigned __int64 nSerialNo )
-{
-	unsigned int		lstTableID[64] = { 0 };
-	unsigned int		nTableCount = refDatabaseIO.GetTablesID( lstTableID, 64 );
-	int					nSetSize = m_oResponseBuffer.GetReqSessionCount();
-/*
-	for( int n = 0; n < nTableCount && nSetSize > 0; n++ )
-	{
-		unsigned __int64	nQueryID = nSerialNo;
-		unsigned int		nTableID = lstTableID[n];
-		int					nDataLen = refDatabaseIO.FetchRecordsByID( nTableID, m_pImageDataBuffer, MAX_IMAGE_BUFFER_SIZE, nQueryID );
-
-		if( nDataLen < 0 )
-		{
-			DataNodeService::GetSerivceObj().WriteWarning( "LinkSessions::OnNewLink() : failed 2 fetch image of table, errorcode=%d", nDataLen );
-			return -1 * (n*100);
-		}
-
-		for( std::set<unsigned int>::iterator it = m_setNewReqLinkID.begin(); it != m_setNewReqLinkID.end(); it++ )
-		{
-			nDataLen = SendData( *it, 0, 0, m_pImageDataBuffer, nDataLen, nSerialNo );
-			if( nDataLen < 0 )
-			{
-				DataNodeService::GetSerivceObj().WriteWarning( "LinkSessions::OnNewLink() : failed 2 send image data, errorcode=%d", nDataLen );
-				return -2 * (n*100);
-			}
-		}
-	}
-
-	for( std::set<unsigned int>::iterator it = m_setNewReqLinkID.begin(); it != m_setNewReqLinkID.end(); it++ )
-	{
-		LinkIDSet::GetSetObject().NewLinkID( *it );
-	}
-
-	m_setNewReqLinkID.clear();
-*/
-	return nSetSize;
-}
-
 bool LinkSessions::OnNewLink( unsigned int uiLinkNo, unsigned int uiIpAddr, unsigned int uiPort )
 {
-	return m_oResponseBuffer.AddNewReqSession( uiLinkNo );
+	return ImageRebuilder::GetObj().AddNewReqSession( uiLinkNo );
 }
 
 void LinkSessions::OnCloseLink( unsigned int uiLinkNo, int iCloseType )

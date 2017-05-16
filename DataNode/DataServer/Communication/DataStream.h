@@ -6,6 +6,7 @@
 #include <set>
 #include "../../Infrastructure/Lock.h"
 #include "../../Infrastructure/Thread.h"
+#include "../../MemoryDB/MemoryDatabase.h"
 
 
 /**
@@ -432,14 +433,17 @@ protected:
 
 
 /**
- * @class						QuotationResponse
+ * @class						ImageRebuilder
  * @brief						初始化行情流缓存
  * @author						barry
  */
-class QuotationResponse
+class ImageRebuilder
 {
+private:
+	ImageRebuilder();
+
 public:
-	QuotationResponse();
+	static ImageRebuilder&		GetObj();
 
 	/**
 	 * @brief					初始化行情初始化流缓存
@@ -453,6 +457,15 @@ public:
 	void						Release();
 
 public:
+	/**
+	 * @brief					将所有数据同步/初始化到所有客户端链路
+	 * @param[in]				refDatabaseIO			数据库插件引用
+	 * @param[in]				nSerialNo				推送查询序号(需要>nSerialNo)
+	 * @return					>=0						同步的链路数
+								<0						出错
+	 */
+	int							Flush2ReqSessions( DatabaseIO& refDatabaseIO, unsigned __int64 nSerialNo = 0 );
+
 	/**
 	 * @brief					获取待初始化的新链路数量
 	 */
