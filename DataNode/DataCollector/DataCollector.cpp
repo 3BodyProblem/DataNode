@@ -8,7 +8,7 @@ CollectorStatus::CollectorStatus()
 {
 }
 
-enum CollectorStatus::E_QS_STATUS CollectorStatus::Get() const
+enum E_QS_STATUS CollectorStatus::Get() const
 {
 	CriticalLock			lock( m_oCSLock );
 

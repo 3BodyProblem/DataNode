@@ -133,6 +133,35 @@ int DataIOEngine::OnData( unsigned int nDataID, char* pData, unsigned int nDataL
 	return nErrorCode;
 }
 
+void DataIOEngine::OnLog( unsigned char nLogLevel, const char* pszFormat, ... )
+{
+    va_list		valist;
+    char		pszLogBuf[8000] = { 0 };
+
+    va_start( valist, pszFormat );
+    _vsnprintf( pszLogBuf, 8000, pszFormat, valist );
+    va_end( valist );
+
+	switch( nLogLevel )	///< 日志类型[0=信息、1=警告日志、2=错误日志、3=详细日志]
+	{
+	case 0:
+		MServicePlug::WriteInfo( "%s", pszLogBuf );
+		break;
+	case 1:
+		MServicePlug::WriteWarning( "%s", pszLogBuf );
+		break;
+	case 2:
+		MServicePlug::WriteError( "%s", pszLogBuf );
+		break;
+	case 3:
+		MServicePlug::WriteDetail( "%s", pszLogBuf );
+		break;
+	default:
+		::printf( "unknow log level [%d] \n", nLogLevel );
+		break;
+	}
+}
+
 
 ///< ----------------------------------------------------------------------------
 

@@ -71,6 +71,13 @@ public:///< I_DataHandle接口实现: 用于给数据采集模块提供行情数据的回调方法
 	 */
 	virtual int				OnData( unsigned int nDataID, char* pData, unsigned int nDataLen, bool bPushFlag );
 
+	/**
+	 * @brief				日志函数
+	 * @param[in]			nLogLevel			日志类型[0=信息、1=警告日志、2=错误日志、3=详细日志]
+	 * @param[in]			pszFormat			字符串格式化串
+	 */
+	virtual void			OnLog( unsigned char nLogLevel, const char* pszFormat, ... );
+
 protected:
 	/**
 	 * @brief				任务函数(内循环)

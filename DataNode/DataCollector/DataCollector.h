@@ -17,18 +17,6 @@
 class CollectorStatus
 {
 public:
-	enum E_QS_STATUS
-	{
-		E_STATUS_NONE = -1,
-		E_STATUS_TODAY_IS_HOLIDAY = 0,
-		E_STATUS_CONNECTION_ESTABLISHED,
-		E_STATUS_CONNECTION_CLOSED,
-		E_STATUS_SESSION_LOGIN,
-		E_STATUS_SESSION_REBUILD,
-		E_STATUS_SESSION_SUBSCRIBE,
-		E_STATUS_SERVICE_IS_AVAILABLE,
-	};
-
 	CollectorStatus();
 
 public:
@@ -70,6 +58,7 @@ public:
 public:///< 数据采集模块事件定义
 	/**
  	 * @brief				初始化/重新初始化回调
+	 * @note				同步函数，即函数返回后，即初始化操作已经做完，可以判断执行结果是否为“成功”
 	 * @return				==0							成功
 							!=0							错误
 	 */
