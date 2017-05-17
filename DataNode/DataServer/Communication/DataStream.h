@@ -443,7 +443,10 @@ private:
 	ImageRebuilder();
 
 public:
-	static ImageRebuilder&		GetObj();
+	/**
+	 * @brief					获取单键对象的引用
+	 */
+	static ImageRebuilder&		GetRebuilder();
 
 	/**
 	 * @brief					初始化行情初始化流缓存

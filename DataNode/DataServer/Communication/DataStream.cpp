@@ -108,7 +108,7 @@ ImageRebuilder::ImageRebuilder()
 {
 }
 
-ImageRebuilder& ImageRebuilder::GetObj()
+ImageRebuilder& ImageRebuilder::GetRebuilder()
 {
 	static ImageRebuilder		obj;
 
@@ -140,24 +140,25 @@ int ImageRebuilder::Initialize()
 
 int ImageRebuilder::Flush2ReqSessions( DatabaseIO& refDatabaseIO, unsigned __int64 nSerialNo )
 {
+	CriticalLock		lock( m_oBuffLock );
 	unsigned int		lstTableID[64] = { 0 };
+	int					nSetSize = GetReqSessionCount();
 	unsigned int		nTableCount = refDatabaseIO.GetTablesID( lstTableID, 64 );
-	int					nSetSize = ImageRebuilder::GetObj().GetReqSessionCount();
 
-	for( int n = 0; n < nTableCount && nSetSize > 0; n++ )
+	for( std::set<unsigned int>::iterator it = m_setNewReqLinkID.begin(); it != m_setNewReqLinkID.end(); it++ )
 	{
-		unsigned __int64	nQueryID = nSerialNo;
-		unsigned int		nTableID = lstTableID[n];
-		int					nDataLen = refDatabaseIO.FetchRecordsByID( nTableID, m_pImageDataBuffer, MAX_IMAGE_BUFFER_SIZE, nQueryID );
-
-		if( nDataLen < 0 )
+		for( int n = 0; n < nTableCount && nSetSize > 0; n++ )
 		{
-			DataNodeService::GetSerivceObj().WriteWarning( "LinkSessions::OnNewLink() : failed 2 fetch image of table, errorcode=%d", nDataLen );
-			return -1 * (n*100);
-		}
+			unsigned int		nTableID = lstTableID[n];
+			unsigned __int64	nSerialNoOfAnchor = nSerialNo;
+			int					nDataLen = refDatabaseIO.FetchRecordsByID( nTableID, m_pImageDataBuffer, MAX_IMAGE_BUFFER_SIZE, nSerialNoOfAnchor );
 
-		for( std::set<unsigned int>::iterator it = m_setNewReqLinkID.begin(); it != m_setNewReqLinkID.end(); it++ )
-		{
+			if( nDataLen < 0 )
+			{
+				DataNodeService::GetSerivceObj().WriteWarning( "LinkSessions::OnNewLink() : failed 2 fetch image of table, errorcode=%d", nDataLen );
+				return -1 * (n*100);
+			}
+
 			nDataLen = DataNodeService::GetSerivceObj().SendData( *it, 0, 0, m_pImageDataBuffer, nDataLen/*, nSerialNo*/ );
 			if( nDataLen < 0 )
 			{
@@ -165,14 +166,10 @@ int ImageRebuilder::Flush2ReqSessions( DatabaseIO& refDatabaseIO, unsigned __int
 				return -2 * (n*100);
 			}
 		}
-	}
 
-	for( std::set<unsigned int>::iterator it = m_setNewReqLinkID.begin(); it != m_setNewReqLinkID.end(); it++ )
-	{
 		LinkIDSet::GetSetObject().NewLinkID( *it );
+		m_setNewReqLinkID.erase( it++ );
 	}
-
-	m_setNewReqLinkID.clear();
 
 	return nSetSize;
 }

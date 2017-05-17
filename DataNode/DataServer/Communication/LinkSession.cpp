@@ -78,7 +78,7 @@ int LinkSessions::Instance()
 		return nErrCode;
 	}
 
-	if( 0 != (nErrCode = ImageRebuilder::GetObj().Initialize()) )	///< 分配10M的快照数据缓存(用于对下初始化)
+	if( 0 != (nErrCode = ImageRebuilder::GetRebuilder().Initialize()) )	///< 分配10M的快照数据缓存(用于对下初始化)
 	{
 		DataNodeService::GetSerivceObj().WriteError( "LinkSessions::Instance() : failed 2 initialize Image buffer ..." );
 		return -100;
@@ -87,17 +87,7 @@ int LinkSessions::Instance()
 	return 0;
 }
 
-int LinkSessions::SendData( unsigned int uiLinkNo, unsigned short usMessageNo, unsigned short usFunctionID, const char* lpInBuf, unsigned int uiInSize, unsigned __int64	nSerialNo )
-{
-	return DataNodeService::GetSerivceObj().SendData( uiLinkNo, usMessageNo, usFunctionID, lpInBuf, uiInSize );
-}
-
-int LinkSessions::SendError( unsigned int uiLinkNo, unsigned short usMessageNo, unsigned short usFunctionID, const char* lpErrorInfo )
-{
-	return DataNodeService::GetSerivceObj().SendError( uiLinkNo, usMessageNo, usFunctionID, lpErrorInfo );
-}
-
-void LinkSessions::PushData( unsigned short usMessageNo, unsigned short usFunctionID, const char* lpInBuf, unsigned int uiInSize, bool bPushFlag, unsigned __int64	nSerialNo )
+void LinkSessions::PushData( unsigned short usMessageNo, unsigned short usFunctionID, const char* lpInBuf, unsigned int uiInSize, bool bPushFlag, unsigned __int64 nSerialNo )
 {
 	m_oQuotationBuffer.PutMessage( usMessageNo, lpInBuf, uiInSize );
 }
@@ -122,7 +112,7 @@ bool LinkSessions::OnCommand( const char* szSrvUnitName, const char* szCommand, 
 
 bool LinkSessions::OnNewLink( unsigned int uiLinkNo, unsigned int uiIpAddr, unsigned int uiPort )
 {
-	return ImageRebuilder::GetObj().AddNewReqSession( uiLinkNo );
+	return ImageRebuilder::GetRebuilder().AddNewReqSession( uiLinkNo );
 }
 
 void LinkSessions::OnCloseLink( unsigned int uiLinkNo, int iCloseType )
