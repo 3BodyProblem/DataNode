@@ -20,13 +20,13 @@ public:
 	CollectorStatus();
 
 public:
-	enum E_QS_STATUS		Get() const;
+	enum E_SS_Status		Get() const;
 
-	bool					Set( enum E_QS_STATUS eNewStatus );
+	bool					Set( enum E_SS_Status eNewStatus );
 
 private:
 	mutable CriticalObject	m_oCSLock;
-	enum E_QS_STATUS		m_eStatus;			///< 当前行情逻辑状态，用于判断当前该做什么操作了
+	enum E_SS_Status		m_eStatus;			///< 当前行情逻辑状态，用于判断当前该做什么操作了
 };
 
 

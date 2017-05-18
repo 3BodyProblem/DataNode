@@ -4,18 +4,18 @@
 
 
 CollectorStatus::CollectorStatus()
-: m_eStatus( E_STATUS_NONE )
+: m_eStatus( ET_SS_UNACTIVE )
 {
 }
 
-enum E_QS_STATUS CollectorStatus::Get() const
+enum E_SS_Status CollectorStatus::Get() const
 {
 	CriticalLock			lock( m_oCSLock );
 
 	return m_eStatus;
 }
 
-bool CollectorStatus::Set( enum E_QS_STATUS eNewStatus )
+bool CollectorStatus::Set( enum E_SS_Status eNewStatus )
 {
 	CriticalLock			lock( m_oCSLock );
 

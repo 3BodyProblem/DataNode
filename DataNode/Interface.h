@@ -3,21 +3,17 @@
 
 
 /**
- * @class					E_QS_STATUS
- * @brief					数据采集模块的当前状态
- * @date					2017/5/3
- * @author					barry
+ * @class	E_SS_Status
+ * @brief	CTP行情会话状态枚举
  */
-enum E_QS_STATUS
+enum E_SS_Status
 {
-	E_STATUS_NONE = -1,
-	E_STATUS_TODAY_IS_HOLIDAY = 0,
-	E_STATUS_CONNECTION_ESTABLISHED,
-	E_STATUS_CONNECTION_CLOSED,
-	E_STATUS_SESSION_LOGIN,
-	E_STATUS_SESSION_REBUILD,
-	E_STATUS_SESSION_SUBSCRIBE,
-	E_STATUS_SERVICE_IS_AVAILABLE,
+	ET_SS_UNACTIVE = 0,				///< 未激活:	需要对Session调用Initialize()
+	ET_SS_DISCONNECTED,				///< 断开状态
+	ET_SS_CONNECTED,				///< 连通状态
+	ET_SS_LOGIN,					///< 登录成功
+    ET_SS_INITIALIZING,				///< 初始化码表/快照中
+	ET_SS_WORKING,					///< 正常工作中
 };
 
 
