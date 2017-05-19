@@ -94,9 +94,9 @@ int MkHoliday::ReloadHoliday()
 	int					nErrorCode = 0;
     bool				new_file = false;
 
-	if( ini_file.load( m_sHolidayPath ) <= 0 )
+	if( 0 != (nErrorCode=ini_file.load( m_sHolidayPath )) )
 	{
-        DataNodeService::GetSerivceObj().WriteInfo( "MOptionIO", "´ò¿ªholiday.iniÊ§°Ü:%d", errno );
+        DataNodeService::GetSerivceObj().WriteInfo( "MkHoliday::ReloadHoliday() £ºfailed 2 open holiday.ini %d", nErrorCode );
         return -1;
     }
 
@@ -110,7 +110,7 @@ int MkHoliday::ReloadHoliday()
             continue;
         }
 
-		std::string		str_year = it->first.substr( it->first.length() - nSepIndex, it->first.length() );///<ini_file.GetSectionName(i).Right(4);
+		std::string		str_year = it->first.substr( it->first.length()-nSepIndex+1, it->first.length() );///<ini_file.GetSectionName(i).Right(4);
         int year = atoi(str_year.c_str());
         if ((year >= 3000) || (year <= 2000)) {
             continue;

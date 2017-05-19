@@ -9,7 +9,7 @@ bool SimpleThread::s_bAllThreadStopFlag = false;
 
 
 SimpleThread::SimpleThread()
- : m_bThreadStopFlag( true ), m_hHandle( 0 ), m_nThreadID( -1 )
+ : m_bThreadStopFlag( false ), m_hHandle( 0 ), m_nThreadID( -1 )
 {
 }
 
@@ -23,8 +23,6 @@ int  SimpleThread::Create( std::string sThreadName, tagSimpleTheadFunction fpFun
 	m_bThreadStopFlag = false;
 	s_bAllThreadStopFlag = false;
 	m_sThreadName = sThreadName.c_str();
-
-	Join();
 
 	#ifndef LINUXCODE
 		m_hHandle = (HANDLE)::_beginthreadex(	0,
@@ -112,7 +110,7 @@ void SimpleThread::Join( unsigned long nWaitTime )
 
 bool SimpleThread::IsAlive()
 {
-	if( true == s_bAllThreadStopFlag && true == m_bThreadStopFlag )
+	if( false == s_bAllThreadStopFlag && false == m_bThreadStopFlag )
 	{
 		return true;
 	}

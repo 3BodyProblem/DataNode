@@ -82,7 +82,7 @@ int DataIOEngine::Execute()
 					continue;
 				}
 
-				if( 0 != (nErrorCode=m_oDataCollector.ReInitializeDataCollector()) )
+				if( 0 != (nErrorCode=m_oDataCollector.RecoverDataCollector()) )
 				{
 					DataNodeService::GetSerivceObj().WriteWarning( "DataIOEngine::Execute() : failed 2 initialize data collector module, errorcode=%d", nErrorCode );
 					m_oInitFlag.RedoInitialize();
@@ -139,7 +139,7 @@ void DataIOEngine::OnLog( unsigned char nLogLevel, const char* pszFormat, ... )
     char		pszLogBuf[8000] = { 0 };
 
     va_start( valist, pszFormat );
-    _vsnprintf( pszLogBuf, 8000, pszFormat, valist );
+    _vsnprintf( pszLogBuf, sizeof(pszLogBuf)-1, pszFormat, valist );
     va_end( valist );
 
 	switch( nLogLevel )	///< 日志类型[0=信息、1=警告日志、2=错误日志、3=详细日志]
@@ -290,8 +290,8 @@ int DataNodeService::OnIdle()
 
 void DataNodeService::OnInquireStatus()
 {
-	bool					bDataBuilded = m_oDatabaseIO.IsBuilded();
-	const CollectorStatus&	refDataCollectorStatus = m_oDataCollector.InquireDataCollectorStatus();
+	bool				bDataBuilded = m_oDatabaseIO.IsBuilded();
+	enum E_SS_Status	eStatus = m_oDataCollector.InquireDataCollectorStatus();
 
 }
 

@@ -26,6 +26,8 @@ bool CollectorStatus::Set( enum E_SS_Status eNewStatus )
 
 
 DataCollector::DataCollector()
+ : m_pFuncInitialize( NULL ), m_pFuncRelease( NULL )
+ , m_pFuncRecoverQuotation( NULL ), m_pFuncGetStatus( NULL )
 {
 }
 
@@ -35,11 +37,28 @@ int DataCollector::Initialize( I_DataHandle* pIDataCallBack )
 
 	DataNodeService::GetSerivceObj().WriteInfo( "DataCollector::Initialize() : initializing data collector plugin ......" );
 
-	int						nErrorCode = m_oDllPlugin.LoadDll( Configuration::GetConfigObj().GetDataCollectorPluginPath() );
+	int			nErrorCode = m_oDllPlugin.LoadDll( Configuration::GetConfigObj().GetDataCollectorPluginPath() );
 
 	if( 0 != nErrorCode )
 	{
 		DataNodeService::GetSerivceObj().WriteError( "DataCollector::Initialize() : failed 2 load data collector module, errorcode=%d", nErrorCode );
+		return nErrorCode;
+	}
+
+	m_pFuncInitialize = (T_Func_Initialize)m_oDllPlugin.GetDllFunction( "Initialize" );
+	m_pFuncRelease = (T_Func_Release)m_oDllPlugin.GetDllFunction( "Release" );
+	m_pFuncRecoverQuotation = (T_Func_RecoverQuotation)m_oDllPlugin.GetDllFunction( "RecoverQuotation" );
+	m_pFuncGetStatus = (T_Func_GetStatus)m_oDllPlugin.GetDllFunction( "GetStatus" );
+
+	if( NULL == m_pFuncInitialize || NULL == m_pFuncRelease || NULL == m_pFuncRecoverQuotation || NULL == m_pFuncGetStatus )
+	{
+		DataNodeService::GetSerivceObj().WriteError( "DataCollector::Initialize() : invalid fuction pointer(NULL)" );
+		return -10;
+	}
+
+	if( 0 != (nErrorCode = m_pFuncInitialize( pIDataCallBack )) )
+	{
+		DataNodeService::GetSerivceObj().WriteError( "DataCollector::Initialize() : failed 2 initialize data collector module, errorcode=%d", nErrorCode );
 		return nErrorCode;
 	}
 
@@ -52,26 +71,54 @@ void DataCollector::Release()
 {
 	DataNodeService::GetSerivceObj().WriteInfo( "DataCollector::Release() : releasing memory database plugin ......" );
 
+	if( NULL != m_pFuncRelease )
+	{
+		m_pFuncRelease();
+		m_pFuncRelease = NULL;
+	}
+
+	m_pFuncGetStatus = NULL;
+	m_pFuncInitialize = NULL;
+	m_pFuncRecoverQuotation = NULL;
 	m_oDllPlugin.CloseDll();
 
 	DataNodeService::GetSerivceObj().WriteInfo( "DataCollector::Release() : memory database plugin is released ......" );
 }
 
-int DataCollector::ReInitializeDataCollector()
+int DataCollector::RecoverDataCollector()
 {
-	DataNodeService::GetSerivceObj().WriteInfo( "DataCollector::ReInitializeDataCollector() : initializeing data collector ......" );
+	DataNodeService::GetSerivceObj().WriteInfo( "DataCollector::RecoverDataCollector() : recovering data collector ......" );
 
+	if( NULL == m_pFuncRecoverQuotation )
+	{
+		DataNodeService::GetSerivceObj().WriteError( "DataCollector::RecoverDataCollector() : invalid fuction pointer(NULL)" );
+		return -1;
+	}
 
-	DataNodeService::GetSerivceObj().WriteInfo( "DataCollector::ReInitializeDataCollector() : data collector initialized ......" );
+	int		nErrorCode = m_pFuncRecoverQuotation();
 
-	return 0;
+	if( 0 != nErrorCode )
+	{
+		DataNodeService::GetSerivceObj().WriteError( "DataCollector::RecoverDataCollector() : failed 2 recover quotation" );
+		return nErrorCode;
+	}
+
+	DataNodeService::GetSerivceObj().WriteInfo( "DataCollector::RecoverDataCollector() : data collector recovered ......" );
+
+	return nErrorCode;
 }
 
-const CollectorStatus& DataCollector::InquireDataCollectorStatus()
+enum E_SS_Status DataCollector::InquireDataCollectorStatus()
 {
-	static CollectorStatus	obj;
+	if( NULL == m_pFuncGetStatus )
+	{
+		DataNodeService::GetSerivceObj().WriteError( "DataCollector::InquireDataCollectorStatus() : invalid fuction pointer(NULL)" );
+		return ET_SS_UNACTIVE;
+	}
 
-	return obj;
+	m_oCollectorStatus.Set( (enum E_SS_Status)m_pFuncGetStatus() );
+
+	return m_oCollectorStatus.Get();
 }
 
 

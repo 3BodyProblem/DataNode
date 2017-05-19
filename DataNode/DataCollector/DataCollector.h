@@ -62,15 +62,20 @@ public:///< 数据采集模块事件定义
 	 * @return				==0							成功
 							!=0							错误
 	 */
-	int						ReInitializeDataCollector();
+	int						RecoverDataCollector();
 
 	/**
 	 * @biref				取得当前数据采集模块状态
 	 */
-	const CollectorStatus&	InquireDataCollectorStatus();
+	enum E_SS_Status		InquireDataCollectorStatus();
 
 private:
+	CollectorStatus			m_oCollectorStatus;				///< 数据采集模块的状态
 	Dll						m_oDllPlugin;					///< 插件加载类
+	T_Func_Initialize		m_pFuncInitialize;				///< 数据采集器初始化接口
+	T_Func_Release			m_pFuncRelease;					///< 数据采集器释放接口
+	T_Func_RecoverQuotation	m_pFuncRecoverQuotation;		///< 数据采集器行情数据重新初始化接口
+	T_Func_GetStatus		m_pFuncGetStatus;				///< 数据采集器状态获取接口
 };
 
 

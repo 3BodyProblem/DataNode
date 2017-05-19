@@ -5,6 +5,7 @@
 #include "SvrConfig.h"
 #include "NodeServer.h"
 #include "../Infrastructure/IniFile.h"
+#include "../Infrastructure/DateTime.h"
 
 
 char*	__BasePath(char *in)
@@ -69,7 +70,7 @@ int Configuration::Load()
 {
 	inifile::IniFile	oIniFile;
 	int					nErrCode = 0;
-	std::string			sIniPath = GetModulePath(NULL) + "srvunit\\DataNode\\" + "DataNode.ini";
+	std::string			sIniPath = GetModulePath(NULL) + "DataNode.ini";
 
 	///< ---------- load .ini -------------------------
 	if( 0 != (nErrCode=oIniFile.load( sIniPath )) )
@@ -96,11 +97,17 @@ int Configuration::Load()
 		::printf( "Configuration::Load() : Without Quotation Data Compressor .............................. \n" );
 	}
 
-	m_sHolidayFilePath = oIniFile.getStringValue( std::string("Holiday"), std::string("file"), nErrCode );
+	m_sHolidayFilePath = GetModulePath(NULL) + oIniFile.getStringValue( std::string("Holiday"), std::string("file"), nErrCode );
 	if( 0 != nErrCode )	{
 		::printf( "Configuration::Load() : invalid holiday file path\n" );
 		return -5;
 	}
+	m_sNodeInHolidayFile = oIniFile.getStringValue( std::string("Holiday"), std::string("PreName"), nErrCode );
+	if( 0 != nErrCode )	{
+		::printf( "Configuration::Load() : invalid section name of holiday.ini\n" );
+		return -6;
+	}
+
 	int	nTestFlag = oIniFile.getIntValue( std::string("Holiday"), std::string("testflag"), nErrCode );
 	m_bTestFlag = nTestFlag==1?true:false;
 
