@@ -26,7 +26,7 @@ extern "C"
 			return nErrorCode;
 		}
 
-		while( true == DataNodeService::GetSerivceObj().IsAlive() )
+		while( true == DataNodeService::GetSerivceObj().IsServiceAlive() )
 		{
 			SimpleThread::Sleep( 1000*2 );
 		}

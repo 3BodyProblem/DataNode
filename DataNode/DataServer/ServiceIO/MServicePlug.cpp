@@ -34,7 +34,7 @@ string MServicePlug::inner_get_application_path(void)
 	return(tempbuf);
 }
 //.............................................................................................................................
-int  MServicePlug::Instance(const tagServicePlug_StartInParam * lpParam)
+int  MServicePlug::Instance(const tagServicePlug_StartInParam * lpParam,char * szErrorString,unsigned int uiErrorSize)
 {
 	char						dllpath[256];
 	int							errorcode;
@@ -44,6 +44,7 @@ int  MServicePlug::Instance(const tagServicePlug_StartInParam * lpParam)
 	_snprintf(dllpath,sizeof(dllpath),"%sServicePlug.dll",inner_get_application_path().c_str());
 	if ( (m_hDllHandle = ::LoadLibraryA(dllpath)) == NULL )
 	{
+		_snprintf(szErrorString,uiErrorSize,"{MServicePlug}装载动态链接库%s发生错误（GetLastError() = %d）",dllpath,::GetLastError());
 		Release();
 		return(-1);
 	}
@@ -53,14 +54,26 @@ int  MServicePlug::Instance(const tagServicePlug_StartInParam * lpParam)
 	m_lpEndWork = (tagServicePlug_EndWork *)::GetProcAddress(m_hDllHandle,"EndWork");
 	if ( m_lpStartWork == NULL || m_lpRegisterSpi == NULL || m_lpEndWork == NULL )
 	{
+		_snprintf(szErrorString,uiErrorSize,"{MServicePlug}装载动态链接库%s发生错误（函数不匹配）",dllpath);
 		Release();
 		return(-2);
 	}
 
-	if ( (errorcode = m_lpStartWork(lpParam,&m_sOutParam)) < 0 )
+	memcpy(&m_sInParam,lpParam,sizeof(tagServicePlug_StartInParam));
+	try
 	{
+		if ( (errorcode = m_lpStartWork(&m_sInParam,&m_sOutParam)) < 0 )
+		{
+			_snprintf(szErrorString,uiErrorSize,"{MServicePlug}装载动态链接库%s发生错误（StartWork函数返回错误，ERR = %d）",dllpath,errorcode);
+			Release();
+			return(-3);
+		}
+	}
+	catch(...)
+	{
+		_snprintf(szErrorString,uiErrorSize,"{MServicePlug}装载动态链接库%s发生错误（StartWork函数发生未知异常）",dllpath);
 		Release();
-		return(-3);
+		return(-4);
 	}
 
 	return(1);
@@ -72,7 +85,14 @@ void MServicePlug::Release(void)
 
 	if ( m_lpEndWork != NULL )
 	{
-		m_lpEndWork();
+		try
+		{
+			m_lpEndWork();
+		}
+		catch(...)
+		{
+
+		}
 	}
 
 	m_lpStartWork = NULL;
@@ -81,45 +101,94 @@ void MServicePlug::Release(void)
 
 	if ( m_hDllHandle != NULL )
 	{
-		::FreeLibrary(m_hDllHandle);
+		try
+		{
+			::FreeLibrary(m_hDllHandle);
+		}
+		catch(...)
+		{
+
+		}
 		m_hDllHandle = NULL;
 	}
 }
 //.............................................................................................................................
 void MServicePlug::RegisterSpi(MServicePlug_Spi * lpSpi)
 {
-	if ( m_lpRegisterSpi != NULL )
+	try
 	{
-		m_lpRegisterSpi(lpSpi);
+		if ( m_lpRegisterSpi != NULL )
+		{
+			m_lpRegisterSpi(lpSpi);
+		}
+	}
+	catch(...)
+	{
+
 	}
 }
 //.............................................................................................................................
 void MServicePlug::WriteReport(const char * szType,const char * szSrvUnitName,const char * szContent)
 {
-	if ( strcmp(szType,"信息") == 0 )
+	try
 	{
-		::SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE),10);
-		printf("[信息]{%s}%s\n",szSrvUnitName,szContent);
-	}
-	else if ( strcmp(szType,"警告") == 0 )
-	{
-		::SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE),14);
-		printf("[警告]{%s}%s\n",szSrvUnitName,szContent);
-	}
-	else if ( strcmp(szType,"错误") == 0 )
-	{
-		::SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE),12);
-		printf("[错误]{%s}%s\n",szSrvUnitName,szContent);
-	}
-	else
-	{
-		::SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE),8);
-		printf("[详细]{%s}%s\n",szSrvUnitName,szContent);
-	}
+		if ( strcmp(szType,"信息") == 0 )
+		{
+			::SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE),10);
+			if ( strlen(szSrvUnitName) > 0 )
+			{
+				printf("[信息]{%s}%s\n",szSrvUnitName,szContent);
+			}
+			else
+			{
+				printf("[信息]%s\n",szContent);
+			}
+		}
+		else if ( strcmp(szType,"警告") == 0 )
+		{
+			::SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE),14);
+			if ( strlen(szSrvUnitName) > 0 )
+			{
+				printf("[警告]{%s}%s\n",szSrvUnitName,szContent);
+			}
+			else
+			{
+				printf("[警告]%s\n",szContent);
+			}
+		}
+		else if ( strcmp(szType,"错误") == 0 )
+		{
+			::SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE),12);
+			if ( strlen(szSrvUnitName) > 0 )
+			{
+				printf("[错误]{%s}%s\n",szSrvUnitName,szContent);
+			}
+			else
+			{
+				printf("[错误]%s\n",szContent);
+			}
+		}
+		else
+		{
+			::SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE),8);
+			if ( strlen(szSrvUnitName) > 0 )
+			{
+				printf("[详细]{%s}%s\n",szSrvUnitName,szContent);
+			}
+			else
+			{
+				printf("[详细]%s\n",szContent);
+			}
+		}
 
-	if ( m_sOutParam.lpWriteReport != NULL )
+		if ( m_sOutParam.lpWriteReport != NULL )
+		{
+			m_sOutParam.lpWriteReport(szType,szSrvUnitName,szContent);
+		}
+	}
+	catch(...)
 	{
-		m_sOutParam.lpWriteReport(szType,szSrvUnitName,szContent);
+
 	}
 }
 //.............................................................................................................................
@@ -173,67 +242,184 @@ void MServicePlug::WriteDetail(const char * szFormat,...)
 //.............................................................................................................................
 bool MServicePlug::IsStop(void)
 {
-	if ( m_sOutParam.lpIsStop == NULL )
+	try
+	{
+		if ( m_sOutParam.lpIsStop == NULL )
+		{
+			return(true);
+		}
+
+		return(m_sOutParam.lpIsStop());
+	}
+	catch(...)
 	{
 		return(true);
 	}
-
-	return(m_sOutParam.lpIsStop());
 }
 //.............................................................................................................................
 int  MServicePlug::SendData(unsigned int uiLinkNo,unsigned short usMessageNo,unsigned short usFunctionID,const char * lpInBuf,unsigned int uiInSize)
 {
-	if ( m_sOutParam.lpSendData == NULL )
+	try
 	{
-		return(-1);
-	}
+		if ( m_sOutParam.lpSendData == NULL )
+		{
+			return(-1);
+		}
 
-	return(m_sOutParam.lpSendData(uiLinkNo,usMessageNo,usFunctionID,lpInBuf,uiInSize));
+		return(m_sOutParam.lpSendData(uiLinkNo,usMessageNo,usFunctionID,lpInBuf,uiInSize));
+	}
+	catch(...)
+	{
+		return(-2);
+	}
 }
 //.............................................................................................................................
 int  MServicePlug::SendError(unsigned int uiLinkNo,unsigned short usMessageNo,unsigned short usFunctionID,const char * lpErrorInfo)
 {
-	if ( m_sOutParam.lpSendError == NULL )
+	try
 	{
-		return(-1);
-	}
+		if ( m_sOutParam.lpSendError == NULL )
+		{
+			return(-1);
+		}
 
-	return(m_sOutParam.lpSendError(uiLinkNo,usMessageNo,usFunctionID,lpErrorInfo));
+		return(m_sOutParam.lpSendError(uiLinkNo,usMessageNo,usFunctionID,lpErrorInfo));
+	}
+	catch(...)
+	{
+		return(-2);
+	}
 }
 //.............................................................................................................................
 void MServicePlug::PushData(const unsigned int * lpLinkNoSet,unsigned int uiLinkNoCount,unsigned short usMessageNo,unsigned short usFunctionID,const char * lpInBuf,unsigned int uiInSize)
 {
-	if ( m_sOutParam.lpPushData != NULL )
+	try
 	{
-		m_sOutParam.lpPushData(lpLinkNoSet,uiLinkNoCount,usMessageNo,usFunctionID,lpInBuf,uiInSize);
+		if ( m_sOutParam.lpPushData != NULL )
+		{
+			m_sOutParam.lpPushData(lpLinkNoSet,uiLinkNoCount,usMessageNo,usFunctionID,lpInBuf,uiInSize);
+		}
+	}
+	catch(...)
+	{
+
 	}
 }
 //.............................................................................................................................
 int  MServicePlug::CloseLink(unsigned int uiLinkNo)
 {
-	if ( m_sOutParam.lpCloseLink == NULL )
+	try
 	{
-		return(-1);
-	}
+		if ( m_sOutParam.lpCloseLink == NULL )
+		{
+			return(-1);
+		}
 
-	return(m_sOutParam.lpCloseLink(uiLinkNo));
+		return(m_sOutParam.lpCloseLink(uiLinkNo));
+	}
+	catch(...)
+	{
+		return(-2);
+	}
+}
+//.............................................................................................................................
+int  MServicePlug::SetAddtionData(unsigned int uiLinkNo,unsigned int uiAddtionData)
+{
+	try
+	{
+		if ( m_sOutParam.lpSetAddtionData == NULL )
+		{
+			return(-1);
+		}
+
+		return(m_sOutParam.lpSetAddtionData(uiLinkNo,uiAddtionData));
+	}
+	catch(...)
+	{
+		return(-2);
+	}
+}
+//.............................................................................................................................
+int  MServicePlug::GetAddtionData(unsigned int uiLinkNo,unsigned int * lpAddtionData)
+{
+	try
+	{
+		if ( m_sOutParam.lpGetAddtionData == NULL )
+		{
+			return(-1);
+		}
+
+		return(m_sOutParam.lpGetAddtionData(uiLinkNo,lpAddtionData));
+	}
+	catch(...)
+	{
+		return(-2);
+	}
+}
+//.............................................................................................................................
+int  MServicePlug::GetLinkInfo(unsigned int uiLinkNo,tagServicePlug_LinkInfo * lpLinkInfo)
+{
+	try
+	{
+		if ( m_sOutParam.lpGetLinkInfo == NULL )
+		{
+			return(-1);
+		}
+
+		return(m_sOutParam.lpGetLinkInfo(uiLinkNo,lpLinkInfo));
+	}
+	catch(...)
+	{
+		return(-2);
+	}
+}
+//.............................................................................................................................
+int  MServicePlug::GetStatus(tagServicePlug_Status * lpOut)
+{
+	try
+	{
+		if ( m_sOutParam.lpGetStatus == NULL )
+		{
+			return(-1);
+		}
+
+		return(m_sOutParam.lpGetStatus(lpOut));
+	}
+	catch(...)
+	{
+		return(-2);
+	}
 }
 //.............................................................................................................................
 char * MServicePlug::Malloc(unsigned int uiSize)
 {
-	if ( m_sOutParam.lpMalloc == NULL )
+	try
+	{
+		if ( m_sOutParam.lpMalloc == NULL )
+		{
+			return(NULL);
+		}
+
+		return(m_sOutParam.lpMalloc(uiSize));
+	}
+	catch(...)
 	{
 		return(NULL);
 	}
-
-	return(m_sOutParam.lpMalloc(uiSize));
 }
 //.............................................................................................................................
 void MServicePlug::Free(char * lpPtr)
 {
-	if ( m_sOutParam.lpFree != NULL )
+	try
 	{
-		m_sOutParam.lpFree(lpPtr);
+		if ( m_sOutParam.lpFree != NULL )
+		{
+			m_sOutParam.lpFree(lpPtr);
+		}
+	}
+	catch(...)
+	{
+
 	}
 }
 //-----------------------------------------------------------------------------------------------------------------------------

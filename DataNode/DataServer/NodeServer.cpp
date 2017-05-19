@@ -188,6 +188,7 @@ int DataNodeService::Activate()
 	{
 		DataNodeService::GetSerivceObj().WriteInfo( "DataNodeService::Activate() : activating service.............." );
 
+		static	char						pszErrorDesc[8192] = { 0 };
 		int									nErrorCode = Configuration::GetConfigObj().Load();	///< 加载配置信息
 		const tagServicePlug_StartInParam&	refStartInParam = Configuration::GetConfigObj().GetStartInParam();
 
@@ -196,7 +197,7 @@ int DataNodeService::Activate()
 			return nErrorCode;
 		}
 
-		if( (nErrorCode=MServicePlug::Instance( &refStartInParam )) < 0 )	{					///< 初始化服务框架
+		if( (nErrorCode=MServicePlug::Instance( &refStartInParam, pszErrorDesc, sizeof(pszErrorDesc) )) < 0 )	{					///< 初始化服务框架
 			::printf( "DataNodeService::Activate() : failed 2 initialize serviceIO framework, errorcode=%d", nErrorCode );
 			return nErrorCode;
 		}
@@ -205,8 +206,6 @@ int DataNodeService::Activate()
 			::printf( "DataNodeService::Activate() : failed 2 initialize link session set, errorcode=%d", nErrorCode );
 			return -2;
 		}
-
-		MServicePlug::RegisterSpi( &m_oLinkSessions );											///< 注册服务框架的回调对象
 
 		MServicePlug::WriteInfo( "DataNodeService::Activate() : serviceIO framework initialized!" );
 		MServicePlug::WriteInfo( "DataNodeService::Activate() : Configuration As Follow:\n\
@@ -226,6 +225,7 @@ int DataNodeService::Activate()
 			return nErrorCode;
 		}
 
+		MServicePlug::RegisterSpi( &m_oLinkSessions );											///< 注册服务框架的回调对象
 		DataNodeService::GetSerivceObj().WriteInfo( "DataNodeService::Activate() : service activated.............." );
 
 		return 0;
@@ -263,6 +263,18 @@ void DataNodeService::Destroy()
 	}
 }
 
+bool DataNodeService::IsServiceAlive()
+{
+	if( true == SimpleThread::IsAlive() && false == MServicePlug::IsStop() )
+	{
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+
 int DataNodeService::OnIdle()
 {
 	bool			bInitPoint = false;
@@ -282,17 +294,22 @@ int DataNodeService::OnIdle()
 		OnBackupDatabase();
 	}
 
-	///< 轮询行情采集模块的状态
-	OnInquireStatus();
-
 	return 0;
 }
 
-void DataNodeService::OnInquireStatus()
+bool DataNodeService::OnInquireStatus()
 {
 	bool				bDataBuilded = m_oDatabaseIO.IsBuilded();
 	enum E_SS_Status	eStatus = m_oDataCollector.InquireDataCollectorStatus();
 
+	if( ET_SS_WORKING == eStatus && true == bDataBuilded )
+	{
+		return true;
+	}
+	else
+	{
+		return false;
+	}
 }
 
 void DataNodeService::OnBackupDatabase()

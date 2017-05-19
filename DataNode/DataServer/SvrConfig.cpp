@@ -63,7 +63,7 @@ Configuration::Configuration()
 	///< ------------- config start arguments -----------------------
 	::memset( &m_oStartInParam, 0, sizeof(m_oStartInParam) );
 	m_oStartInParam.uiVersion = ( (100 << 16) | 1 );							///< 服务模块版本号
-	::sprintf( m_oStartInParam.szSrvUnitName, "{%s}", "DataNodeEngine" );		///< 服务模块显示名
+//	::sprintf( m_oStartInParam.szSrvUnitName, "{%s}", "DataNodeEngine" );		///< 服务模块显示名(注意：不要填写名称)
 }
 
 int Configuration::Load()

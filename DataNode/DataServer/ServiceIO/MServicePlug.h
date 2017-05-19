@@ -13,13 +13,14 @@
 #include <windows.h>
 #include <stdio.h>
 #include <string>
-using namespace std;
 #include "MServicePlug.hpp"
+using namespace std;
 //-----------------------------------------------------------------------------------------------------------------------------
 class MServicePlug
 {
 protected:
 	HINSTANCE								m_hDllHandle;
+	tagServicePlug_StartInParam				m_sInParam;
 	tagServicePlug_StartOutParam			m_sOutParam;
 	tagServicePlug_StartWork			*	m_lpStartWork;
 	tagServicePlug_RegisterSpi			*	m_lpRegisterSpi;
@@ -33,31 +34,39 @@ public:
 	virtual ~MServicePlug();
 public:
 	//初始化和释放
-	int  Instance(const tagServicePlug_StartInParam * lpParam);
+	int  Instance(const tagServicePlug_StartInParam * lpParam,char * szErrorString,unsigned int uiErrorSize);
 	void Release(void);
 	//注册回调响应类
 	void RegisterSpi(MServicePlug_Spi * lpSpi);
 public:
 	//本进程日志输出函数
-	void WriteReport(const char * szType,const char * szSrvUnitName,const char * szContent);
-	void WriteInfo(const char * szFormat,...);
-	void WriteWarning(const char * szFormat,...);
-	void WriteError(const char * szFormat,...);
-	void WriteDetail(const char * szFormat,...);
+	virtual void WriteReport(const char * szType,const char * szSrvUnitName,const char * szContent);
+	virtual void WriteInfo(const char * szFormat,...);
+	virtual void WriteWarning(const char * szFormat,...);
+	virtual void WriteError(const char * szFormat,...);
+	virtual void WriteDetail(const char * szFormat,...);
 	//本服务进程获取结束标志
-	bool IsStop(void);
+	virtual bool IsStop(void);
 	//发送数据
-	int  SendData(unsigned int uiLinkNo,unsigned short usMessageNo,unsigned short usFunctionID,const char * lpInBuf,unsigned int uiInSize);
+	virtual int  SendData(unsigned int uiLinkNo,unsigned short usMessageNo,unsigned short usFunctionID,const char * lpInBuf,unsigned int uiInSize);
 	//发送错误
-	int  SendError(unsigned int uiLinkNo,unsigned short usMessageNo,unsigned short usFunctionID,const char * lpErrorInfo);
+	virtual int  SendError(unsigned int uiLinkNo,unsigned short usMessageNo,unsigned short usFunctionID,const char * lpErrorInfo);
 	//推送数据
-	void PushData(const unsigned int * lpLinkNoSet,unsigned int uiLinkNoCount,unsigned short usMessageNo,unsigned short usFunctionID,const char * lpInBuf,unsigned int uiInSize);
+	virtual void PushData(const unsigned int * lpLinkNoSet,unsigned int uiLinkNoCount,unsigned short usMessageNo,unsigned short usFunctionID,const char * lpInBuf,unsigned int uiInSize);
 	//关闭连接
-	int  CloseLink(unsigned int uiLinkNo);
+	virtual int  CloseLink(unsigned int uiLinkNo);
+	//设置连接附加数据
+	virtual int  SetAddtionData(unsigned int uiLinkNo,unsigned int uiAddtionData);
+	//获取连接附加数据
+	virtual int  GetAddtionData(unsigned int uiLinkNo,unsigned int * lpAddtionData);
+	//获取连接详细信息
+	virtual int  GetLinkInfo(unsigned int uiLinkNo,tagServicePlug_LinkInfo * lpLinkInfo);
+	//获取服务状态
+	virtual int  GetStatus(tagServicePlug_Status * lpOut);
 	//从内存池分配内存
-	char * Malloc(unsigned int uiSize);
+	virtual char * Malloc(unsigned int uiSize);
 	//释放从内存池分配的内存
-	void Free(char * lpPtr);
+	virtual void Free(char * lpPtr);
 };
 //-----------------------------------------------------------------------------------------------------------------------------
 #endif

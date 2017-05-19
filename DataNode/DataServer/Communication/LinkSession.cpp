@@ -101,6 +101,7 @@ int LinkSessions::CloseLink( unsigned int uiLinkNo )
 
 void LinkSessions::OnReportStatus( char* szStatusInfo, unsigned int uiSize )
 {
+	::sprintf( szStatusInfo, ":working = %s,下单频率 = 10 \n", DataNodeService::GetSerivceObj().OnInquireStatus()==true?"true":"false" );
 //	cs_format(szStatusInfo,uiSize, _T( ":[API/SPI 总数],(2)API/SPI 创建数目=%d,(2)API/SPI 验证数目=%d,[API 调用计数],下单频率=%.2f,撤单频率=%.2f,查询频率=%.2f"), spi_total, spi_auth, freq_insertOrder, freq_cancelOrder, freq_queryOrder);
 }
 

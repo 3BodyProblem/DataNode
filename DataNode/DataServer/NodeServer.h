@@ -125,6 +125,13 @@ public:
 	 */
 	static DataNodeService&	GetSerivceObj();
 
+	/**
+	 * @brief				线程是否工作中
+	 * @return				true				还在工作中
+							false				非工作状态
+	 */
+	bool					IsServiceAlive();
+
 public:
 	/**
 	 * @brief				初始化&启动行情服务
@@ -152,8 +159,9 @@ public:
 
 	/**
 	 * @brief				询问数据采集模块的状态
+	 * @return				true				可服务
 	 */
-	void					OnInquireStatus();
+	bool					OnInquireStatus();
 };
 
 
