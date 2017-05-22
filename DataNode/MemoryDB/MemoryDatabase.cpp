@@ -129,6 +129,35 @@ int DatabaseIO::UpdateQuotation( unsigned int nDataID, char* pData, unsigned int
 	return 0;
 }
 
+int DatabaseIO::QueryQuotation( unsigned int nDataID, char* pData, unsigned int nDataLen, unsigned __int64& nDbSerialNo )
+{
+	I_Table*		pTable = NULL;
+	int				nAffectNum = 0;
+
+	nDbSerialNo = 0;
+	if( false == m_bBuilded )
+	{
+		DataNodeService::GetSerivceObj().WriteError( "DatabaseIO::QueryQuotation() : failed 2 update quotation before initialization, message id=%d" );
+		return -1;
+	}
+
+	if( NULL == ((pTable = m_pIDatabase->QueryTable( nDataID ))) )
+	{
+		DataNodeService::GetSerivceObj().WriteError( "DatabaseIO::QueryQuotation() : failed 2 locate data table 4 message, message id=%d", nDataID );
+		return -2;
+	}
+
+	RecordBlock&	refRecord = pTable->SelectRecord( pData, ::strlen(pData) );
+	if( true == refRecord.IsNone() )
+	{
+		return 0;
+	}
+
+	::memcpy( pData, refRecord.GetPtr(), refRecord.Length() );
+
+	return refRecord.Length();
+}
+
 int DatabaseIO::RecoverDatabase()
 {
 	try
@@ -136,6 +165,8 @@ int DatabaseIO::RecoverDatabase()
 		if( m_pIDatabase )
 		{
 			DataNodeService::GetSerivceObj().WriteInfo( "DatabaseIO::RecoverDatabase() : recovering ......" );
+
+			m_pIDatabase->DeleteTables();
 
 			if( true == m_pIDatabase->LoadFromDisk( Configuration::GetConfigObj().GetRecoveryFolderPath().c_str() ) )
 			{

@@ -72,6 +72,18 @@ public:///< I_DataHandle接口实现: 用于给数据采集模块提供行情数据的回调方法
 	virtual int				OnData( unsigned int nDataID, char* pData, unsigned int nDataLen, bool bPushFlag );
 
 	/**
+	 * @brief				内存数据查询接口
+	 * @param[in]			nDataID				消息ID
+	 * @param[in,out]		pData				数据内容(包含查询主键)
+	 * @param[in]			nDataLen			长度
+	 * @return				>0					成功,返回数据结构的大小
+							==0					没查到结果
+							!=0					错误
+	 * @note				如果pData的缓存为“全零”缓存，则返回表内的所有数据
+	 */
+	virtual int				OnQuery( unsigned int nDataID, char* pData, unsigned int nDataLen );
+
+	/**
 	 * @brief				日志函数
 	 * @param[in]			nLogLevel			日志类型[0=信息、1=警告日志、2=错误日志、3=详细日志]
 	 * @param[in]			pszFormat			字符串格式化串

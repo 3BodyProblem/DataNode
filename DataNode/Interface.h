@@ -13,6 +13,7 @@ enum E_SS_Status
 	ET_SS_CONNECTED,				///< 连通状态
 	ET_SS_LOGIN,					///< 登录成功
     ET_SS_INITIALIZING,				///< 初始化码表/快照中
+	ET_SS_INITIALIZED,				///< 初始化完成
 	ET_SS_WORKING,					///< 正常工作中
 };
 
@@ -51,6 +52,17 @@ public:
 							!=0					错误
 	 */
 	virtual int				OnData( unsigned int nDataID, char* pData, unsigned int nDataLen, bool bPushFlag ) = 0;
+
+	/**
+	 * @brief				内存数据查询接口
+	 * @param[in]			nDataID				消息ID
+	 * @param[in,out]		pData				数据内容(包含查询主键)
+	 * @param[in]			nDataLen			长度
+	 * @return				>0					成功,返回数据结构的大小
+							==0					没查到结果
+							!=0					错误
+	 */
+	virtual int				OnQuery( unsigned int nDataID, char* pData, unsigned int nDataLen ) = 0;
 
 	/**
 	 * @brief				日志函数

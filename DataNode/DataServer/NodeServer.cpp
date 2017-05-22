@@ -89,7 +89,7 @@ int DataIOEngine::Execute()
 					continue;
 				}
 
-				DataNodeService::GetSerivceObj().WriteInfo( "DataIOEngine::Execute() : [NOTICE] Service is Initialized ......" );
+				DataNodeService::GetSerivceObj().WriteInfo( "DataIOEngine::Execute() : ................. [NOTICE] Service is Available ....................." );
 				continue;
 			}
 
@@ -109,6 +109,21 @@ int DataIOEngine::Execute()
 	DataNodeService::GetSerivceObj().WriteInfo( "DataIOEngine::Execute() : exit thread func ..." );
 
 	return 0;
+}
+
+int DataIOEngine::OnQuery( unsigned int nDataID, char* pData, unsigned int nDataLen )
+{
+	unsigned __int64		nSerialNo = 0;
+	static	const char		s_pszZeroBuff[32] = { 0 };
+
+	if( 0 == strncmp( pData, s_pszZeroBuff, sizeof(s_pszZeroBuff) ) )
+	{
+		return m_oDatabaseIO.FetchRecordsByID( nDataID, pData, nDataLen, nSerialNo );
+	}
+	else
+	{
+		return m_oDatabaseIO.QueryQuotation( nDataID, pData, nDataLen, nSerialNo );
+	}
 }
 
 int DataIOEngine::OnImage( unsigned int nDataID, char* pData, unsigned int nDataLen, bool bLastFlag )
@@ -145,19 +160,19 @@ void DataIOEngine::OnLog( unsigned char nLogLevel, const char* pszFormat, ... )
 	switch( nLogLevel )	///< 日志类型[0=信息、1=警告日志、2=错误日志、3=详细日志]
 	{
 	case 0:
-		MServicePlug::WriteInfo( "%s", pszLogBuf );
+		MServicePlug::WriteInfo( "[Plugin] %s", pszLogBuf );
 		break;
 	case 1:
-		MServicePlug::WriteWarning( "%s", pszLogBuf );
+		MServicePlug::WriteWarning( "[Plugin] %s", pszLogBuf );
 		break;
 	case 2:
-		MServicePlug::WriteError( "%s", pszLogBuf );
+		MServicePlug::WriteError( "[Plugin] %s", pszLogBuf );
 		break;
 	case 3:
-		MServicePlug::WriteDetail( "%s", pszLogBuf );
+		MServicePlug::WriteDetail( "[Plugin] %s", pszLogBuf );
 		break;
 	default:
-		::printf( "unknow log level [%d] \n", nLogLevel );
+		::printf( "[Plugin] unknow log level [%d] \n", nLogLevel );
 		break;
 	}
 }

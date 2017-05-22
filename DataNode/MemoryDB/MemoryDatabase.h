@@ -62,6 +62,18 @@ public:
 
 public:
 	/**
+	 * @brief						查询实时行情数据
+	 * @param[in]					nDataID				消息ID
+	 * @param[in,out]				pData				数据内容
+	 * @param[in]					nDataLen			长度
+	 * @param[out]					nDbSerialNo			数据库新增，更新操作流水号
+	 * @return						>0					成功,返回数据结构的长度
+									==0					未查到数据
+									!=0					错误
+	 */
+	int								QueryQuotation( unsigned int nDataID, char* pData, unsigned int nDataLen, unsigned __int64& nDbSerialNo );
+
+	/**
 	 * @brief						更新实时行情数据
 	 * @param[in]					nDataID				消息ID
 	 * @param[in]					pData				数据内容

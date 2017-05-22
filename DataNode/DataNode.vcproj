@@ -272,6 +272,14 @@
 			Name="DataServer"
 			>
 			<File
+				RelativePath=".\DataServer\DataEcho.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\DataServer\DataEcho.h"
+				>
+			</File>
+			<File
 				RelativePath=".\DataServer\NodeServer.cpp"
 				>
 			</File>
@@ -333,6 +341,14 @@
 			</File>
 			<File
 				RelativePath=".\InitializeFlag\InitFlag.h"
+				>
+			</File>
+		</Filter>
+		<Filter
+			Name="Protocal"
+			>
+			<File
+				RelativePath=".\Protocal\CTP_DL_QuoProtocal.h"
 				>
 			</File>
 		</Filter>
