@@ -166,7 +166,11 @@ int DatabaseIO::RecoverDatabase()
 		{
 			DataNodeService::GetSerivceObj().WriteInfo( "DatabaseIO::RecoverDatabase() : recovering ......" );
 
-			m_pIDatabase->DeleteTables();
+			if( 0 != m_pIDatabase->DeleteTables() )
+			{
+				DataNodeService::GetSerivceObj().WriteWarning( "DatabaseIO::RecoverDatabase() : failed 2 clean mem-database" );
+				return -1;
+			}
 
 			if( true == m_pIDatabase->LoadFromDisk( Configuration::GetConfigObj().GetRecoveryFolderPath().c_str() ) )
 			{
@@ -176,7 +180,7 @@ int DatabaseIO::RecoverDatabase()
 			else
 			{
 				DataNodeService::GetSerivceObj().WriteWarning( "DatabaseIO::RecoverDatabase() : failed 2 recover quotation data ......" );
-				return -1;
+				return -2;
 			}
 		}
 
@@ -191,7 +195,7 @@ int DatabaseIO::RecoverDatabase()
 		DataNodeService::GetSerivceObj().WriteWarning( "DatabaseIO::BackupDatabase() : unknow exception" );
 	}
 
-	return -1;
+	return -3;
 }
 
 int DatabaseIO::BackupDatabase()

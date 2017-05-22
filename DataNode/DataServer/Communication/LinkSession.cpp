@@ -155,10 +155,21 @@ bool LinkSessions::OnCommand( const char* szSrvUnitName, const char* szCommand, 
 	}
 	else if( sCmd == "snaptable" )
 	{
+		std::string		sParam1 = Str2Lower( std::string( pArgv[1] ) );
 
+		::memcpy( s_pEchoDataBuf, sParam1.c_str(), sParam1.length() );
+		int		nDataLen = DataNodeService::GetSerivceObj().OnQuery( 1000, s_pEchoDataBuf, s_nMaxEchoBufLen );
+		if( nDataLen > 0 )
+		{
+			tagCTPSnapData*		pSnapData = (tagCTPSnapData*)s_pEchoDataBuf;
+
+			::sprintf( szResult, "[%s]\n", pSnapData->Code );
+
+			return true;
+		}
 	}
 
-	return true;
+	return false;
 }
 
 bool LinkSessions::OnNewLink( unsigned int uiLinkNo, unsigned int uiIpAddr, unsigned int uiPort )

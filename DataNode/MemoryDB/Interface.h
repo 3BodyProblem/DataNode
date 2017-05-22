@@ -137,7 +137,7 @@ public:
 	/**
 	 * @brief						清理所有数据表
 	 */
-	virtual void					DeleteTables() = 0;
+	virtual int						DeleteTables() = 0;
 
 	/**
 	 * @brief						从硬盘恢复所有数据
