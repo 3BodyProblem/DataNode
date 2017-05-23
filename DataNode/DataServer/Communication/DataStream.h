@@ -19,6 +19,7 @@
 typedef struct
 {
 	unsigned __int64				nSeqNo;				///< 自增序号
+	unsigned int					nBodyLen;			///< 数据部分长度
 	unsigned int					nMsgCount;			///< 包内的Message数量
 } tagPackageHead;
 
@@ -69,10 +70,9 @@ public:
 	 * @param[in]					pData					数据指针
 	 * @param[in]					nDataSize				数据长度
 	 * @param[in]					nSeqNo					当前数据块的更新序号
-	 * @param[in]					bEnclosePkg				是否封装一个包头
 	 * @return						==0						成功
 	 */
-	int								PushBlock( unsigned int nDataID, const char* pData, unsigned int nDataSize, unsigned __int64 nSeqNo, bool bEnclosePkg );
+	int								PushBlock( unsigned int nDataID, const char* pData, unsigned int nDataSize, unsigned __int64 nSeqNo );
 
 	/**
 	 * @brief						获取一个数据包
@@ -84,392 +84,19 @@ public:
 	 */
 	int								GetOnePkg( char* pBuff, unsigned int nBuffSize );
 
+	/**
+	 * @brief						是否为空
+	 * @return						true					为空
+	 */
+	bool							IsEmpty();
+
 protected:
+	CriticalObject					m_oLock;				///< 锁
 	char*							m_pPkgBuffer;			///< 数据包缓存地址
 	unsigned int					m_nMaxPkgBufSize;		///< 数据包缓存大小
 	unsigned long					m_nFirstPosition;		///< 起始位置索引
 	unsigned long					m_nLastPosition;		///< 结束位置索引
 };
-
-
-/**
- * @class							SimpleLoopBuffer
- * @brief							循环缓存
- * @author							barry
- */
-template<class tempclass>
-class SimpleLoopBuffer
-{
-public:
-	SimpleLoopBuffer();
-	virtual ~SimpleLoopBuffer();
-public:
-	/**
-	 * @brief						初始化缓存对象
-	 * @param[in]					nMaxBufSize				将分配的缓存大小
-	 * @return						==0						成功
-	 */
-	int								Initialize( unsigned long nMaxBufSize );
-
-	/**
-	 * @brief						释放缓存空间
-	 */
-	void							Release();
-
-public:
-	/**
-	 * @brief						存储数据
-	 * @param[in]					nDataID					数据ID
-	 * @param[in]					lpIn					数据指针
-	 * @param[in]					lInSize					数据长度
-	 * @return						==0						成功
-	 */
-	int								PutData( unsigned int nDataID, const tempclass* lpIn, unsigned long lInSize );
-
-	/**
-	 * @brief						取出数据
-	 * @param[out]					nDataID					数据ID
-	 * @param[out]					lpOut					数据写缓存指针
-	 * @param[in]					lInSize					数据写缓存长度
-	 * @return						>0						返回取出数据大小
-	 */
-	int								GetData( unsigned int& nDataID, tempclass* lpOut, unsigned int lInSize );
-
-	/**
-	 * @brief						查看数据（仅仅查看，不取出)
-	 * @param[out]					lpOut					数据写缓存指针
-	 * @param[in]					lInSize					数据写缓存长度
-	 * @return						>0						返回取出数据大小
-	 */
-	int								LookData( tempclass * lpOut, unsigned long lInSize );
-
-	/**
-	 * @brief						移除数据
-	 * @param[in]					lInSize					将移除的数据量
-	 * @return						==0						成功
-	 */
-	int								MoveData( unsigned long lInSize );
-
-public:
-	/**
-	 * @brief						清除数据
-	 */
-	void							Clear();
-
-	/**
-	 * @brief						判断是否为空或满
-	 */
-	bool							IsEmpty();
-
-	/**
-	 * @brief						是否队列满
-	 */
-	bool							IsFull();
-
-public:
-	/**
-	 * @brief						获取数据数量
-	 */
-	int								GetRecordCount();
-
-	/**
-	 * @brief						获取当前空余（剩余）空间数量
-	 */
-	int								GetFreeRecordCount();
-
-	/**
-	 * @brief						获取数据最大空间
-	 */
-	int								GetMaxRecord();
-
-	/**
-	 * @brief						获取数据百分比
-	 */
-	int								GetPercent();
-
-protected:
-	tempclass*						m_lpRecordData;
-	unsigned long					m_lMaxRecord;
-	unsigned long					m_lFirstRecord;
-	unsigned long					m_lLastRecord;
-
-};
-
-
-template<class tempclass> SimpleLoopBuffer<tempclass>::SimpleLoopBuffer()
-: m_lpRecordData( NULL ), m_lMaxRecord( 0 ), m_lFirstRecord( 0 ), m_lLastRecord( 0 )
-{
-}
-
-template<class tempclass> SimpleLoopBuffer<tempclass>::~SimpleLoopBuffer()
-{
-	Release();
-}
-
-template<class tempclass>int  SimpleLoopBuffer<tempclass>::Initialize( unsigned long nMaxBufSize )
-{
-	assert( nMaxBufSize != 0 );
-	Release();
-
-	try
-	{
-		m_lpRecordData = new tempclass[nMaxBufSize];
-	}
-	catch( ... )
-	{
-		m_lpRecordData = NULL;
-	}
-
-	if( NULL == m_lpRecordData )
-	{
-		return -1;
-	}
-
-	m_lMaxRecord = nMaxBufSize;
-	m_lFirstRecord = 0;
-	m_lLastRecord = 0;
-
-	return 0;
-}
-
-template<class tempclass>void SimpleLoopBuffer<tempclass>::Release()
-{
-	if( m_lpRecordData != NULL )
-	{
-		delete []m_lpRecordData;
-		m_lpRecordData = NULL;
-	}
-
-	m_lMaxRecord = 0;
-	m_lFirstRecord = 0;
-	m_lLastRecord = 0;
-}
-
-template<class tempclass>int  SimpleLoopBuffer<tempclass>::PutData( unsigned int nDataID, const tempclass * lpIn,unsigned long lInSize )
-{
-	register int				errorcode;
-	register int				icopysize;
-
-	assert( lpIn != NULL );
-	if( lInSize == 0 )
-	{
-		return 0;
-	}
-
-	if( m_lpRecordData == NULL || m_lMaxRecord == 0 )
-	{
-		assert( 0 );
-		return -1;
-	}
-
-	errorcode = (m_lFirstRecord + m_lMaxRecord - m_lLastRecord - 1) % m_lMaxRecord;
-	if ( lInSize > errorcode )
-	{
-		return -2;
-	}
-
-	icopysize = m_lMaxRecord - m_lLastRecord;
-	if( icopysize >= (lInSize+sizeof(unsigned int)*2) )
-	{
-		*((unsigned int*)(m_lpRecordData + m_lLastRecord)) = nDataID;
-		m_lLastRecord += sizeof(unsigned int);
-		*((unsigned int*)(m_lpRecordData + m_lLastRecord)) = lInSize;
-		m_lLastRecord += sizeof(unsigned int);
-		memcpy( &m_lpRecordData[m_lLastRecord],(char *)lpIn,sizeof(tempclass) * lInSize );
-	}
-	else
-	{
-		*((unsigned int*)(m_lpRecordData + m_lLastRecord)) = nDataID;
-		m_lLastRecord += sizeof(unsigned int);
-		*((unsigned int*)(m_lpRecordData + m_lLastRecord)) = lInSize;
-		m_lLastRecord += sizeof(unsigned int);
-		icopysize -= sizeof(unsigned int)*2;
-		memcpy( &m_lpRecordData[m_lLastRecord],lpIn,sizeof(tempclass) * icopysize );
-		memcpy( &m_lpRecordData[0],lpIn + icopysize,sizeof(tempclass) * (lInSize - icopysize) );
-	}
-
-	m_lLastRecord = (m_lLastRecord + lInSize) % m_lMaxRecord;
-
-	return 0;
-}
-
-template<class tempclass>int  SimpleLoopBuffer<tempclass>::GetData( unsigned int& nDataID, tempclass* lpOut,unsigned int lInSize )
-{
-	register int				errorcode;
-	register int				icopysize;
-
-	assert( lpOut != NULL );
-
-	if( m_lpRecordData == NULL || m_lMaxRecord == 0 )
-	{
-		assert( 0 );
-		return -1;
-	}
-
-	errorcode = (m_lLastRecord + m_lMaxRecord - m_lFirstRecord) % m_lMaxRecord;
-	if( errorcode == 0 )
-	{
-		return -2;
-	}
-	else if( lInSize > errorcode )
-	{
-		lInSize = errorcode;
-	}
-
-	icopysize = m_lMaxRecord - m_lFirstRecord;
-	if( icopysize >= lInSize )
-	{
-		nDataID = *((unsigned int*)(m_lpRecordData + m_lLastRecord));
-		m_lFirstRecord += sizeof(unsigned int);
-		lInSize = *((unsigned int*)(m_lpRecordData + m_lLastRecord));
-		m_lFirstRecord += sizeof(unsigned int);
-		memcpy( lpOut,&m_lpRecordData[m_lFirstRecord],sizeof(tempclass) * lInSize );
-	}
-	else
-	{
-		nDataID = *((unsigned int*)(m_lpRecordData + m_lLastRecord));
-		m_lFirstRecord += sizeof(unsigned int);
-		lInSize = *((unsigned int*)(m_lpRecordData + m_lLastRecord));
-		m_lFirstRecord += sizeof(unsigned int);
-		memcpy( lpOut,&m_lpRecordData[m_lFirstRecord],sizeof(tempclass) * icopysize );
-		memcpy( lpOut + icopysize,&m_lpRecordData[0],sizeof(tempclass) * (lInSize - icopysize) );
-	}
-
-	m_lFirstRecord = (m_lFirstRecord + lInSize) % m_lMaxRecord;
-	
-	return lInSize;
-}
-
-template<class tempclass>int  SimpleLoopBuffer<tempclass>::LookData( tempclass * lpOut,unsigned long lInSize )
-{
-	register int				errorcode;
-	register int				icopysize;
-	
-	assert( lpOut != NULL );
-	
-	if( m_lpRecordData == NULL || m_lMaxRecord == 0 )
-	{
-		assert( 0 );
-		return -1;
-	}
-	
-	errorcode = (m_lLastRecord + m_lMaxRecord - m_lFirstRecord) % m_lMaxRecord;
-	if( errorcode <= 0 )
-	{
-		return -2;
-	}
-	else if ( lInSize > errorcode )
-	{
-		lInSize = errorcode;
-	}
-	
-	icopysize = m_lMaxRecord - m_lFirstRecord;
-	if( icopysize >= lInSize )
-	{
-		memcpy(lpOut,&m_lpRecordData[m_lFirstRecord],sizeof(tempclass) * lInSize);
-	}
-	else
-	{
-		memcpy(lpOut,&m_lpRecordData[m_lFirstRecord],sizeof(tempclass) * icopysize);
-		memcpy(lpOut + icopysize,&m_lpRecordData[0],sizeof(tempclass) * (lInSize - icopysize));
-	}
-
-	return lInSize;
-}
-
-template<class tempclass>int  SimpleLoopBuffer<tempclass>::MoveData( unsigned long lInSize )
-{
-	register unsigned long				errorcode;
-	
-	if( m_lpRecordData == NULL || m_lMaxRecord == 0 )
-	{
-		assert( 0 );
-		return -1;
-	}
-	
-	errorcode = (m_lLastRecord + m_lMaxRecord - m_lFirstRecord) % m_lMaxRecord;
-	if( lInSize > errorcode )
-	{
-		lInSize = errorcode;
-	}
-
-	m_lFirstRecord = (m_lFirstRecord + lInSize) % m_lMaxRecord;
-
-	return 0;
-}
-
-template<class tempclass>void SimpleLoopBuffer<tempclass>::Clear()
-{
-	m_lLastRecord = 0;
-	m_lFirstRecord = 0;
-}
-
-template<class tempclass>bool SimpleLoopBuffer<tempclass>::IsEmpty()
-{
-	if( m_lLastRecord == m_lFirstRecord )
-	{
-		return true;
-	}
-	else
-	{
-		return false;
-	}
-}
-
-template<class tempclass>bool SimpleLoopBuffer<tempclass>::IsFull()
-{
-	if( m_lMaxRecord == 0 )
-	{
-		assert( 0 );
-		return true;
-	}
-	else if( ((m_lLastRecord + 1) % m_lMaxRecord) == m_lFirstRecord )
-	{
-		return true;
-	}
-	else
-	{
-		return false;
-	}
-}
-
-template<class tempclass>int  SimpleLoopBuffer<tempclass>::GetRecordCount()
-{
-	if( m_lMaxRecord == 0 )
-	{
-		assert( 0 );
-		return 0;
-	}
-
-	return (m_lLastRecord + m_lMaxRecord - m_lFirstRecord) % m_lMaxRecord;
-}
-
-template<class tempclass>int  SimpleLoopBuffer<tempclass>::GetFreeRecordCount()
-{
-	if( m_lMaxRecord == 0 )
-	{
-		assert( 0 );
-		return 0;
-	}
-
-	return m_lMaxRecord - GetRecordCount() - 1;
-}
-
-template<class tempclass>int  SimpleLoopBuffer<tempclass>::GetMaxRecord()
-{
-	return m_lMaxRecord;
-}
-
-template<class tempclass>int  SimpleLoopBuffer<tempclass>::GetPercent()
-{
-	if( m_lMaxRecord == 0 )
-	{
-		assert 0;
-		return 100;
-	}
-
-	return ((m_lLastRecord + m_lMaxRecord - m_lFirstRecord) % m_lMaxRecord) * 100 / m_lMaxRecord;
-}
 
 
 /**
@@ -515,7 +142,7 @@ public:
 	 * @return					> 0						成功，返回历次调用累积的序列化的长度
 								<= 0					失败
 	 */
-	int							PutMessage( unsigned short nMsgID, const char *pData, unsigned int nLen );
+	int							PutMessage( unsigned short nMsgID, const char *pData, unsigned int nLen, unsigned __int64 nSeqNo );
 
 	/**
 	 * @brief					从缓存中取数据 & 推送给下级客户端
@@ -525,9 +152,8 @@ public:
 	void						FlushQuotation2Client();
 
 protected:
-	CriticalObject				m_oLock;				///< 锁
 	WaitEvent					m_oWaitEvent;			///< 条件等待
-	SimpleLoopBuffer<char>		m_oDataBuffer;			///< 数据缓存队列
+	PackagesBuffer				m_oDataBuffer;			///< 数据缓存队列
 	char*						m_pSendBuffer;			///< 数据发送缓存
 	unsigned int				m_nMaxSendBufSize;		///< 发送缓存最大长度
 };
@@ -586,7 +212,9 @@ public:
 protected:
 	CriticalObject				m_oBuffLock;			///< 初始化数据推送缓存锁
 	std::set<unsigned int>		m_setNewReqLinkID;		///< 待初始化链路ID集合
-	char*						m_pImageDataBuffer;		///< 初始化数据缓存
+	PackagesBuffer				m_oDataBuffer;			///< 数据缓存队列
+	char*						m_pSendBuffer;			///< 数据发送缓存
+	unsigned int				m_nMaxSendBufSize;		///< 发送缓存最大长度
 };
 
 

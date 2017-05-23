@@ -19,6 +19,8 @@ int PackagesBuffer::Initialize( unsigned long nMaxBufSize )
 {
 	Release();
 
+	CriticalLock	guard( m_oLock );
+
 	if( NULL == (m_pPkgBuffer = new char[nMaxBufSize]) )
 	{
 		DataNodeService::GetSerivceObj().WriteError( "PackagesBuffer::Instance() : failed 2 initialize package buffer, size = %d", nMaxBufSize );
@@ -34,6 +36,8 @@ void PackagesBuffer::Release()
 {
 	if( NULL != m_pPkgBuffer )
 	{
+		CriticalLock	guard( m_oLock );
+
 		delete [] m_pPkgBuffer;
 		m_pPkgBuffer = NULL;
 		m_nMaxPkgBufSize = 0;
@@ -42,8 +46,9 @@ void PackagesBuffer::Release()
 	}
 }
 
-int PackagesBuffer::PushBlock( unsigned int nDataID, const char* pData, unsigned int nDataSize, unsigned __int64 nSeqNo, bool bEnclosePkg )
+int PackagesBuffer::PushBlock( unsigned int nDataID, const char* pData, unsigned int nDataSize, unsigned __int64 nSeqNo )
 {
+	CriticalLock		guard( m_oLock );
 	unsigned int		nBlockSize = nDataSize + sizeof(tagBlockHead);
 
 	if( NULL == m_pPkgBuffer || nDataSize == 0 || NULL == pData || m_nMaxPkgBufSize == 0 )	{
@@ -63,11 +68,13 @@ int PackagesBuffer::PushBlock( unsigned int nDataID, const char* pData, unsigned
 	{
 		m_nLastPosition += sizeof(tagPackageHead);
 		((tagPackageHead*)(m_pPkgBuffer+m_nFirstPosition))->nSeqNo = nSeqNo;
+		((tagPackageHead*)(m_pPkgBuffer+m_nFirstPosition))->nBodyLen = sizeof(tagPackageHead) + nDataSize;
 		((tagPackageHead*)(m_pPkgBuffer+m_nFirstPosition))->nMsgCount = 1;
 	}
 	else
 	{
 		((tagPackageHead*)(m_pPkgBuffer+m_nFirstPosition))->nMsgCount++;
+		((tagPackageHead*)(m_pPkgBuffer+m_nFirstPosition))->nBodyLen += nDataSize;
 	}
 
 	int				nConsecutiveFreeSize = m_nMaxPkgBufSize - m_nLastPosition;
@@ -99,6 +106,8 @@ int PackagesBuffer::PushBlock( unsigned int nDataID, const char* pData, unsigned
 
 int PackagesBuffer::GetOnePkg( char* pBuff, unsigned int nBuffSize )
 {
+	CriticalLock		guard( m_oLock );
+
 	if( NULL == pBuff || nBuffSize == 0 || NULL == m_pPkgBuffer || m_nMaxPkgBufSize == 0 )	{
 		assert( 0 );
 		return -1;
@@ -109,25 +118,41 @@ int PackagesBuffer::GetOnePkg( char* pBuff, unsigned int nBuffSize )
 	{
 		return -2;
 	}
-	else if( lInSize > nDataLen )
+
+	tagPackageHead*		pPkgHead = (tagPackageHead*)m_pPkgBuffer[m_nFirstPosition];
+
+	nBuffSize = pPkgHead->nBodyLen + sizeof(tagPackageHead);
+	if( nBuffSize < nDataLen )
 	{
-		nBuffSize = nDataLen;
+		return -3;
 	}
 
-	icopysize = m_lMaxRecord - m_lFirstRecord;
-	if( icopysize >= lInSize )
+	int nConsecutiveSize = m_nMaxPkgBufSize - m_nFirstPosition;
+	if( nConsecutiveSize >= nBuffSize )
 	{
-		memcpy( lpOut,&m_lpRecordData[m_lFirstRecord],sizeof(tempclass) * lInSize );
+		::memcpy( pBuff, &m_pPkgBuffer[m_nFirstPosition], nBuffSize );
 	}
 	else
 	{
-		memcpy( lpOut,&m_lpRecordData[m_lFirstRecord],sizeof(tempclass) * icopysize );
-		memcpy( lpOut + icopysize,&m_lpRecordData[0],sizeof(tempclass) * (lInSize - icopysize) );
+		::memcpy( pBuff, &m_pPkgBuffer[m_nFirstPosition], nConsecutiveSize );
+		::memcpy( pBuff + nConsecutiveSize, &m_pPkgBuffer[0], (nBuffSize - nConsecutiveSize) );
 	}
 
 	m_nFirstPosition = (m_nFirstPosition + nBuffSize) % m_nMaxPkgBufSize;
 	
 	return nBuffSize;
+}
+
+bool PackagesBuffer::IsEmpty()
+{
+	if( m_nFirstPosition == m_nLastPosition )
+	{
+		return true;
+	}
+	else
+	{
+		return false;
+	}
 }
 
 
@@ -143,8 +168,6 @@ QuotationStream::~QuotationStream()
 
 void QuotationStream::Release()
 {
-	CriticalLock	guard( m_oLock );
-
 	SimpleTask::StopThread();	///< 停止线程
 	SimpleTask::Join();			///< 退出等待
 	m_oDataBuffer.Release();	///< 释放所有资源
@@ -162,14 +185,12 @@ int QuotationStream::Initialize( unsigned int nNewBuffSize )
 {
 	Release();
 
-	CriticalLock	guard( m_oLock );
-
-	if( NULL == (m_pSendBuffer = new char[nNewBuffSize]) )
+	if( NULL == (m_pSendBuffer = new char[nNewBuffSize/2]) )
 	{
 		DataNodeService::GetSerivceObj().WriteError( "QuotationStream::Instance() : failed 2 initialize send data buffer, size = %d", nNewBuffSize );
 		return -1;
 	}
-	m_nMaxSendBufSize = nNewBuffSize;
+	m_nMaxSendBufSize = nNewBuffSize/2;
 
 	if( 0 != m_oDataBuffer.Initialize( nNewBuffSize ) )	///< 从内存池申请一块缓存
 	{
@@ -194,16 +215,15 @@ int QuotationStream::Execute()
 	return 0;
 }
 
-int QuotationStream::PutMessage( unsigned short nMsgID, const char *pData, unsigned int nLen )
+int QuotationStream::PutMessage( unsigned short nMsgID, const char *pData, unsigned int nLen, unsigned __int64 nSeqNo )
 {
 	if( NULL == pData || 0 == nLen )
 	{
 		return -12345;
 	}
 
-	CriticalLock	guard( m_oLock );
-	bool			bNeedActivateEvent = m_oDataBuffer.IsEmpty();				///< 是否需要激活事件对象
-	int				nErrorCode = m_oDataBuffer.PutData( nMsgID, pData, nLen );	///< 缓存数据
+	bool			bNeedActivateEvent = m_oDataBuffer.IsEmpty();							///< 是否需要激活事件对象
+	int				nErrorCode = m_oDataBuffer.PushBlock( nMsgID, pData, nLen, nSeqNo );	///< 缓存数据
 
 	if( true == bNeedActivateEvent )
 	{
@@ -216,23 +236,22 @@ int QuotationStream::PutMessage( unsigned short nMsgID, const char *pData, unsig
 void QuotationStream::FlushQuotation2Client()
 {
 	LinkIDSet::LINKID_VECTOR	vctLinkID;
-	CriticalLock				guard( m_oLock );
 	unsigned int				nLinkCount = LinkIDSet::GetSetObject().FetchLinkIDList( vctLinkID+0, 32 );
 
 	if( false == m_oDataBuffer.IsEmpty() && nLinkCount > 0 )
 	{
 		unsigned int	nDataID = 0;
-		int				nDataSize = m_oDataBuffer.GetData( nDataID, m_pSendBuffer, m_nMaxSendBufSize );
+		int				nDataSize = m_oDataBuffer.GetOnePkg( m_pSendBuffer, m_nMaxSendBufSize );
 		DataNodeService::GetSerivceObj().PushData( vctLinkID+0, nLinkCount, 0, 0, m_pSendBuffer, nDataSize );
 	}
 }
 
 
-#define		MAX_IMAGE_BUFFER_SIZE			(1024*1024*10)
+#define		MAX_IMAGE_BUFFER_SIZE			(1024*1024*5)
 
 
 ImageRebuilder::ImageRebuilder()
- : m_pImageDataBuffer( NULL )
+ : m_pSendBuffer( NULL ), m_nMaxSendBufSize( 0 )
 {
 }
 
@@ -245,25 +264,29 @@ ImageRebuilder& ImageRebuilder::GetRebuilder()
 
 void ImageRebuilder::Release()
 {
-	if( NULL != m_pImageDataBuffer )
+	m_oDataBuffer.Release();
+
+	if( NULL != m_pSendBuffer )
 	{
-		delete [] m_pImageDataBuffer;
-		m_pImageDataBuffer = NULL;
+		delete []m_pSendBuffer;
+		m_pSendBuffer = NULL;
 	}
+
+	m_nMaxSendBufSize = 0;
 }
 
 int ImageRebuilder::Initialize()
 {
 	Release();
-	m_pImageDataBuffer = new char[MAX_IMAGE_BUFFER_SIZE];	///< 分配10M的快照数据缓存(用于对下初始化)
 
-	if( NULL == m_pImageDataBuffer )
+	if( NULL == (m_pSendBuffer = new char[MAX_IMAGE_BUFFER_SIZE]) )
 	{
-		DataNodeService::GetSerivceObj().WriteError( "ImageRebuilder::Initialize() : failed 2 initialize Image buffer ..." );
+		DataNodeService::GetSerivceObj().WriteError( "QuotationStream::Instance() : failed 2 initialize send data buffer, size = %d", MAX_IMAGE_BUFFER_SIZE );
 		return -1;
 	}
+	m_nMaxSendBufSize = MAX_IMAGE_BUFFER_SIZE;
 
-	return 0;
+	return m_oDataBuffer.Initialize( MAX_IMAGE_BUFFER_SIZE*2 );
 }
 
 int ImageRebuilder::Flush2ReqSessions( DatabaseIO& refDatabaseIO, unsigned __int64 nSerialNo )
@@ -279,7 +302,7 @@ int ImageRebuilder::Flush2ReqSessions( DatabaseIO& refDatabaseIO, unsigned __int
 		{
 			unsigned int		nTableID = lstTableID[n];
 			unsigned __int64	nSerialNoOfAnchor = nSerialNo;
-			int					nDataLen = refDatabaseIO.FetchRecordsByID( nTableID, m_pImageDataBuffer, MAX_IMAGE_BUFFER_SIZE, nSerialNoOfAnchor );
+			int					nDataLen = refDatabaseIO.FetchRecordsByID( nTableID, m_pSendBuffer, MAX_IMAGE_BUFFER_SIZE, nSerialNoOfAnchor );
 
 			if( nDataLen < 0 )
 			{
@@ -287,7 +310,7 @@ int ImageRebuilder::Flush2ReqSessions( DatabaseIO& refDatabaseIO, unsigned __int
 				return -1 * (n*100);
 			}
 
-			nDataLen = DataNodeService::GetSerivceObj().SendData( *it, 0, 0, m_pImageDataBuffer, nDataLen/*, nSerialNo*/ );
+			nDataLen = DataNodeService::GetSerivceObj().SendData( *it, 0, 0, m_pSendBuffer, nDataLen/*, nSerialNo*/ );
 			if( nDataLen < 0 )
 			{
 				DataNodeService::GetSerivceObj().WriteWarning( "LinkSessions::OnNewLink() : failed 2 send image data, errorcode=%d", nDataLen );

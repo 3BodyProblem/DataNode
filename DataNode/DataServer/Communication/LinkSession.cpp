@@ -90,7 +90,7 @@ int LinkSessions::Instance()
 
 void LinkSessions::PushData( unsigned short usMessageNo, unsigned short usFunctionID, const char* lpInBuf, unsigned int uiInSize, bool bPushFlag, unsigned __int64 nSerialNo )
 {
-	m_oQuotationBuffer.PutMessage( usMessageNo, lpInBuf, uiInSize );
+	m_oQuotationBuffer.PutMessage( usMessageNo, lpInBuf, uiInSize, nSerialNo );
 }
 
 int LinkSessions::CloseLink( unsigned int uiLinkNo )
