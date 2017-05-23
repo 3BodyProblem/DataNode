@@ -28,7 +28,13 @@ bool CollectorStatus::Set( enum E_SS_Status eNewStatus )
 DataCollector::DataCollector()
  : m_pFuncInitialize( NULL ), m_pFuncRelease( NULL )
  , m_pFuncRecoverQuotation( NULL ), m_pFuncGetStatus( NULL )
+ , m_nMarketID( 0 )
 {
+}
+
+unsigned int DataCollector::GetMarketID()
+{
+	return m_nMarketID;
 }
 
 int DataCollector::Initialize( I_DataHandle* pIDataCallBack )
@@ -49,8 +55,9 @@ int DataCollector::Initialize( I_DataHandle* pIDataCallBack )
 	m_pFuncRelease = (T_Func_Release)m_oDllPlugin.GetDllFunction( "Release" );
 	m_pFuncRecoverQuotation = (T_Func_RecoverQuotation)m_oDllPlugin.GetDllFunction( "RecoverQuotation" );
 	m_pFuncGetStatus = (T_Func_GetStatus)m_oDllPlugin.GetDllFunction( "GetStatus" );
+	m_pFuncGetMarketID = (T_Func_GetMarketID)m_oDllPlugin.GetDllFunction( "GetMarketID" );
 
-	if( NULL == m_pFuncInitialize || NULL == m_pFuncRelease || NULL == m_pFuncRecoverQuotation || NULL == m_pFuncGetStatus )
+	if( NULL == m_pFuncInitialize || NULL == m_pFuncRelease || NULL == m_pFuncRecoverQuotation || NULL == m_pFuncGetStatus || NULL == m_pFuncGetMarketID )
 	{
 		DataNodeService::GetSerivceObj().WriteError( "DataCollector::Initialize() : invalid fuction pointer(NULL)" );
 		return -10;
@@ -61,6 +68,8 @@ int DataCollector::Initialize( I_DataHandle* pIDataCallBack )
 		DataNodeService::GetSerivceObj().WriteError( "DataCollector::Initialize() : failed 2 initialize data collector module, errorcode=%d", nErrorCode );
 		return nErrorCode;
 	}
+
+	m_nMarketID = m_pFuncGetMarketID();
 
 	DataNodeService::GetSerivceObj().WriteInfo( "DataCollector::Initialize() : data collector plugin is initialized ......" );
 

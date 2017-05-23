@@ -78,8 +78,6 @@ int DataIOEngine::Execute()
 				if( 0 != (nErrorCode=m_oDatabaseIO.RecoverDatabase()) )
 				{
 					DataNodeService::GetSerivceObj().WriteWarning( "DataIOEngine::Execute() : failed 2 recover quotations data from disk ..., errorcode=%d", nErrorCode );
-					m_oInitFlag.RedoInitialize();
-					continue;
 				}
 
 				if( 0 != (nErrorCode=m_oDataCollector.RecoverDataCollector()) )

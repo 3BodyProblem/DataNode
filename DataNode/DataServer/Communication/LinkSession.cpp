@@ -102,74 +102,25 @@ int LinkSessions::CloseLink( unsigned int uiLinkNo )
 
 void LinkSessions::OnReportStatus( char* szStatusInfo, unsigned int uiSize )
 {
-	::sprintf( szStatusInfo, ":working = %s,下单频率 = 10 \n", DataNodeService::GetSerivceObj().OnInquireStatus()==true?"true":"false" );
-//	cs_format(szStatusInfo,uiSize, _T( ":[API/SPI 总数],(2)API/SPI 创建数目=%d,(2)API/SPI 验证数目=%d,[API 调用计数],下单频率=%.2f,撤单频率=%.2f,查询频率=%.2f"), spi_total, spi_auth, freq_insertOrder, freq_cancelOrder, freq_queryOrder);
+	::sprintf( szStatusInfo, ":working = %s,链路数 = 0 \n", DataNodeService::GetSerivceObj().OnInquireStatus()==true?"true":"false" );
 }
 
 bool LinkSessions::OnCommand( const char* szSrvUnitName, const char* szCommand, char* szResult, unsigned int uiSize )
 {
 	int							nArgc = 32;
 	char*						pArgv[32] = { 0 };
-	static const unsigned int	s_nMaxEchoBufLen = 1024*1024*10;
-	static char*				s_pEchoDataBuf = new char[s_nMaxEchoBufLen];
 
-	if( NULL == s_pEchoDataBuf )
-	{
-		::sprintf( szResult, "LinkSessions::OnCommand : [ERR] invalid buffer pointer." );
-		return true;
-	}
-
-	::memset( s_pEchoDataBuf, 0, s_nMaxEchoBufLen );
+	///< 拆解出关键字和参数字符
 	if( false == SplitString( pArgv, nArgc, szCommand ) )
 	{
 		::sprintf( szResult, "LinkSessions::OnCommand : [ERR] parse command string failed" );
 		return true;
 	}
 
-	std::string		sCmd = Str2Lower( std::string( pArgv[0] ) );
+	CTP_DL_Echo					objEcho4CTPDL;
 
-	if( sCmd == "nametable" )
-	{
-		std::string		sParam1 = Str2Lower( std::string( pArgv[1] ) );
-		std::string		sParam2 = Str2Lower( std::string( pArgv[2] ) );
-		unsigned int	nBeginPos = ::atol( sParam1.c_str() );
-		unsigned int	nEndPos = nBeginPos + ::atol( sParam2.c_str() );
-		unsigned int	nWritePos = 0;
-		unsigned int	nIndex = 0;
-
-		int		nDataLen = DataNodeService::GetSerivceObj().OnQuery( 1000, s_pEchoDataBuf, s_nMaxEchoBufLen );
-		for( unsigned int nOffset = 0; nOffset < s_nMaxEchoBufLen && nOffset < nDataLen; nOffset+=sizeof(tagCTPReferenceData), nIndex++ )
-		{
-			tagCTPReferenceData*	pEchoData = (tagCTPReferenceData*)(s_pEchoDataBuf+nOffset);
-
-			if( nIndex > nEndPos )
-			{
-				return true;
-			}
-
-			if( nIndex >= nBeginPos && nIndex <= nEndPos )
-			{
-				nWritePos += ::sprintf( szResult+nWritePos, "[%s]\n", pEchoData->Code );
-			}
-		}
-	}
-	else if( sCmd == "snaptable" )
-	{
-		std::string		sParam1 = Str2Lower( std::string( pArgv[1] ) );
-
-		::memcpy( s_pEchoDataBuf, sParam1.c_str(), sParam1.length() );
-		int		nDataLen = DataNodeService::GetSerivceObj().OnQuery( 1000, s_pEchoDataBuf, s_nMaxEchoBufLen );
-		if( nDataLen > 0 )
-		{
-			tagCTPSnapData*		pSnapData = (tagCTPSnapData*)s_pEchoDataBuf;
-
-			::sprintf( szResult, "[%s]\n", pSnapData->Code );
-
-			return true;
-		}
-	}
-
-	return false;
+	///< 执行回显命令串
+	return objEcho4CTPDL( pArgv, nArgc, szResult, uiSize );
 }
 
 bool LinkSessions::OnNewLink( unsigned int uiLinkNo, unsigned int uiIpAddr, unsigned int uiPort )

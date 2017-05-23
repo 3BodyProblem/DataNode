@@ -1,4 +1,5 @@
 #include "DataEcho.h"
+#include "NodeServer.h"
 
 
 #pragma warning(disable:4244)
@@ -64,7 +65,88 @@ bool SplitString( char** pArgv, int& nArgc, const char* pszStr )
 }
 
 
+const unsigned int	IDataEcho::s_nMaxEchoBufLen = 1024*1024*10;
+char*				IDataEcho::s_pEchoDataBuf = new char[s_nMaxEchoBufLen];
 
+
+IDataEcho::IDataEcho( std::string sMarketName )
+ : m_sMarketName( sMarketName )
+{
+}
+
+const std::string& IDataEcho::GetMarketName()
+{
+	return m_sMarketName;
+}
+
+bool IDataEcho::operator()( char** pArgv, unsigned int nArgc, char* szResult, unsigned int uiSize )
+{
+	if( NULL == s_pEchoDataBuf )
+	{
+		::sprintf( szResult, "IDataEcho::operator() : [ERR] invalid buffer pointer." );
+		return true;
+	}
+
+	::memset( s_pEchoDataBuf, 0, s_nMaxEchoBufLen );
+
+	return ExcuteCommand( pArgv, nArgc, szResult, uiSize );
+}
+
+CTP_DL_Echo::CTP_DL_Echo()
+ : IDataEcho( "CTP_大连" )
+{
+}
+
+bool CTP_DL_Echo::ExcuteCommand( char** pArgv, unsigned int nArgc, char* szResult, unsigned int uiSize )
+{
+	unsigned int	nWritePos = 0;
+	std::string		sCmd = Str2Lower( std::string( pArgv[0] ) );
+
+	if( sCmd == "nametable" )
+	{
+		std::string		sParam1 = Str2Lower( std::string( pArgv[1] ) );
+		std::string		sParam2 = Str2Lower( std::string( pArgv[2] ) );
+		unsigned int	nBeginPos = ::atol( sParam1.c_str() );
+		unsigned int	nEndPos = nBeginPos + ::atol( sParam2.c_str() );
+		unsigned int	nIndex = 0;
+
+		int		nDataLen = DataNodeService::GetSerivceObj().OnQuery( 1000, s_pEchoDataBuf, s_nMaxEchoBufLen );
+		for( unsigned int nOffset = 0; nOffset < s_nMaxEchoBufLen && nOffset < nDataLen; nOffset+=sizeof(tagCTPReferenceData), nIndex++ )
+		{
+			tagCTPReferenceData*	pEchoData = (tagCTPReferenceData*)(s_pEchoDataBuf+nOffset);
+
+			if( nIndex > nEndPos )
+			{
+				return true;
+			}
+
+			if( nIndex >= nBeginPos && nIndex <= nEndPos )
+			{
+				nWritePos += ::sprintf( szResult+nWritePos, "[%s] 名称:%s, 合约乖数:%u", pEchoData->Code, pEchoData->Name, pEchoData->ContractMult );
+				nWritePos += ::sprintf( szResult+nWritePos, ", 手比率:%u, 交割日:%u\n", pEchoData->LotSize, pEchoData->DeliveryDate );
+			}
+		}
+	}
+	else if( sCmd == "snaptable" )
+	{
+		std::string		sParam1 = pArgv[1];
+
+		::memcpy( s_pEchoDataBuf, sParam1.c_str(), sParam1.length() );
+		int		nDataLen = DataNodeService::GetSerivceObj().OnQuery( 1000, s_pEchoDataBuf, s_nMaxEchoBufLen );
+		if( nDataLen > 0 )
+		{
+			tagCTPSnapData*		pEchoData = (tagCTPSnapData*)s_pEchoDataBuf;
+
+			nWritePos += ::sprintf( szResult+nWritePos, "[%s]\n", pEchoData->Code );
+			nWritePos += ::sprintf( szResult+nWritePos, "最新:%u, 最高:%u, 最低:%u\n", pEchoData->Now, pEchoData->High, pEchoData->Low );
+			nWritePos += ::sprintf( szResult+nWritePos, "金额:%f, 成交量:%I64d\n", pEchoData->Amount, pEchoData->Volume );
+
+			return true;
+		}
+	}
+
+	return true;
+}
 
 
 

@@ -55,6 +55,11 @@ public:
 	 */
 	void					Release();
 
+	/**
+	 * @brief				获取市场编号
+	 */
+	unsigned int			GetMarketID();
+
 public:///< 数据采集模块事件定义
 	/**
  	 * @brief				初始化/重新初始化回调
@@ -71,11 +76,14 @@ public:///< 数据采集模块事件定义
 
 private:
 	CollectorStatus			m_oCollectorStatus;				///< 数据采集模块的状态
+	unsigned int			m_nMarketID;					///< 数据采集器对应的市场ID
+private:
 	Dll						m_oDllPlugin;					///< 插件加载类
 	T_Func_Initialize		m_pFuncInitialize;				///< 数据采集器初始化接口
 	T_Func_Release			m_pFuncRelease;					///< 数据采集器释放接口
 	T_Func_RecoverQuotation	m_pFuncRecoverQuotation;		///< 数据采集器行情数据重新初始化接口
 	T_Func_GetStatus		m_pFuncGetStatus;				///< 数据采集器状态获取接口
+	T_Func_GetMarketID		m_pFuncGetMarketID;				///< 数据采集器对应的市场ID获取接口
 };
 
 
