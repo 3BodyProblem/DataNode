@@ -9,6 +9,89 @@
 #include "../../MemoryDB/MemoryDatabase.h"
 
 
+#pragma pack(1)
+
+/**
+ * @class							tagPackageHead
+ * @brief							数据包的包头结构定义
+ * @author							barry
+ */
+typedef struct
+{
+	unsigned __int64				nSeqNo;				///< 自增序号
+	unsigned int					nMsgCount;			///< 包内的Message数量
+} tagPackageHead;
+
+
+/**
+ * @class							tagBlockHead
+ * @brief							数据块的头部的定义
+ * @author							barry
+ */
+typedef struct
+{
+	unsigned int					nDataType;			///< 数据块类型
+	unsigned int					nDataLen;			///< 数据块长度
+} tagBlockHead;
+
+#pragma pack()
+
+
+/**
+ * @class							PackagesBuffer
+ * @brief							数据包队列缓存
+ * @detail							struct PkgHead + data block1 + data block2 + ...
+ * @author							barry
+ */
+class PackagesBuffer
+{
+public:
+	PackagesBuffer();
+	~PackagesBuffer();
+
+public:
+	/**
+	 * @brief						初始化缓存对象
+	 * @param[in]					nMaxBufSize				将分配的缓存大小
+	 * @return						==0						成功
+	 */
+	int								Initialize( unsigned long nMaxBufSize );
+
+	/**
+	 * @brief						释放缓存空间
+	 */
+	void							Release();
+
+public:
+	/**
+	 * @brief						存储数据
+	 * @param[in]					nDataID					数据ID
+	 * @param[in]					pData					数据指针
+	 * @param[in]					nDataSize				数据长度
+	 * @param[in]					nSeqNo					当前数据块的更新序号
+	 * @param[in]					bEnclosePkg				是否封装一个包头
+	 * @return						==0						成功
+	 */
+	int								PushBlock( unsigned int nDataID, const char* pData, unsigned int nDataSize, unsigned __int64 nSeqNo, bool bEnclosePkg );
+
+	/**
+	 * @brief						获取一个数据包
+	 * @param[out]					pBuff					输出数据缓存地址
+	 * @param[in]					nBuffSize				数据缓存长度
+	 * @return						>0						数据长度
+									==0						无数据
+									<0						出错
+	 */
+	int								GetOnePkg( char* pBuff, unsigned int nBuffSize );
+
+protected:
+	char*							m_pPkgBuffer;			///< 数据包缓存地址
+	unsigned int					m_nMaxPkgBufSize;		///< 数据包缓存大小
+	unsigned long					m_nFirstPosition;		///< 起始位置索引
+	unsigned long					m_nLastPosition;		///< 结束位置索引
+};
+
+
 /**
  * @class							SimpleLoopBuffer
  * @brief							循环缓存
@@ -36,19 +119,21 @@ public:
 public:
 	/**
 	 * @brief						存储数据
+	 * @param[in]					nDataID					数据ID
 	 * @param[in]					lpIn					数据指针
 	 * @param[in]					lInSize					数据长度
 	 * @return						==0						成功
 	 */
-	int								PutData( const tempclass* lpIn, unsigned long lInSize );
+	int								PutData( unsigned int nDataID, const tempclass* lpIn, unsigned long lInSize );
 
 	/**
 	 * @brief						取出数据
+	 * @param[out]					nDataID					数据ID
 	 * @param[out]					lpOut					数据写缓存指针
 	 * @param[in]					lInSize					数据写缓存长度
 	 * @return						>0						返回取出数据大小
 	 */
-	int								GetData( tempclass* lpOut, unsigned long lInSize );
+	int								GetData( unsigned int& nDataID, tempclass* lpOut, unsigned int lInSize );
 
 	/**
 	 * @brief						查看数据（仅仅查看，不取出)
@@ -160,13 +245,12 @@ template<class tempclass>void SimpleLoopBuffer<tempclass>::Release()
 	m_lLastRecord = 0;
 }
 
-template<class tempclass>int  SimpleLoopBuffer<tempclass>::PutData( const tempclass * lpIn,unsigned long lInSize )
+template<class tempclass>int  SimpleLoopBuffer<tempclass>::PutData( unsigned int nDataID, const tempclass * lpIn,unsigned long lInSize )
 {
 	register int				errorcode;
 	register int				icopysize;
 
 	assert( lpIn != NULL );
-	
 	if( lInSize == 0 )
 	{
 		return 0;
@@ -185,12 +269,21 @@ template<class tempclass>int  SimpleLoopBuffer<tempclass>::PutData( const tempcl
 	}
 
 	icopysize = m_lMaxRecord - m_lLastRecord;
-	if( icopysize >= lInSize )
+	if( icopysize >= (lInSize+sizeof(unsigned int)*2) )
 	{
+		*((unsigned int*)(m_lpRecordData + m_lLastRecord)) = nDataID;
+		m_lLastRecord += sizeof(unsigned int);
+		*((unsigned int*)(m_lpRecordData + m_lLastRecord)) = lInSize;
+		m_lLastRecord += sizeof(unsigned int);
 		memcpy( &m_lpRecordData[m_lLastRecord],(char *)lpIn,sizeof(tempclass) * lInSize );
 	}
 	else
 	{
+		*((unsigned int*)(m_lpRecordData + m_lLastRecord)) = nDataID;
+		m_lLastRecord += sizeof(unsigned int);
+		*((unsigned int*)(m_lpRecordData + m_lLastRecord)) = lInSize;
+		m_lLastRecord += sizeof(unsigned int);
+		icopysize -= sizeof(unsigned int)*2;
 		memcpy( &m_lpRecordData[m_lLastRecord],lpIn,sizeof(tempclass) * icopysize );
 		memcpy( &m_lpRecordData[0],lpIn + icopysize,sizeof(tempclass) * (lInSize - icopysize) );
 	}
@@ -200,7 +293,7 @@ template<class tempclass>int  SimpleLoopBuffer<tempclass>::PutData( const tempcl
 	return 0;
 }
 
-template<class tempclass>int  SimpleLoopBuffer<tempclass>::GetData( tempclass* lpOut,unsigned long lInSize )
+template<class tempclass>int  SimpleLoopBuffer<tempclass>::GetData( unsigned int& nDataID, tempclass* lpOut,unsigned int lInSize )
 {
 	register int				errorcode;
 	register int				icopysize;
@@ -226,10 +319,18 @@ template<class tempclass>int  SimpleLoopBuffer<tempclass>::GetData( tempclass* l
 	icopysize = m_lMaxRecord - m_lFirstRecord;
 	if( icopysize >= lInSize )
 	{
+		nDataID = *((unsigned int*)(m_lpRecordData + m_lLastRecord));
+		m_lFirstRecord += sizeof(unsigned int);
+		lInSize = *((unsigned int*)(m_lpRecordData + m_lLastRecord));
+		m_lFirstRecord += sizeof(unsigned int);
 		memcpy( lpOut,&m_lpRecordData[m_lFirstRecord],sizeof(tempclass) * lInSize );
 	}
 	else
 	{
+		nDataID = *((unsigned int*)(m_lpRecordData + m_lLastRecord));
+		m_lFirstRecord += sizeof(unsigned int);
+		lInSize = *((unsigned int*)(m_lpRecordData + m_lLastRecord));
+		m_lFirstRecord += sizeof(unsigned int);
 		memcpy( lpOut,&m_lpRecordData[m_lFirstRecord],sizeof(tempclass) * icopysize );
 		memcpy( lpOut + icopysize,&m_lpRecordData[0],sizeof(tempclass) * (lInSize - icopysize) );
 	}
