@@ -94,6 +94,16 @@ public:
 	virtual RecordBlock				SelectRecord( char* pKeyStr, unsigned int nKeyLen ) = 0;
 
 	/**
+	 * @brief						删除某条记录
+	 * @param[in]					pKeyStr					主键地址
+	 * @param[in]					nKeyLen					主键长度
+	 * @return						>0						返回被操作到的记录数
+									==0						未有记录被删除
+									<0						删除时出现错误
+	 */
+	virtual int						DeleteRecord( char* pKeyStr, unsigned int nKeyLen ) = 0;
+
+	/**
 	 * @brief						将数据表的数据原样copy到缓存
 	 * @param[in]					pBuffer					缓存地址
 	 * @param[in]					nBufferSize				缓存长度
