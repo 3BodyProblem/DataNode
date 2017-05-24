@@ -64,6 +64,7 @@ int DataIOEngine::Execute()
 	DataNodeService::GetSerivceObj().WriteInfo( "DataIOEngine::Execute() : enter into thread func ..." );
 
 	int			nErrorCode = 0;
+	bool		bInitPoint = false;
 
 	while( true == IsAlive() )
 	{
@@ -75,11 +76,16 @@ int DataIOEngine::Execute()
 				SimpleTask::Sleep( 1000 );
 				DataNodeService::GetSerivceObj().WriteInfo( "DataIOEngine::Execute() : [NOTICE] Enter Service Initializing Time ......" );
 
-				if( 0 != (nErrorCode=m_oDatabaseIO.RecoverDatabase()) )
+				///< 在非交易时段从文件恢复行情数据到内存
+				if( -1 == m_oInitFlag.InTradingPeriod( bInitPoint ) )
 				{
-					DataNodeService::GetSerivceObj().WriteWarning( "DataIOEngine::Execute() : failed 2 recover quotations data from disk ..., errorcode=%d", nErrorCode );
+					if( 0 != (nErrorCode=m_oDatabaseIO.RecoverDatabase()) )
+					{
+						DataNodeService::GetSerivceObj().WriteWarning( "DataIOEngine::Execute() : failed 2 recover quotations data from disk ..., errorcode=%d", nErrorCode );
+					}
 				}
 
+				///< 重新初始化行情采集模块
 				if( 0 != (nErrorCode=m_oDataCollector.RecoverDataCollector()) )
 				{
 					DataNodeService::GetSerivceObj().WriteWarning( "DataIOEngine::Execute() : failed 2 initialize data collector module, errorcode=%d", nErrorCode );
@@ -302,8 +308,8 @@ int DataNodeService::OnIdle()
 		ImageRebuilder::GetRebuilder().Flush2ReqSessions( m_oDatabaseIO, 0 );
 	}
 
-	///< 在非交易时段，进行内存插件中的行情数据落盘
-	if( -1 == m_oInitFlag.InTradingPeriod( bInitPoint ) && true == m_oDatabaseIO.IsBuilded() )	{
+	///< 在交易时段，进行内存插件中的行情数据落盘
+	if( 0 <= m_oInitFlag.InTradingPeriod( bInitPoint ) && true == m_oDatabaseIO.IsBuilded() )	{
 		OnBackupDatabase();
 	}
 
@@ -331,7 +337,7 @@ void DataNodeService::OnBackupDatabase()
 	time_t			nTimeNowT = ::time( NULL );
 
 	///< 每十分钟落盘一次
-	if( nTimeNowT - nLastTimeT < 60 * 10 )
+	if( nTimeNowT - nLastTimeT < 60 * 15 )
 	{
 		return;
 	}
