@@ -97,11 +97,12 @@ public:
 	 * @brief						删除某条记录
 	 * @param[in]					pKeyStr					主键地址
 	 * @param[in]					nKeyLen					主键长度
+	 * @param[in,out]				nDbSerialNo				取出>nDbSerialNo的数据(若为0,则全部取出) & 将回填最新的流水号
 	 * @return						>0						返回被操作到的记录数
 									==0						未有记录被删除
 									<0						删除时出现错误
 	 */
-	virtual int						DeleteRecord( char* pKeyStr, unsigned int nKeyLen ) = 0;
+	virtual int						DeleteRecord( char* pKeyStr, unsigned int nKeyLen, unsigned __int64& nDbSerialNo ) = 0;
 
 	/**
 	 * @brief						将数据表的数据原样copy到缓存
