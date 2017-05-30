@@ -22,15 +22,21 @@ bool DatabaseIO::IsBuilded()
 	return m_bBuilded;
 }
 
-unsigned int DatabaseIO::GetTablesID( unsigned int* pIDList, unsigned int nMaxListSize )
+unsigned int DatabaseIO::GetTablesID( unsigned int* pIDList, unsigned int nMaxListSize, unsigned int* pWidthList, unsigned int nMaxWidthlistLen )
 {
 	unsigned int			nIndex = 0;
 	unsigned int*			pIDListPtr = pIDList;
 	CriticalLock			lock( m_oLock );
 
-	for( std::set<unsigned int>::iterator it = m_setTableID.begin(); it != m_setTableID.end() && nIndex < nMaxListSize; it++ )
+	for( TMAP_DATAID2WIDTH::iterator it = m_mapTableID.begin(); it != m_mapTableID.end() && nIndex < nMaxListSize; it++ )
 	{
-		*(pIDListPtr+nIndex) = *it;
+		*(pIDListPtr+nIndex) = it->first;
+
+		if( NULL != pWidthList && 0 != nMaxWidthlistLen )
+		{
+			*(pWidthList+nIndex) = it->second;
+		}
+
 		nIndex++;
 	}
 
@@ -97,9 +103,36 @@ int DatabaseIO::BuildMessageTable( unsigned int nDataID, char* pData, unsigned i
 		return -3;
 	}
 
-	m_setTableID.insert( nDataID );		///< 数据表ID集合，添加
+	m_mapTableID.insert( std::make_pair(nDataID, nDataLen) );		///< 数据表ID集合，添加
 
 	return 0;
+}
+
+int DatabaseIO::DeleteRecord( unsigned int nDataID, char* pData, unsigned int nDataLen )
+{
+	I_Table*			pTable = NULL;
+	int					nAffectNum = 0;
+	unsigned __int64	nDbSerialNo = 0;
+
+	if( false == m_bBuilded )
+	{
+		DataNodeService::GetSerivceObj().WriteError( "DatabaseIO::DeleteRecord() : failed 2 delete record before initialization, message id=%d" );
+		return -1;
+	}
+
+	if( NULL == ((pTable = m_pIDatabase->QueryTable( nDataID ))) )
+	{
+		DataNodeService::GetSerivceObj().WriteError( "DatabaseIO::DeleteRecord() : failed 2 locate data table 4 message, message id=%d", nDataID );
+		return -2;
+	}
+
+	if( 0 > (nAffectNum = pTable->DeleteRecord( pData, nDataLen, nDbSerialNo )) )
+	{
+		DataNodeService::GetSerivceObj().WriteError( "DatabaseIO::DeleteRecord() : failed 2 delete record from table, message id=%d, affectnum=%d", nDataID, nAffectNum );
+		return -3;
+	}
+
+	return nAffectNum;
 }
 
 int DatabaseIO::UpdateQuotation( unsigned int nDataID, char* pData, unsigned int nDataLen, unsigned __int64& nDbSerialNo )
@@ -266,7 +299,7 @@ void DatabaseIO::Release()
 	{
 		DataNodeService::GetSerivceObj().WriteInfo( "DatabaseIO::Release() : releasing memory database plugin ......" );
 
-		m_setTableID.clear();				///< 清空数据表ID集合
+		m_mapTableID.clear();				///< 清空数据表ID集合
 		BackupDatabase();					///< 备份行情数据到磁盘
 		m_pIDatabase->DeleteTables();		///< 清理内存插件中的数据表
 		m_pIDatabase = NULL;				///< 重置内存插件数据库指针

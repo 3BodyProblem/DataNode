@@ -289,6 +289,48 @@ int ImageRebuilder::Initialize()
 	return m_oDataBuffer.Initialize( MAX_IMAGE_BUFFER_SIZE*2 );
 }
 
+int ImageRebuilder::QueryCodeListInDatabase( unsigned int nDataID, DatabaseIO& refDatabaseIO, std::set<std::string>& setCode )
+{
+	bool				bFinded = false;
+	CriticalLock		lock( m_oBuffLock );
+	unsigned int		lstTableID[64] = { 0 };
+	unsigned int		lstRecordWidth[64] = { 0 };
+	unsigned int		nTableCount = refDatabaseIO.GetTablesID( lstTableID, 64, lstRecordWidth, 64 );
+
+	if( 0 == nTableCount ) {
+		DataNodeService::GetSerivceObj().WriteWarning( "ImageRebuilder::QueryCodeListInDatabase() : database is empty! " );
+		return -1;
+	}
+
+	setCode.clear();
+	for( unsigned int n = 0; n < nTableCount; n++ )
+	{
+		unsigned int		nTableID = lstTableID[n];
+		unsigned int		nRecordLen = lstRecordWidth[n];
+		unsigned __int64	nSerialNoOfAnchor = 0;
+
+		if( nDataID != nTableID )	{
+			continue;
+		}
+
+		int					nDataLen = refDatabaseIO.FetchRecordsByID( nTableID, m_pSendBuffer, MAX_IMAGE_BUFFER_SIZE, nSerialNoOfAnchor );
+		if( nDataLen < 0 )
+		{
+			DataNodeService::GetSerivceObj().WriteWarning( "ImageRebuilder::QueryCodeListInDatabase() : failed 2 fetch image of table, errorcode=%d", nDataLen );
+			return -1 * (n*100);
+		}
+
+		bFinded = true;
+		setCode.insert( std::string(m_pSendBuffer+n*nRecordLen) );
+	}
+
+	if( false == bFinded ) {
+		DataNodeService::GetSerivceObj().WriteWarning( "ImageRebuilder::QueryCodeListInDatabase() : miss table in database, TableID=%d", nDataID );
+	}
+
+	return setCode.size();
+}
+
 int ImageRebuilder::Flush2ReqSessions( DatabaseIO& refDatabaseIO, unsigned __int64 nSerialNo )
 {
 	CriticalLock		lock( m_oBuffLock );
@@ -298,7 +340,7 @@ int ImageRebuilder::Flush2ReqSessions( DatabaseIO& refDatabaseIO, unsigned __int
 
 	for( std::set<unsigned int>::iterator it = m_setNewReqLinkID.begin(); it != m_setNewReqLinkID.end(); it++ )
 	{
-		for( int n = 0; n < nTableCount && nSetSize > 0; n++ )
+		for( unsigned int n = 0; n < nTableCount && nSetSize > 0; n++ )
 		{
 			unsigned int		nTableID = lstTableID[n];
 			unsigned __int64	nSerialNoOfAnchor = nSerialNo;
@@ -306,14 +348,14 @@ int ImageRebuilder::Flush2ReqSessions( DatabaseIO& refDatabaseIO, unsigned __int
 
 			if( nDataLen < 0 )
 			{
-				DataNodeService::GetSerivceObj().WriteWarning( "LinkSessions::OnNewLink() : failed 2 fetch image of table, errorcode=%d", nDataLen );
+				DataNodeService::GetSerivceObj().WriteWarning( "ImageRebuilder::Flush2ReqSessions() : failed 2 fetch image of table, errorcode=%d", nDataLen );
 				return -1 * (n*100);
 			}
 
 			nDataLen = DataNodeService::GetSerivceObj().SendData( *it, 0, 0, m_pSendBuffer, nDataLen/*, nSerialNo*/ );
 			if( nDataLen < 0 )
 			{
-				DataNodeService::GetSerivceObj().WriteWarning( "LinkSessions::OnNewLink() : failed 2 send image data, errorcode=%d", nDataLen );
+				DataNodeService::GetSerivceObj().WriteWarning( "ImageRebuilder::Flush2ReqSessions() : failed 2 send image data, errorcode=%d", nDataLen );
 				return -2 * (n*100);
 			}
 		}

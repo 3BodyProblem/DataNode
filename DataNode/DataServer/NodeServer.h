@@ -2,6 +2,7 @@
 #define	__DATA_NODE_SERVER_H__
 
 
+#include <map>
 #include <string>
 #include "SvrConfig.h"
 #include "../Interface.h"
@@ -13,6 +14,9 @@
 #include "../InitializeFlag/InitFlag.h"
 #include "../MemoryDB/MemoryDatabase.h"
 #include "../DataCollector/DataCollector.h"
+
+
+typedef std::map<unsigned int,std::set<std::string>>	MAP_TABLEID_CODES;
 
 
 /**
@@ -99,12 +103,26 @@ protected:
 	virtual int				Execute();
 
 	/**
+	 * @brief				从内存中加载所有数据表下关联的商品代码
+	 * @return				>=0					成功,返回数据表数量
+							<0					失败
+	 */
+	int						LoadCodesListInDatabase();
+
+	/**
+	 * @brief				删除内存库中的非有效商品记录
+	 * @return				返回删除的数量
+	 */
+	int						RemoveCodeExpiredInDatabase();
+
+	/**
 	 * @brief				空闲状态任务: 内存数据落盘/行情超时等...
 	 * @note				所以，关于内存数据落盘文件的存取，需要内存数据插件的标识接口支持
 	 */
 	virtual int				OnIdle() = 0;
 
 protected:
+	MAP_TABLEID_CODES		m_mapID2Codes;					///< 记录各消息ID下的关联codes
 	InitializerFlag			m_oInitFlag;					///< 重新初始化标识
 	LinkSessions			m_oLinkSessions;				///< 下级的链路会话
 

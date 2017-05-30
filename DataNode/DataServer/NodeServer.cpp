@@ -77,11 +77,17 @@ int DataIOEngine::Execute()
 				DataNodeService::GetSerivceObj().WriteInfo( "DataIOEngine::Execute() : [NOTICE] Enter Service Initializing Time ......" );
 
 				///< 在非交易时段从文件恢复行情数据到内存
-				if( -1 == m_oInitFlag.InTradingPeriod( bInitPoint ) )
+				if( 0 != (nErrorCode=m_oDatabaseIO.RecoverDatabase()) )
 				{
-					if( 0 != (nErrorCode=m_oDatabaseIO.RecoverDatabase()) )
+					DataNodeService::GetSerivceObj().WriteWarning( "DataIOEngine::Execute() : failed 2 recover quotations data from disk ..., errorcode=%d", nErrorCode );
+				}
+				else
+				{///< 从内存数据库中，查一遍已经存在的商品代码，供以后参考，是否有过期的代码需要删除
+					if( 0 != (nErrorCode=LoadCodesListInDatabase()) )
 					{
-						DataNodeService::GetSerivceObj().WriteWarning( "DataIOEngine::Execute() : failed 2 recover quotations data from disk ..., errorcode=%d", nErrorCode );
+						DataNodeService::GetSerivceObj().WriteWarning( "DataIOEngine::Execute() : failed 2 code list from database ..., errorcode=%d", nErrorCode );
+						m_oInitFlag.RedoInitialize();
+						continue;
 					}
 				}
 
@@ -89,6 +95,14 @@ int DataIOEngine::Execute()
 				if( 0 != (nErrorCode=m_oDataCollector.RecoverDataCollector()) )
 				{
 					DataNodeService::GetSerivceObj().WriteWarning( "DataIOEngine::Execute() : failed 2 initialize data collector module, errorcode=%d", nErrorCode );
+					m_oInitFlag.RedoInitialize();
+					continue;
+				}
+
+				///< 删除内存中过期的商品
+				if( (nErrorCode=RemoveCodeExpiredInDatabase()) < 0 )
+				{
+					DataNodeService::GetSerivceObj().WriteWarning( "DataIOEngine::Execute() : failed 2 remove expired code in database, errorcode=%d", nErrorCode );
 					m_oInitFlag.RedoInitialize();
 					continue;
 				}
@@ -115,10 +129,61 @@ int DataIOEngine::Execute()
 	return 0;
 }
 
+int DataIOEngine::LoadCodesListInDatabase()
+{
+	int					nErrorCode = 0;
+	unsigned int		lstTableID[64] = { 0 };
+	unsigned int		nTableCount = m_oDatabaseIO.GetTablesID( lstTableID, 64, NULL, 0 );
+
+	m_mapID2Codes.clear();
+	for( unsigned int n = 0; n < nTableCount; n++ )
+	{
+		std::set<std::string>		setCode;
+		unsigned int				nDataID = lstTableID[n];
+
+		if( (nErrorCode=ImageRebuilder::GetRebuilder().QueryCodeListInDatabase( nDataID, m_oDatabaseIO, setCode )) < 0 )
+		{
+			DataNodeService::GetSerivceObj().WriteWarning( "DataIOEngine::LoadCodesListInDatabase() : failed fetch code list in table [%d] ", nDataID );
+			return -100 - n;
+		}
+
+		m_mapID2Codes[nDataID] = setCode;
+	}
+
+	return m_mapID2Codes.size();
+}
+
+int DataIOEngine::RemoveCodeExpiredInDatabase()
+{
+	int					nAffectNum = 0;
+	int					nErrorCode = 0;
+	unsigned int		lstTableID[64] = { 0 };
+	unsigned int		nTableCount = m_oDatabaseIO.GetTablesID( lstTableID, 64, NULL, 0 );
+
+	for( unsigned int n = 0; n < nTableCount; n++ )
+	{
+		unsigned int				nDataID = lstTableID[n];
+		std::set<std::string>&		setCode = m_mapID2Codes[nDataID];
+
+		for( std::set<std::string>::iterator it = setCode.begin(); it != setCode.end(); it++ )
+		{
+			if( (nErrorCode=m_oDatabaseIO.DeleteRecord( nDataID, (char*)(it->c_str()), 32 )) < 0 )
+			{
+				DataNodeService::GetSerivceObj().WriteWarning( "DataIOEngine::RemoveCodeExpiredInDatabase() : failed delete code[] from table [%d] ", it->c_str(), nDataID );
+				return -1000 - nErrorCode;
+			}
+
+			nAffectNum++;
+		}
+	}
+
+	return nAffectNum;
+}
+
 int DataIOEngine::OnQuery( unsigned int nDataID, char* pData, unsigned int nDataLen )
 {
 	unsigned __int64		nSerialNo = 0;
-	static	const char		s_pszZeroBuff[32] = { 0 };
+	static	const char		s_pszZeroBuff[128] = { 0 };
 
 	if( 0 == strncmp( pData, s_pszZeroBuff, sizeof(s_pszZeroBuff) ) )
 	{

@@ -3,12 +3,14 @@
 
 
 #include <set>
+#include <map>
 #include "Interface.h"
 #include "../Infrastructure/Dll.h"
 #include "../Infrastructure/Lock.h"
 
 
-#define		MAX_CODE_LENGTH		32	///< 最大代码长度
+#define			MAX_CODE_LENGTH							32						///< 最大代码长度
+typedef			std::map<unsigned int,unsigned int>		TMAP_DATAID2WIDTH;		///< map[数据ID,数据结构长度]
 
 
 /**
@@ -38,11 +40,13 @@ public:
 public:
 	/**
 	 * @brief						取得存在的数据表id列表
-	 * @param[in]					pIDList			数据表id列表指针
+	 * @param[out]					pIDList			数据表id列表指针
 	 * @param[in]					nMaxListSize	数据表的长度
+	 * @param[out]					pWidthList		各数据表结构宽度信息列表
+	 * @param[in]					nMaxWidthlistLen	列表最大长度
 	 * @return						返回实际的数据表数量
 	 */
-	unsigned int					GetTablesID( unsigned int* pIDList, unsigned int nMaxListSize );
+	unsigned int					GetTablesID( unsigned int* pIDList, unsigned int nMaxListSize, unsigned int* pWidthList = NULL, unsigned int nMaxWidthlistLen = 0 );
 
 	/**
 	 * @brief						将数据表的数据原样copy到缓存
@@ -97,6 +101,16 @@ public:
 	 */
 	int								BuildMessageTable( unsigned int nDataID, char* pData, unsigned int nDataLen, bool bLastFlag, unsigned __int64& nDbSerialNo );
 
+	/**
+	 * @brief						删除记录
+	 * @param[in]					nDataID				数据表ID
+	 * @param[in]					pData				需要删除的代码
+	 * @param[in]					nDataLen			代码长度
+	 * @return						>=0					返回受影响的记录数
+									<0					出错
+	 */
+	int								DeleteRecord( unsigned int nDataID, char* pData, unsigned int nDataLen );
+
 public:
 	/**
 	 * @brief						从磁盘恢复行情数据到内存插件
@@ -114,7 +128,7 @@ public:
 
 protected:
 	CriticalObject					m_oLock;						///< 锁
-	std::set<unsigned int>			m_setTableID;					///< 数据表ID集合表
+	TMAP_DATAID2WIDTH				m_mapTableID;					///< 数据表ID集合表
 	bool							m_bBuilded;						///< 数据表是否已经初始化完成
 	Dll								m_oDllPlugin;					///< 插件加载类
 	IDBFactory*						m_pIDBFactoryPtr;				///< 内存数据插件库的工厂类

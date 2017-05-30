@@ -4,6 +4,7 @@
 
 #pragma warning(disable:4018)
 #include <set>
+#include <string>
 #include "../../Infrastructure/Lock.h"
 #include "../../Infrastructure/Thread.h"
 #include "../../MemoryDB/MemoryDatabase.h"
@@ -187,6 +188,16 @@ public:
 	void						Release();
 
 public:
+	/**
+	 * @brief					获取内存数据库某数据表的的所有商品主键
+	 * @param[in]				nDataID					数据表ID
+	 * @param[in]				refDatabaseIO			数据库插件引用
+	 * @param[out]				setCode					数据表主键集合
+	 * @return					>=0						集合中的元素数量
+								<0						出错
+	 */
+	int							QueryCodeListInDatabase( unsigned int nDataID, DatabaseIO& refDatabaseIO, std::set<std::string>& setCode );
+
 	/**
 	 * @brief					将所有数据同步/初始化到所有客户端链路
 	 * @param[in]				refDatabaseIO			数据库插件引用
