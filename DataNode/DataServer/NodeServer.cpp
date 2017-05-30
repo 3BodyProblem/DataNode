@@ -77,6 +77,7 @@ int DataIOEngine::Execute()
 				DataNodeService::GetSerivceObj().WriteInfo( "DataIOEngine::Execute() : [NOTICE] Enter Service Initializing Time ......" );
 
 				///< 在非交易时段从文件恢复行情数据到内存
+				m_mapID2Codes.clear();
 				if( 0 != (nErrorCode=m_oDatabaseIO.RecoverDatabase()) )
 				{
 					DataNodeService::GetSerivceObj().WriteWarning( "DataIOEngine::Execute() : failed 2 recover quotations data from disk ..., errorcode=%d", nErrorCode );
