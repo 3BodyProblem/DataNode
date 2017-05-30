@@ -199,6 +199,14 @@ int DataIOEngine::OnImage( unsigned int nDataID, char* pData, unsigned int nData
 {
 	unsigned __int64	nSerialNo = 0;
 
+	///< 删除所有合法的商品，记录下过期代码列表
+	if( m_mapID2Codes.find( nDataID ) != m_mapID2Codes.end() )
+	{
+		std::set<std::string>&		setCode = m_mapID2Codes[nDataID];
+
+		setCode.erase( std::string( pData ) );
+	}
+
 	return m_oDatabaseIO.BuildMessageTable( nDataID, pData, nDataLen, bLastFlag, nSerialNo );
 }
 
