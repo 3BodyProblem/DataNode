@@ -11,6 +11,11 @@ DataIOEngine::DataIOEngine()
 {
 }
 
+DataIOEngine::~DataIOEngine()
+{
+	Release();
+}
+
 int DataIOEngine::Initialize( const std::string& sDataCollectorPluginPath, const std::string& sMemPluginPath, const std::string& sHolidayPath )
 {
 	int			nErrorCode = 0;
@@ -84,7 +89,7 @@ int DataIOEngine::Execute()
 				}
 				else
 				{///< 从内存数据库中，查一遍已经存在的商品代码，供以后参考，是否有过期的代码需要删除
-					if( 0 != (nErrorCode=LoadCodesListInDatabase()) )
+					if( 0 >= (nErrorCode=LoadCodesListInDatabase()) )
 					{
 						DataNodeService::GetSerivceObj().WriteWarning( "DataIOEngine::Execute() : failed 2 code list from database ..., errorcode=%d", nErrorCode );
 						m_oInitFlag.RedoInitialize();
@@ -134,15 +139,22 @@ int DataIOEngine::LoadCodesListInDatabase()
 {
 	int					nErrorCode = 0;
 	unsigned int		lstTableID[64] = { 0 };
-	unsigned int		nTableCount = m_oDatabaseIO.GetTablesID( lstTableID, 64, NULL, 0 );
+	unsigned int		lstRecordWidth[64] = { 0 };
+	unsigned int		nTableCount = m_oDatabaseIO.GetTablesID( lstTableID, 64, lstRecordWidth, 64 );
+
+	if( 0 == nTableCount ) {
+		DataNodeService::GetSerivceObj().WriteWarning( "DataIOEngine::LoadCodesListInDatabase() : database is empty " );
+		return -1;
+	}
 
 	m_mapID2Codes.clear();
 	for( unsigned int n = 0; n < nTableCount; n++ )
 	{
 		std::set<std::string>		setCode;
 		unsigned int				nDataID = lstTableID[n];
+		unsigned int				nRecordLen = lstRecordWidth[n];
 
-		if( (nErrorCode=m_oLinkSessions.GetRebuilder().QueryCodeListInDatabase( nDataID, m_oDatabaseIO, setCode )) < 0 )
+		if( (nErrorCode=m_oLinkSessions.QueryCodeListInDatabase( nDataID, nRecordLen, setCode )) < 0 )
 		{
 			DataNodeService::GetSerivceObj().WriteWarning( "DataIOEngine::LoadCodesListInDatabase() : failed fetch code list in table [%d] ", nDataID );
 			return -100 - n;
@@ -150,6 +162,8 @@ int DataIOEngine::LoadCodesListInDatabase()
 
 		m_mapID2Codes[nDataID] = setCode;
 	}
+
+	DataNodeService::GetSerivceObj().WriteInfo( "DataIOEngine::LoadCodesListInDatabase() : fetch codes number=%d", m_mapID2Codes.size() );
 
 	return m_mapID2Codes.size();
 }
@@ -173,6 +187,8 @@ int DataIOEngine::RemoveCodeExpiredInDatabase()
 				DataNodeService::GetSerivceObj().WriteWarning( "DataIOEngine::RemoveCodeExpiredInDatabase() : failed delete code[] from table [%d] ", it->c_str(), nDataID );
 				return -1000 - nErrorCode;
 			}
+
+			DataNodeService::GetSerivceObj().WriteInfo( "DataIOEngine::RemoveCodeExpiredInDatabase() : DataType=%d, Code[%d] has erased!", nDataID, it->c_str() );
 
 			nAffectNum++;
 		}
@@ -216,12 +232,12 @@ int DataIOEngine::OnData( unsigned int nDataID, char* pData, unsigned int nDataL
 	unsigned __int64	nSerialNo = 0;
 	int					nErrorCode = m_oDatabaseIO.UpdateQuotation( nDataID, pData, nDataLen, nSerialNo );
 
-	if( 0 != nErrorCode )
+	if( 0 >= nErrorCode )
 	{
 		return nErrorCode;
 	}
 
-	m_oLinkSessions.PushData( nDataID, 0, pData, nDataLen, bPushFlag, nSerialNo );
+	m_oLinkSessions.PushQuotation( nDataID, 0, pData, nDataLen, bPushFlag, nSerialNo );
 
 	return nErrorCode;
 }
@@ -372,14 +388,9 @@ int DataNodeService::OnIdle()
 {
 	bool			bInitPoint = false;
 
-	if( 0 == m_oLinkSessions.GetRebuilder().GetReqSessionCount() )
-	{
-		SimpleTask::Sleep( 1000 );
-	}
-	else
-	{
-		///< 检查是否有新的链接到来请求初始化行情数据推送的
-		m_oLinkSessions.GetRebuilder().Flush2ReqSessions( m_oDatabaseIO, 0 );
+	///< 检查是否有新的链接到来请求初始化行情数据推送的
+	if( 0 == m_oLinkSessions.FlushImageData2NewSessions( 0 ) ) {		///< 对新到达的链接，推送"全量"初始化快照行情
+		SimpleTask::Sleep( 1000 );							///< 在没有新链接到来的情况下，sleep一秒
 	}
 
 	///< 在交易时段，进行内存插件中的行情数据落盘

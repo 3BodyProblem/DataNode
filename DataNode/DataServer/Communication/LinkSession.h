@@ -11,15 +11,15 @@
 
 
 /**
- * @class						LinkIDSet
+ * @class						LinkIDRegister
  * @brief						管理/维护各链路的ID号
  * @detail						新连接到达时添加新ID，删除失效的链路ID
  * @author						barry
  */
-class LinkIDSet
+class LinkIDRegister
 {
 private:
-	LinkIDSet();
+	LinkIDRegister();
 
 public:
 	#define						MAX_LINKID_NUM			32
@@ -28,7 +28,7 @@ public:
 	/**
 	 * @brief					获取对单键的引用
 	 */
-	static LinkIDSet&			GetSetObject();
+	static LinkIDRegister&		GetSetObject();
 
 	/**
 	 * @brief					添加一个新到的链路ID
@@ -63,15 +63,24 @@ private:
 };
 
 
+#define		MAX_IMAGE_BUFFER_SIZE		(1024*1024*8)
+
+
 /**
  * @class						Spi4LinkCollection
- * @brief						通讯链路会话集合事件回调类
+ * @brief						链路数据回调/推送类
+ * @detail						通讯链路会话集合事件回调逻辑
+								+
+								实时行情推送业务
+								+
+								初始化行情推送业务
  * @author						barry
  */
 class Spi4LinkCollection : public MServicePlug_Spi
 {
 public:
 	Spi4LinkCollection();
+	~Spi4LinkCollection();
 
 	/**
 	 * @brief					初始化
@@ -80,22 +89,35 @@ public:
 	int							Instance( DatabaseIO& refDbIO );
 
 	/**
-	 * @brief					获取行情查询对象
+	 * @brief					释放资源
 	 */
-	ImageDataQuery&				GetRebuilder();
+	void						Release();
 
-public:
+public:///< 初始化行情推送接口
 	/**
-	 * @brief					推送数据
+	 * @brief					将全幅初始化行情发到新到达的链路
+	 * @param[in]				nSerialNo				推送查询序号(需要>nSerialNo)
+	 * @return					>=0						同步的链路数
+								<0						出错
 	 */
-	void						PushData( unsigned short usMessageNo, unsigned short usFunctionID, const char* lpInBuf, unsigned int uiInSize, bool bPushFlag, unsigned __int64 nSerialNo );
+	int							FlushImageData2NewSessions( unsigned __int64 nSerialNo = 0 );
 
 	/**
-	 * @brief					关闭连接
+	 * @brief					将实时推送的数据放进缓存
 	 */
-	int							CloseLink( unsigned int uiLinkNo );
+	void						PushQuotation( unsigned short usMessageNo, unsigned short usFunctionID, const char* lpInBuf, unsigned int uiInSize, bool bPushFlag, unsigned __int64 nSerialNo );
 
-public:
+	/**
+	 * @brief					获取内存数据库某数据表的的所有商品主键
+	 * @param[in]				nDataID					数据表ID
+	 * @param[in]				nRecordLen				数据表对应数据包长度
+	 * @param[out]				setCode					数据表主键集合
+	 * @return					>=0						集合中的元素数量
+								<0						出错
+	 */
+	int							QueryCodeListInDatabase( unsigned int nDataID, unsigned int nRecordLen, std::set<std::string>& setCode );
+
+public:///< 网络框架事件回调
 	/**
 	 * @brief					本进程状态响应函数，报告状态时回调
 	 * @param[out]				szStatusInfo			服务器状态信息（字符串形式），服务器状态信息可填写最大控件
@@ -147,8 +169,13 @@ public:
 
 protected:
 	DatabaseIO*					m_pDatabase;			///< 数据操作对象指针
-	ImageDataQuery				m_oImageQuery;			///< 行情全量快照推送对象
-	RealTimeQuotationProducer	m_oQuotationBuffer;		///< 实时行情推送缓存
+	QuotationSynchronizer		m_oQuotationBuffer;		///< 实时行情推送缓存
+protected:
+	CriticalObject				m_oLock;				///< 初始化数据推送缓存锁
+	std::set<unsigned int>		m_setNewReqLinkID;		///< 待初始化链路ID集合
+	unsigned int				m_nReqLinkCount;		///< 请求初始化的链路数量
+	char*						m_pSendBuffer;			///< 数据发送缓存
+	unsigned int				m_nMaxSendBufSize;		///< 发送缓存最大长度
 };
 
 

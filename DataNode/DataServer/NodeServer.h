@@ -33,6 +33,7 @@ class DataIOEngine : public I_DataHandle, public SimpleTask, public MServicePlug
 {
 public:
 	DataIOEngine();
+	~DataIOEngine();
 
 	/**
  	 * @brief				初始化行情各参数，准备工作
@@ -103,6 +104,13 @@ protected:
 	virtual int				Execute();
 
 	/**
+	 * @brief				空闲状态任务: 内存数据落盘/行情超时等...
+	 * @note				所以，关于内存数据落盘文件的存取，需要内存数据插件的标识接口支持
+	 */
+	virtual int				OnIdle() = 0;
+
+public:
+	/**
 	 * @brief				从内存中加载所有数据表下关联的商品代码
 	 * @return				>=0					成功,返回数据表数量
 							<0					失败
@@ -114,12 +122,6 @@ protected:
 	 * @return				返回删除的数量
 	 */
 	int						RemoveCodeExpiredInDatabase();
-
-	/**
-	 * @brief				空闲状态任务: 内存数据落盘/行情超时等...
-	 * @note				所以，关于内存数据落盘文件的存取，需要内存数据插件的标识接口支持
-	 */
-	virtual int				OnIdle() = 0;
 
 protected:
 	MAP_TABLEID_CODES		m_mapID2Codes;					///< 记录各消息ID下的关联codes

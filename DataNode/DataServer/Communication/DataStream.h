@@ -106,18 +106,18 @@ protected:
 
 
 /**
- * @class						RealTimeQuotationProducer
+ * @class						QuotationSynchronizer
  * @brief						行情流实时推送缓存
  * @author						barry
  */
-class RealTimeQuotationProducer : public SimpleTask
+class QuotationSynchronizer : public SimpleTask
 {
 public:
 	/**
 	 * @brief					构造函数
 	 */
-	RealTimeQuotationProducer();
-	~RealTimeQuotationProducer();
+	QuotationSynchronizer();
+	~QuotationSynchronizer();
 
 	/**
 	 * @brief					初始化行情流推送缓存
@@ -165,73 +165,11 @@ public:
 protected:
 	WaitEvent					m_oWaitEvent;			///< 条件等待
 	PackagesBuffer				m_oDataBuffer;			///< 数据缓存队列
-	char*						m_pSendBuffer;			///< 数据发送缓存
-	unsigned int				m_nMaxSendBufSize;		///< 发送缓存最大长度
-};
-
-
-/**
- * @class						ImageDataQuery
- * @brief						初始化行情流缓存
- * @author						barry
- */
-class ImageDataQuery
-{
-public:
-	ImageDataQuery();
-
-	/**
-	 * @brief					初始化行情初始化流缓存
-	 * @return					!= 0					失败
-	 */
-	int							Initialize();
-
-	/**
-	 * @brief					释放各资源
-	 */
-	void						Release();
-
-public:
-	/**
-	 * @brief					获取内存数据库某数据表的的所有商品主键
-	 * @param[in]				nDataID					数据表ID
-	 * @param[in]				refDatabaseIO			数据库插件引用
-	 * @param[out]				setCode					数据表主键集合
-	 * @return					>=0						集合中的元素数量
-								<0						出错
-	 */
-	int							QueryCodeListInDatabase( unsigned int nDataID, DatabaseIO& refDatabaseIO, std::set<std::string>& setCode );
-
-	/**
-	 * @brief					将所有数据同步/初始化到所有客户端链路
-	 * @param[in]				refDatabaseIO			数据库插件引用
-	 * @param[in]				nSerialNo				推送查询序号(需要>nSerialNo)
-	 * @return					>=0						同步的链路数
-								<0						出错
-	 */
-	int							Flush2ReqSessions( DatabaseIO& refDatabaseIO, unsigned __int64 nSerialNo = 0 );
-
-	/**
-	 * @brief					获取待初始化的新链路数量
-	 */
-	unsigned int				GetReqSessionCount();
-
-	/**
-	 * @brief					增加一个新的待初始化推送的链路号
-	 * @param[in]				nLinkNo					链路号
-	 * @return					true					增加成功
-								false					失败，有重复项
-	 */
-	bool						AddNewReqSession( unsigned int nLinkNo );
-
 protected:
-	CriticalObject				m_oBuffLock;			///< 初始化数据推送缓存锁
-	std::set<unsigned int>		m_setNewReqLinkID;		///< 待初始化链路ID集合
-	unsigned int				m_nReqLinkCount;		///< 请求初始化的链路数量
-	PackagesBuffer				m_oDataBuffer;			///< 数据缓存队列
 	char*						m_pSendBuffer;			///< 数据发送缓存
 	unsigned int				m_nMaxSendBufSize;		///< 发送缓存最大长度
 };
+
 
 
 
