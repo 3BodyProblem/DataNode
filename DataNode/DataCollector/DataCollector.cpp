@@ -78,20 +78,18 @@ int DataCollector::Initialize( I_DataHandle* pIDataCallBack )
 
 void DataCollector::Release()
 {
-	DataNodeService::GetSerivceObj().WriteInfo( "DataCollector::Release() : releasing memory database plugin ......" );
-
 	if( NULL != m_pFuncRelease )
 	{
+		DataNodeService::GetSerivceObj().WriteInfo( "DataCollector::Release() : releasing memory database plugin ......" );
 		m_pFuncRelease();
 		m_pFuncRelease = NULL;
+		DataNodeService::GetSerivceObj().WriteInfo( "DataCollector::Release() : memory database plugin is released ......" );
 	}
 
 	m_pFuncGetStatus = NULL;
 	m_pFuncInitialize = NULL;
 	m_pFuncRecoverQuotation = NULL;
 	m_oDllPlugin.CloseDll();
-
-	DataNodeService::GetSerivceObj().WriteInfo( "DataCollector::Release() : memory database plugin is released ......" );
 }
 
 int DataCollector::RecoverDataCollector()

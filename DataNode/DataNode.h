@@ -2,6 +2,9 @@
 #define	__DATA_TABLE_PAINTER_H__
 
 
+
+
+
 /**
  * @brief				DLL导出接口
  * @author				barry

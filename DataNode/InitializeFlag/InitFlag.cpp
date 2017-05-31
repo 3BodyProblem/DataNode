@@ -10,10 +10,7 @@
 int MkHoliday::Initialize( std::string sHolidayFilePath, bool bTestFlag )
 {
 	m_bHolidayTestFlag = bTestFlag;
-	m_sHolidayPath = sHolidayFilePath.c_str();
-
-	DataNodeService::GetSerivceObj().WriteInfo( "MkHoliday::Initialize()", "holiday configuration path : %s", m_sHolidayPath.c_str() );
-	DataNodeService::GetSerivceObj().WriteInfo( "MkHoliday::Initialize()", true==m_bHolidayTestFlag?"------ Test Model -----":"----------------" );
+	m_sHolidayPath = sHolidayFilePath;
 
 	return ReloadHoliday();
 }
@@ -160,8 +157,6 @@ int InitializerFlag::Initialize( const T_VECTOR_PERIODS& refTradingPeriods, std:
 		return -1;
 	}
 
-	DataNodeService::GetSerivceObj().WriteInfo( "InitializerFlag::Initialize() : policy module is initialized" );
-
 	return 0;
 }
 
@@ -170,6 +165,13 @@ void InitializerFlag::RedoInitialize()
 	CriticalLock		guard( m_oLock );
 
 	m_nLastTradingTimeStatus = -1;
+}
+
+MkHoliday& InitializerFlag::GetHoliday()
+{
+	CriticalLock		guard( m_oLock );
+
+	return m_oHoliday;
 }
 
 bool InitializerFlag::GetFlag()

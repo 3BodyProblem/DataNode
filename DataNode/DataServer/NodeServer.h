@@ -33,7 +33,6 @@ class DataIOEngine : public I_DataHandle, public SimpleTask, public MServicePlug
 {
 public:
 	DataIOEngine();
-	~DataIOEngine();
 
 	/**
  	 * @brief				初始化行情各参数，准备工作
@@ -194,6 +193,15 @@ public:
 	 * @return				true				可服务
 	 */
 	bool					OnInquireStatus();
+
+public:
+	virtual void			WriteInfo( const char * szFormat,... );
+	virtual void			WriteWarning( const char * szFormat,... );
+	virtual void			WriteError( const char * szFormat,... );
+	virtual void			WriteDetail( const char * szFormat,... );
+
+protected:
+	bool					m_bActivated;
 };
 
 

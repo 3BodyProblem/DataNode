@@ -11,9 +11,7 @@ extern "C"
 {
 	void	ExecuteUnitTest()
 	{
-		::printf( "\n\n---------------------- [Begin] -------------------------\n" );
 		ExecuteTestCase();
-		::printf( "----------------------  [End]  -------------------------\n\n\n" );
 	}
 
 	int		RunNodeServer()

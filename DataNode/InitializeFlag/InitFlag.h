@@ -112,6 +112,11 @@ public:
 	 */
 	int								InTradingPeriod( bool& bInitPoint );
 
+	/**
+	 * @brief						获取节假日集合
+	 */
+	MkHoliday&						GetHoliday();
+
 private:
 	CriticalObject					m_oLock;
 	MkHoliday						m_oHoliday;						///< 节假日记录

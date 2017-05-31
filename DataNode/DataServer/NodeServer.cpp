@@ -11,11 +11,6 @@ DataIOEngine::DataIOEngine()
 {
 }
 
-DataIOEngine::~DataIOEngine()
-{
-	Release();
-}
-
 int DataIOEngine::Initialize( const std::string& sDataCollectorPluginPath, const std::string& sMemPluginPath, const std::string& sHolidayPath )
 {
 	int			nErrorCode = 0;
@@ -55,13 +50,9 @@ int DataIOEngine::Initialize( const std::string& sDataCollectorPluginPath, const
 
 void DataIOEngine::Release()
 {
-	DataNodeService::GetSerivceObj().WriteInfo( "DataIOEngine::Release() : DataNode Engine is releasing ......" );
-
 	m_oDataCollector.Release();
 	m_oDatabaseIO.Release();
 	SimpleTask::StopThread();
-
-	DataNodeService::GetSerivceObj().WriteInfo( "DataIOEngine::Release() : DataNode Engine is released ......" );
 }
 
 int DataIOEngine::Execute()
@@ -276,6 +267,7 @@ void DataIOEngine::OnLog( unsigned char nLogLevel, const char* pszFormat, ... )
 
 
 DataNodeService::DataNodeService()
+ : m_bActivated( false )
 {
 }
 
@@ -295,6 +287,7 @@ int DataNodeService::Activate()
 {
 	try
 	{
+		m_bActivated = true;
 		DataNodeService::GetSerivceObj().WriteInfo( "DataNodeService::Activate() : activating service.............." );
 
 		static	char						pszErrorDesc[8192] = { 0 };
@@ -355,12 +348,7 @@ void DataNodeService::Destroy()
 {
 	try
 	{
-		DataNodeService::GetSerivceObj().WriteInfo( "DataNodeService::Destroy() : destroying service.............." );
-
 		DataIOEngine::Release();
-		DataNodeService::GetSerivceObj().Release();
-
-		DataNodeService::GetSerivceObj().WriteInfo( "DataNodeService::Destroy() : service destroyed .............." );
 	}
 	catch( std::exception& err )
 	{
@@ -435,6 +423,70 @@ void DataNodeService::OnBackupDatabase()
 	}
 
 	nLastTimeT = nTimeNowT;
+}
+
+void DataNodeService::WriteInfo( const char * szFormat,... )
+{
+	char						tempbuf[8192];
+	va_list						stmarker;
+
+	va_start(stmarker,szFormat);
+	vsnprintf(tempbuf,sizeof(tempbuf),szFormat,stmarker);
+	va_end(stmarker);
+
+	if( true == m_bActivated ) {
+		MServicePlug::WriteInfo( "%s", tempbuf );
+	} else {
+		::printf( "%s\n", tempbuf );
+	}
+}
+
+void DataNodeService::WriteWarning( const char * szFormat,... )
+{
+	char						tempbuf[8192];
+	va_list						stmarker;
+
+	va_start(stmarker,szFormat);
+	vsnprintf(tempbuf,sizeof(tempbuf),szFormat,stmarker);
+	va_end(stmarker);
+
+	if( true == m_bActivated ) {
+		MServicePlug::WriteWarning( "%s", tempbuf );
+	} else {
+		::printf( "%s\n", tempbuf );
+	}
+}
+
+void DataNodeService::WriteError( const char * szFormat,... )
+{
+	char						tempbuf[8192];
+	va_list						stmarker;
+
+	va_start(stmarker,szFormat);
+	vsnprintf(tempbuf,sizeof(tempbuf),szFormat,stmarker);
+	va_end(stmarker);
+
+	if( true == m_bActivated ) {
+		MServicePlug::WriteError( "%s", tempbuf );
+	} else {
+		::printf( "%s\n", tempbuf );
+	}
+}
+
+void DataNodeService::WriteDetail( const char * szFormat,... )
+{
+	char						tempbuf[8192];
+	va_list						stmarker;
+
+	va_start(stmarker,szFormat);
+	vsnprintf(tempbuf,sizeof(tempbuf),szFormat,stmarker);
+	va_end(stmarker);
+
+	if( true == m_bActivated ) {
+		MServicePlug::WriteDetail( "%s", tempbuf );
+	} else {
+		::printf( "%s\n", tempbuf );
+	}
 }
 
 
