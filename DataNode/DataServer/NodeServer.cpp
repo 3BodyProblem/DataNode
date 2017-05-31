@@ -142,7 +142,7 @@ int DataIOEngine::LoadCodesListInDatabase()
 		std::set<std::string>		setCode;
 		unsigned int				nDataID = lstTableID[n];
 
-		if( (nErrorCode=ImageRebuilder::GetRebuilder().QueryCodeListInDatabase( nDataID, m_oDatabaseIO, setCode )) < 0 )
+		if( (nErrorCode=ImageDataQuery::GetRebuilder().QueryCodeListInDatabase( nDataID, m_oDatabaseIO, setCode )) < 0 )
 		{
 			DataNodeService::GetSerivceObj().WriteWarning( "DataIOEngine::LoadCodesListInDatabase() : failed fetch code list in table [%d] ", nDataID );
 			return -100 - n;
@@ -372,14 +372,14 @@ int DataNodeService::OnIdle()
 {
 	bool			bInitPoint = false;
 
-	if( 0 == ImageRebuilder::GetRebuilder().GetReqSessionCount() )
+	if( 0 == ImageDataQuery::GetRebuilder().GetReqSessionCount() )
 	{
 		SimpleTask::Sleep( 1000 );
 	}
 	else
 	{
 	///< 检查是否有新的链接到来请求初始化行情数据推送的
-		ImageRebuilder::GetRebuilder().Flush2ReqSessions( m_oDatabaseIO, 0 );
+		ImageDataQuery::GetRebuilder().Flush2ReqSessions( m_oDatabaseIO, 0 );
 	}
 
 	///< 在交易时段，进行内存插件中的行情数据落盘

@@ -46,6 +46,15 @@ void PackagesBuffer::Release()
 	}
 }
 
+float PackagesBuffer::GetPercentOfFreeSize()
+{
+	CriticalLock		guard( m_oLock );
+
+	float	nFreeSize = ((m_nFirstPosition + m_nMaxPkgBufSize - m_nLastPosition - 1) % m_nMaxPkgBufSize) * 1.0;
+
+	return nFreeSize / m_nMaxPkgBufSize * 100;
+}
+
 int PackagesBuffer::PushBlock( unsigned int nDataID, const char* pData, unsigned int nDataSize, unsigned __int64 nSeqNo )
 {
 	CriticalLock		guard( m_oLock );
@@ -156,17 +165,17 @@ bool PackagesBuffer::IsEmpty()
 }
 
 
-QuotationStream::QuotationStream()
+RealTimeQuotationProducer::RealTimeQuotationProducer()
  : m_pSendBuffer( NULL ), m_nMaxSendBufSize( 0 )
 {
 }
 
-QuotationStream::~QuotationStream()
+RealTimeQuotationProducer::~RealTimeQuotationProducer()
 {
 	Release();
 }
 
-void QuotationStream::Release()
+void RealTimeQuotationProducer::Release()
 {
 	SimpleTask::StopThread();	///< Í£Ö¹Ïß³Ì
 	SimpleTask::Join();			///< ÍË³öµÈ´ý
@@ -181,27 +190,27 @@ void QuotationStream::Release()
 	m_nMaxSendBufSize = 0;
 }
 
-int QuotationStream::Initialize( unsigned int nNewBuffSize )
+int RealTimeQuotationProducer::Initialize( unsigned int nNewBuffSize )
 {
 	Release();
 
 	if( NULL == (m_pSendBuffer = new char[nNewBuffSize/2]) )
 	{
-		DataNodeService::GetSerivceObj().WriteError( "QuotationStream::Instance() : failed 2 initialize send data buffer, size = %d", nNewBuffSize );
+		DataNodeService::GetSerivceObj().WriteError( "RealTimeQuotationProducer::Instance() : failed 2 initialize send data buffer, size = %d", nNewBuffSize );
 		return -1;
 	}
 	m_nMaxSendBufSize = nNewBuffSize/2;
 
 	if( 0 != m_oDataBuffer.Initialize( nNewBuffSize ) )	///< ´ÓÄÚ´æ³ØÉêÇëÒ»¿é»º´æ
 	{
-		DataNodeService::GetSerivceObj().WriteError( "QuotationStream::Instance() : failed 2 allocate cache, size = %d", nNewBuffSize );
+		DataNodeService::GetSerivceObj().WriteError( "RealTimeQuotationProducer::Instance() : failed 2 allocate cache, size = %d", nNewBuffSize );
 		return -2;
 	}
 
 	return 0;
 }
 
-int QuotationStream::Execute()
+int RealTimeQuotationProducer::Execute()
 {
 	while( true )
 	{
@@ -215,7 +224,12 @@ int QuotationStream::Execute()
 	return 0;
 }
 
-int QuotationStream::PutMessage( unsigned short nMsgID, const char *pData, unsigned int nLen, unsigned __int64 nSeqNo )
+float RealTimeQuotationProducer::GetFreePercent()
+{
+	return m_oDataBuffer.GetPercentOfFreeSize();
+}
+
+int RealTimeQuotationProducer::PutMessage( unsigned short nMsgID, const char *pData, unsigned int nLen, unsigned __int64 nSeqNo )
 {
 	if( NULL == pData || 0 == nLen )
 	{
@@ -233,7 +247,7 @@ int QuotationStream::PutMessage( unsigned short nMsgID, const char *pData, unsig
 	return nErrorCode;
 }
 
-void QuotationStream::FlushQuotation2Client()
+void RealTimeQuotationProducer::FlushQuotation2Client()
 {
 	LinkIDSet::LINKID_VECTOR	vctLinkID;
 	unsigned int				nLinkCount = LinkIDSet::GetSetObject().FetchLinkIDList( vctLinkID+0, 32 );
@@ -250,19 +264,19 @@ void QuotationStream::FlushQuotation2Client()
 #define		MAX_IMAGE_BUFFER_SIZE			(1024*1024*5)
 
 
-ImageRebuilder::ImageRebuilder()
+ImageDataQuery::ImageDataQuery()
  : m_pSendBuffer( NULL ), m_nMaxSendBufSize( 0 ), m_nReqLinkCount( 0 )
 {
 }
 
-ImageRebuilder& ImageRebuilder::GetRebuilder()
+ImageDataQuery& ImageDataQuery::GetRebuilder()
 {
-	static ImageRebuilder		obj;
+	static ImageDataQuery		obj;
 
 	return obj;
 }
 
-void ImageRebuilder::Release()
+void ImageDataQuery::Release()
 {
 	m_oDataBuffer.Release();
 
@@ -275,13 +289,13 @@ void ImageRebuilder::Release()
 	m_nMaxSendBufSize = 0;
 }
 
-int ImageRebuilder::Initialize()
+int ImageDataQuery::Initialize()
 {
 	Release();
 
 	if( NULL == (m_pSendBuffer = new char[MAX_IMAGE_BUFFER_SIZE]) )
 	{
-		DataNodeService::GetSerivceObj().WriteError( "QuotationStream::Instance() : failed 2 initialize send data buffer, size = %d", MAX_IMAGE_BUFFER_SIZE );
+		DataNodeService::GetSerivceObj().WriteError( "RealTimeQuotationProducer::Instance() : failed 2 initialize send data buffer, size = %d", MAX_IMAGE_BUFFER_SIZE );
 		return -1;
 	}
 	m_nMaxSendBufSize = MAX_IMAGE_BUFFER_SIZE;
@@ -289,7 +303,7 @@ int ImageRebuilder::Initialize()
 	return m_oDataBuffer.Initialize( MAX_IMAGE_BUFFER_SIZE*2 );
 }
 
-int ImageRebuilder::QueryCodeListInDatabase( unsigned int nDataID, DatabaseIO& refDatabaseIO, std::set<std::string>& setCode )
+int ImageDataQuery::QueryCodeListInDatabase( unsigned int nDataID, DatabaseIO& refDatabaseIO, std::set<std::string>& setCode )
 {
 	bool				bFinded = false;
 	CriticalLock		lock( m_oBuffLock );
@@ -298,7 +312,7 @@ int ImageRebuilder::QueryCodeListInDatabase( unsigned int nDataID, DatabaseIO& r
 	unsigned int		nTableCount = refDatabaseIO.GetTablesID( lstTableID, 64, lstRecordWidth, 64 );
 
 	if( 0 == nTableCount ) {
-		DataNodeService::GetSerivceObj().WriteWarning( "ImageRebuilder::QueryCodeListInDatabase() : database is empty! " );
+		DataNodeService::GetSerivceObj().WriteWarning( "ImageDataQuery::QueryCodeListInDatabase() : database is empty! " );
 		return -1;
 	}
 
@@ -316,7 +330,7 @@ int ImageRebuilder::QueryCodeListInDatabase( unsigned int nDataID, DatabaseIO& r
 		int					nDataLen = refDatabaseIO.FetchRecordsByID( nTableID, m_pSendBuffer, MAX_IMAGE_BUFFER_SIZE, nSerialNoOfAnchor );
 		if( nDataLen < 0 )
 		{
-			DataNodeService::GetSerivceObj().WriteWarning( "ImageRebuilder::QueryCodeListInDatabase() : failed 2 fetch image of table, errorcode=%d", nDataLen );
+			DataNodeService::GetSerivceObj().WriteWarning( "ImageDataQuery::QueryCodeListInDatabase() : failed 2 fetch image of table, errorcode=%d", nDataLen );
 			return -1 * (n*100);
 		}
 
@@ -325,13 +339,13 @@ int ImageRebuilder::QueryCodeListInDatabase( unsigned int nDataID, DatabaseIO& r
 	}
 
 	if( false == bFinded ) {
-		DataNodeService::GetSerivceObj().WriteWarning( "ImageRebuilder::QueryCodeListInDatabase() : miss table in database, TableID=%d", nDataID );
+		DataNodeService::GetSerivceObj().WriteWarning( "ImageDataQuery::QueryCodeListInDatabase() : miss table in database, TableID=%d", nDataID );
 	}
 
 	return setCode.size();
 }
 
-int ImageRebuilder::Flush2ReqSessions( DatabaseIO& refDatabaseIO, unsigned __int64 nSerialNo )
+int ImageDataQuery::Flush2ReqSessions( DatabaseIO& refDatabaseIO, unsigned __int64 nSerialNo )
 {
 	CriticalLock		lock( m_oBuffLock );
 	unsigned int		lstTableID[64] = { 0 };
@@ -348,14 +362,14 @@ int ImageRebuilder::Flush2ReqSessions( DatabaseIO& refDatabaseIO, unsigned __int
 
 			if( nDataLen < 0 )
 			{
-				DataNodeService::GetSerivceObj().WriteWarning( "ImageRebuilder::Flush2ReqSessions() : failed 2 fetch image of table, errorcode=%d", nDataLen );
+				DataNodeService::GetSerivceObj().WriteWarning( "ImageDataQuery::Flush2ReqSessions() : failed 2 fetch image of table, errorcode=%d", nDataLen );
 				return -1 * (n*100);
 			}
 
 			nDataLen = DataNodeService::GetSerivceObj().SendData( *it, 0, 0, m_pSendBuffer, nDataLen/*, nSerialNo*/ );
 			if( nDataLen < 0 )
 			{
-				DataNodeService::GetSerivceObj().WriteWarning( "ImageRebuilder::Flush2ReqSessions() : failed 2 send image data, errorcode=%d", nDataLen );
+				DataNodeService::GetSerivceObj().WriteWarning( "ImageDataQuery::Flush2ReqSessions() : failed 2 send image data, errorcode=%d", nDataLen );
 				return -2 * (n*100);
 			}
 		}
@@ -368,20 +382,20 @@ int ImageRebuilder::Flush2ReqSessions( DatabaseIO& refDatabaseIO, unsigned __int
 	return nSetSize;
 }
 
-unsigned int ImageRebuilder::GetReqSessionCount()
+unsigned int ImageDataQuery::GetReqSessionCount()
 {
 	CriticalLock		lock( m_oBuffLock );
 
 	return m_nReqLinkCount;
 }
 
-bool ImageRebuilder::AddNewReqSession( unsigned int nLinkNo )
+bool ImageDataQuery::AddNewReqSession( unsigned int nLinkNo )
 {
 	CriticalLock		lock( m_oBuffLock );
 
 	if( m_setNewReqLinkID.find( nLinkNo ) == m_setNewReqLinkID.end() )
 	{
-		DataNodeService::GetSerivceObj().WriteInfo( "ImageRebuilder::AddNewReqSession() : [WARNING] duplicate link number & new link will be disconnected..." );
+		DataNodeService::GetSerivceObj().WriteInfo( "ImageDataQuery::AddNewReqSession() : [WARNING] duplicate link number & new link will be disconnected..." );
 
 		return false;
 	}

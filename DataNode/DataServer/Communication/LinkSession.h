@@ -142,7 +142,7 @@ public:
 
 protected:
 	DatabaseIO*					m_pDatabase;			///< 数据操作对象指针
-	QuotationStream				m_oQuotationBuffer;		///< 实时行情推送缓存
+	RealTimeQuotationProducer	m_oQuotationBuffer;		///< 实时行情推送缓存
 };
 
 

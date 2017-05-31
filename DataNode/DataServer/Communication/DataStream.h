@@ -91,6 +91,11 @@ public:
 	 */
 	bool							IsEmpty();
 
+	/**
+	 * @brief						获取余下空间的百分比
+	 */
+	float							GetPercentOfFreeSize();
+
 protected:
 	CriticalObject					m_oLock;				///< 锁
 	char*							m_pPkgBuffer;			///< 数据包缓存地址
@@ -101,18 +106,18 @@ protected:
 
 
 /**
- * @class						QuotationStream
- * @brief						行情流缓存
+ * @class						RealTimeQuotationProducer
+ * @brief						行情流实时推送缓存
  * @author						barry
  */
-class QuotationStream : public SimpleTask
+class RealTimeQuotationProducer : public SimpleTask
 {
 public:
 	/**
 	 * @brief					构造函数
 	 */
-	QuotationStream();
-	~QuotationStream();
+	RealTimeQuotationProducer();
+	~RealTimeQuotationProducer();
 
 	/**
 	 * @brief					初始化行情流推送缓存
@@ -152,6 +157,11 @@ public:
 	 */
 	void						FlushQuotation2Client();
 
+	/**
+	 * @brief					获取余下空间的百分比
+	 */
+	float						GetFreePercent();
+
 protected:
 	WaitEvent					m_oWaitEvent;			///< 条件等待
 	PackagesBuffer				m_oDataBuffer;			///< 数据缓存队列
@@ -161,20 +171,20 @@ protected:
 
 
 /**
- * @class						ImageRebuilder
+ * @class						ImageDataQuery
  * @brief						初始化行情流缓存
  * @author						barry
  */
-class ImageRebuilder
+class ImageDataQuery
 {
 private:
-	ImageRebuilder();
+	ImageDataQuery();
 
 public:
 	/**
 	 * @brief					获取单键对象的引用
 	 */
-	static ImageRebuilder&		GetRebuilder();
+	static ImageDataQuery&		GetRebuilder();
 
 	/**
 	 * @brief					初始化行情初始化流缓存

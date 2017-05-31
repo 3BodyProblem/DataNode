@@ -89,7 +89,7 @@ int LinkSessions::Instance( DatabaseIO& refDbIO )
 		return nErrCode;
 	}
 
-	if( 0 != (nErrCode = ImageRebuilder::GetRebuilder().Initialize()) )	///< 分配10M的快照数据缓存(用于对下初始化)
+	if( 0 != (nErrCode = ImageDataQuery::GetRebuilder().Initialize()) )	///< 分配10M的快照数据缓存(用于对下初始化)
 	{
 		DataNodeService::GetSerivceObj().WriteError( "LinkSessions::Instance() : failed 2 initialize Image buffer ..." );
 		return -100;
@@ -117,13 +117,17 @@ void LinkSessions::OnReportStatus( char* szStatusInfo, unsigned int uiSize )
 	}
 
 	unsigned int	nModuleVersion = Configuration::GetConfigObj().GetStartInParam().uiVersion;
+	float			dFreePer = m_oQuotationBuffer.GetFreePercent();
+	unsigned int	nUpdateInterval = ::time(NULL)-m_pDatabase->GetLastUpdateTime();
 
-	::sprintf( szStatusInfo, ":working = %s, 版本 = V%.2f B%03d, 测试行情模式 = %s, 推送链路数 = %d(路), 初始化链路数 = %d(路), 数据表数量 = %d(张), 行情间隔 = %d(秒)\n"
+	::sprintf( szStatusInfo
+		, ":working = %s, 版本 = V%.2f B%03d, 测试行情模式 = %s, 推送链路数 = %d(路), \
+		 初始化链路数 = %u(路), 数据表数量 = %u(张), 行情间隔 = %u(秒), 缓存空闲比例 = %.2f(％)\n"
 		, DataNodeService::GetSerivceObj().OnInquireStatus()==true?"true":"false"
 		, (float)(nModuleVersion>>16)/100.f, nModuleVersion&0xFF
 		, Configuration::GetConfigObj().GetTestFlag()==true?"是":"否"
-		, LinkIDSet::GetSetObject().GetLinkCount(), ImageRebuilder::GetRebuilder().GetReqSessionCount()
-		, m_pDatabase->GetTableCount(), ::time(NULL)-m_pDatabase->GetLastUpdateTime() );
+		, LinkIDSet::GetSetObject().GetLinkCount(), ImageDataQuery::GetRebuilder().GetReqSessionCount()
+		, m_pDatabase->GetTableCount(), nUpdateInterval, dFreePer );
 }
 
 bool LinkSessions::OnCommand( const char* szSrvUnitName, const char* szCommand, char* szResult, unsigned int uiSize )
@@ -146,7 +150,7 @@ bool LinkSessions::OnCommand( const char* szSrvUnitName, const char* szCommand, 
 
 bool LinkSessions::OnNewLink( unsigned int uiLinkNo, unsigned int uiIpAddr, unsigned int uiPort )
 {
-	return ImageRebuilder::GetRebuilder().AddNewReqSession( uiLinkNo );
+	return ImageDataQuery::GetRebuilder().AddNewReqSession( uiLinkNo );
 }
 
 void LinkSessions::OnCloseLink( unsigned int uiLinkNo, int iCloseType )
