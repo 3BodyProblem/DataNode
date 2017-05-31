@@ -5,25 +5,26 @@
 #include <stdlib.h>
 #include <time.h>
 #include "../DataNode.h"
+#include "../DataServer/SvrConfig.h"
 
 
 ///< --------------------- 单元测试类定义 --------------------------------
 
 
 
-void TestTableOperation::SetUpTestCase()
+void TestLogic::SetUpTestCase()
 {
 }
 
-void TestTableOperation::TearDownTestCase()
+void TestLogic::TearDownTestCase()
 {
 }
 
-void TestTableOperation::SetUp()
+void TestLogic::SetUp()
 {
 }
 
-void TestTableOperation::TearDown()
+void TestLogic::TearDown()
 {
 }
 
@@ -37,10 +38,9 @@ void TestTableOperation::TearDown()
 ///< ------------------------ 测试用例定义 ----------------------------------------------------
 
 
-TEST_F( TestTableOperation, DumpEmptyTablesAndLoad )
+TEST_F( TestLogic, TestConfiguration )
 {
-//	ASSERT_EQ( UnitTestEnv::GetDatabasePtr()->SaveToDisk( "./DataRecover/" ), false );
-//	ASSERT_EQ( UnitTestEnv::GetDatabasePtr()->LoadFromDisk( "./DataRecover/" ), false );
+	ASSERT_EQ( 0, Configuration::GetConfigObj().Load() );
 }
 
 

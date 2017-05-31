@@ -13,11 +13,11 @@
 
 
 /**
- * @class							TestTableOperation
- * @brief							测试数据表操作业务
+ * @class							TestLogic
+ * @brief							测试逻辑业务
  * @author							barry
  */
-class TestTableOperation : public testing::Test
+class TestLogic : public testing::Test
 {
 public:
 

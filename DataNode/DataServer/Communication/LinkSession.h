@@ -117,7 +117,7 @@ public:///< 初始化行情推送接口
 	 */
 	int							QueryCodeListInDatabase( unsigned int nDataID, unsigned int nRecordLen, std::set<std::string>& setCode );
 
-public:///< 网络框架事件回调
+protected:///< 网络框架事件回调
 	/**
 	 * @brief					本进程状态响应函数，报告状态时回调
 	 * @param[out]				szStatusInfo			服务器状态信息（字符串形式），服务器状态信息可填写最大控件
