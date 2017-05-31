@@ -67,50 +67,55 @@ unsigned int LinkIDSet::FetchLinkIDList( unsigned int * lpLinkNoArray, unsigned 
 }
 
 
-LinkSessions::LinkSessions()
+Spi4LinkCollection::Spi4LinkCollection()
  : m_pDatabase( NULL )
 {
 }
 
-int LinkSessions::Instance( DatabaseIO& refDbIO )
+int Spi4LinkCollection::Instance( DatabaseIO& refDbIO )
 {
-	DataNodeService::GetSerivceObj().WriteInfo( "LinkSessions::Instance() : initializing ......" );
+	DataNodeService::GetSerivceObj().WriteInfo( "Spi4LinkCollection::Instance() : initializing ......" );
 
 	int		nErrCode = m_oQuotationBuffer.Initialize();
 
 	m_pDatabase = &refDbIO;
 	if( 0 == nErrCode )
 	{
-		DataNodeService::GetSerivceObj().WriteInfo( "LinkSessions::Instance() : initialized ......" );
+		DataNodeService::GetSerivceObj().WriteInfo( "Spi4LinkCollection::Instance() : initialized ......" );
 	}
 	else
 	{
-		DataNodeService::GetSerivceObj().WriteError( "LinkSessions::Instance() : failed 2 initialize ..." );
+		DataNodeService::GetSerivceObj().WriteError( "Spi4LinkCollection::Instance() : failed 2 initialize ..." );
 		return nErrCode;
 	}
 
-	if( 0 != (nErrCode = ImageDataQuery::GetRebuilder().Initialize()) )	///< 分配10M的快照数据缓存(用于对下初始化)
+	if( 0 != (nErrCode = m_oImageQuery.Initialize()) )		///< 分配10M的快照数据缓存(用于对下初始化)
 	{
-		DataNodeService::GetSerivceObj().WriteError( "LinkSessions::Instance() : failed 2 initialize Image buffer ..." );
+		DataNodeService::GetSerivceObj().WriteError( "Spi4LinkCollection::Instance() : failed 2 initialize Image buffer ..." );
 		return -100;
 	}
 
 	return 0;
 }
 
-void LinkSessions::PushData( unsigned short usMessageNo, unsigned short usFunctionID, const char* lpInBuf, unsigned int uiInSize, bool bPushFlag, unsigned __int64 nSerialNo )
+ImageDataQuery& Spi4LinkCollection::GetRebuilder()
+{
+	return m_oImageQuery;
+}
+
+void Spi4LinkCollection::PushData( unsigned short usMessageNo, unsigned short usFunctionID, const char* lpInBuf, unsigned int uiInSize, bool bPushFlag, unsigned __int64 nSerialNo )
 {
 	m_oQuotationBuffer.PutMessage( usMessageNo, lpInBuf, uiInSize, nSerialNo );
 }
 
-int LinkSessions::CloseLink( unsigned int uiLinkNo )
+int Spi4LinkCollection::CloseLink( unsigned int uiLinkNo )
 {
 	LinkIDSet::GetSetObject().RemoveLinkID( uiLinkNo );
 
 	return 0;
 }
 
-void LinkSessions::OnReportStatus( char* szStatusInfo, unsigned int uiSize )
+void Spi4LinkCollection::OnReportStatus( char* szStatusInfo, unsigned int uiSize )
 {
 	if( NULL == m_pDatabase ) {
 		return;
@@ -126,11 +131,11 @@ void LinkSessions::OnReportStatus( char* szStatusInfo, unsigned int uiSize )
 		, DataNodeService::GetSerivceObj().OnInquireStatus()==true?"true":"false"
 		, (float)(nModuleVersion>>16)/100.f, nModuleVersion&0xFF
 		, Configuration::GetConfigObj().GetTestFlag()==true?"是":"否"
-		, LinkIDSet::GetSetObject().GetLinkCount(), ImageDataQuery::GetRebuilder().GetReqSessionCount()
+		, LinkIDSet::GetSetObject().GetLinkCount(), m_oImageQuery.GetReqSessionCount()
 		, m_pDatabase->GetTableCount(), nUpdateInterval, dFreePer );
 }
 
-bool LinkSessions::OnCommand( const char* szSrvUnitName, const char* szCommand, char* szResult, unsigned int uiSize )
+bool Spi4LinkCollection::OnCommand( const char* szSrvUnitName, const char* szCommand, char* szResult, unsigned int uiSize )
 {
 	int							nArgc = 32;
 	char*						pArgv[32] = { 0 };
@@ -138,7 +143,7 @@ bool LinkSessions::OnCommand( const char* szSrvUnitName, const char* szCommand, 
 	///< 拆解出关键字和参数字符
 	if( false == SplitString( pArgv, nArgc, szCommand ) )
 	{
-		::sprintf( szResult, "LinkSessions::OnCommand : [ERR] parse command string failed" );
+		::sprintf( szResult, "Spi4LinkCollection::OnCommand : [ERR] parse command string failed" );
 		return true;
 	}
 
@@ -148,17 +153,17 @@ bool LinkSessions::OnCommand( const char* szSrvUnitName, const char* szCommand, 
 	return objEcho4CTPDL( pArgv, nArgc, szResult, uiSize );
 }
 
-bool LinkSessions::OnNewLink( unsigned int uiLinkNo, unsigned int uiIpAddr, unsigned int uiPort )
+bool Spi4LinkCollection::OnNewLink( unsigned int uiLinkNo, unsigned int uiIpAddr, unsigned int uiPort )
 {
-	return ImageDataQuery::GetRebuilder().AddNewReqSession( uiLinkNo );
+	return m_oImageQuery.AddNewReqSession( uiLinkNo );
 }
 
-void LinkSessions::OnCloseLink( unsigned int uiLinkNo, int iCloseType )
+void Spi4LinkCollection::OnCloseLink( unsigned int uiLinkNo, int iCloseType )
 {
 	LinkIDSet::GetSetObject().RemoveLinkID( uiLinkNo );
 }
 
-bool LinkSessions::OnRecvData( unsigned int uiLinkNo, unsigned short usMessageNo, unsigned short usFunctionID, bool bErrorFlag, const char* lpData, unsigned int uiSize, unsigned int& uiAddtionData )
+bool Spi4LinkCollection::OnRecvData( unsigned int uiLinkNo, unsigned short usMessageNo, unsigned short usFunctionID, bool bErrorFlag, const char* lpData, unsigned int uiSize, unsigned int& uiAddtionData )
 {
 
 	return false;

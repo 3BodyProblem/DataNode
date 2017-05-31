@@ -269,13 +269,6 @@ ImageDataQuery::ImageDataQuery()
 {
 }
 
-ImageDataQuery& ImageDataQuery::GetRebuilder()
-{
-	static ImageDataQuery		obj;
-
-	return obj;
-}
-
 void ImageDataQuery::Release()
 {
 	m_oDataBuffer.Release();

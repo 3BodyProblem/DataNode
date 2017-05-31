@@ -177,14 +177,8 @@ protected:
  */
 class ImageDataQuery
 {
-private:
-	ImageDataQuery();
-
 public:
-	/**
-	 * @brief					获取单键对象的引用
-	 */
-	static ImageDataQuery&		GetRebuilder();
+	ImageDataQuery();
 
 	/**
 	 * @brief					初始化行情初始化流缓存

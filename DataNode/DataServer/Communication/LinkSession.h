@@ -64,20 +64,25 @@ private:
 
 
 /**
- * @class						LinkSessions
- * @brief						通讯链路会话集合类
+ * @class						Spi4LinkCollection
+ * @brief						通讯链路会话集合事件回调类
  * @author						barry
  */
-class LinkSessions : public MServicePlug_Spi
+class Spi4LinkCollection : public MServicePlug_Spi
 {
 public:
-	LinkSessions();
+	Spi4LinkCollection();
 
 	/**
 	 * @brief					初始化
 	 * @return					!= 0				失败
 	 */
 	int							Instance( DatabaseIO& refDbIO );
+
+	/**
+	 * @brief					获取行情查询对象
+	 */
+	ImageDataQuery&				GetRebuilder();
 
 public:
 	/**
@@ -142,6 +147,7 @@ public:
 
 protected:
 	DatabaseIO*					m_pDatabase;			///< 数据操作对象指针
+	ImageDataQuery				m_oImageQuery;			///< 行情全量快照推送对象
 	RealTimeQuotationProducer	m_oQuotationBuffer;		///< 实时行情推送缓存
 };
 

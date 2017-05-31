@@ -124,7 +124,7 @@ protected:
 protected:
 	MAP_TABLEID_CODES		m_mapID2Codes;					///< 记录各消息ID下的关联codes
 	InitializerFlag			m_oInitFlag;					///< 重新初始化标识
-	LinkSessions			m_oLinkSessions;				///< 下级的链路会话
+	Spi4LinkCollection		m_oLinkSessions;				///< 下级的链路会话
 
 protected:
 	DatabaseIO				m_oDatabaseIO;					///< 内存数据插件管理
