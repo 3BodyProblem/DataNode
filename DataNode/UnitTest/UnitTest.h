@@ -12,6 +12,41 @@
 ///< --------------------- 单元测试类定义 --------------------------------
 
 
+/**
+ * @class							TestTableOperation
+ * @brief							测试数据表操作业务
+ * @author							barry
+ */
+class TestTableOperation : public testing::Test
+{
+public:
+
+protected:
+	static	void										SetUpTestCase();
+	static	void										TearDownTestCase();
+	void												SetUp();				///< 预告建立所有需要的数据表
+	void												TearDown();
+};
+
+
+///< ------------ 单元测试初始化类定义 ------------------------------------
+
+
+/**
+ * @class					QLXEnDeCodeTestEnv
+ * @brief					全局事件(初始化引擎)
+ * @author					barry
+ */
+class UnitTestEnv : public testing::Environment
+{
+public:
+	void					SetUp();
+	void					TearDown();
+
+private:
+
+};
+
 
 ///< ------------ 单元测试初始化类定义 ------------------------------------
 

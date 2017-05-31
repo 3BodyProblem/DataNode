@@ -290,12 +290,12 @@ int DataNodeService::Activate()
 			return nErrorCode;
 		}
 
-		if( (nErrorCode=MServicePlug::Instance( &refStartInParam, pszErrorDesc, sizeof(pszErrorDesc) )) < 0 )	{					///< 初始化服务框架
+		if( (nErrorCode=MServicePlug::Instance( &refStartInParam, pszErrorDesc, sizeof(pszErrorDesc) )) < 0 )	{///< 初始化服务框架
 			::printf( "DataNodeService::Activate() : failed 2 initialize serviceIO framework, errorcode=%d", nErrorCode );
 			return nErrorCode;
 		}
 
-		if( 0 != (nErrorCode=m_oLinkSessions.Instance()) )	{									///< 初始化会话链路管理
+		if( 0 != (nErrorCode=m_oLinkSessions.Instance( m_oDatabaseIO )) )	{					///< 初始化会话链路管理
 			::printf( "DataNodeService::Activate() : failed 2 initialize link session set, errorcode=%d", nErrorCode );
 			return -2;
 		}

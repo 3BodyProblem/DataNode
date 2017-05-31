@@ -251,7 +251,7 @@ void QuotationStream::FlushQuotation2Client()
 
 
 ImageRebuilder::ImageRebuilder()
- : m_pSendBuffer( NULL ), m_nMaxSendBufSize( 0 )
+ : m_pSendBuffer( NULL ), m_nMaxSendBufSize( 0 ), m_nReqLinkCount( 0 )
 {
 }
 
@@ -362,6 +362,7 @@ int ImageRebuilder::Flush2ReqSessions( DatabaseIO& refDatabaseIO, unsigned __int
 
 		LinkIDSet::GetSetObject().NewLinkID( *it );
 		m_setNewReqLinkID.erase( it++ );
+		m_nReqLinkCount = m_setNewReqLinkID.size();
 	}
 
 	return nSetSize;
@@ -371,7 +372,7 @@ unsigned int ImageRebuilder::GetReqSessionCount()
 {
 	CriticalLock		lock( m_oBuffLock );
 
-	return m_setNewReqLinkID.size();
+	return m_nReqLinkCount;
 }
 
 bool ImageRebuilder::AddNewReqSession( unsigned int nLinkNo )
@@ -386,6 +387,7 @@ bool ImageRebuilder::AddNewReqSession( unsigned int nLinkNo )
 	}
 
 	m_setNewReqLinkID.insert( nLinkNo );
+	m_nReqLinkCount = m_setNewReqLinkID.size();
 
 	return true;
 }

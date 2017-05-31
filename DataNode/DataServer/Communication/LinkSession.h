@@ -51,9 +51,15 @@ public:
 	 */
 	unsigned int				FetchLinkIDList( unsigned int* lpLinkNoArray, unsigned int uiArraySize );
 
+	/**
+	 * @brief					获取链路数量
+	 */
+	int							GetLinkCount();
+
 private:
 	CriticalObject				m_oLock;				///< 锁
 	std::set<unsigned int>		m_setLinkID;			///< 链路号集合,用于方便处理重复ID,和判断ID是否已经存在
+	int							nLinkIDCount;			///< 链路数量
 };
 
 
@@ -71,7 +77,7 @@ public:
 	 * @brief					初始化
 	 * @return					!= 0				失败
 	 */
-	int							Instance();
+	int							Instance( DatabaseIO& refDbIO );
 
 public:
 	/**

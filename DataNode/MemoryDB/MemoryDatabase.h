@@ -64,6 +64,16 @@ public:
 	 */
 	bool							IsBuilded();
 
+	/**
+	 * @brief						获取数据表的数量
+	 */
+	unsigned int					GetTableCount();
+
+	/**
+	 * @brief						获取最后一次更新时间
+	 */
+	unsigned int					GetLastUpdateTime();
+
 public:
 	/**
 	 * @brief						查询实时行情数据
@@ -130,6 +140,7 @@ protected:
 	CriticalObject					m_oLock;						///< 锁
 	TMAP_DATAID2WIDTH				m_mapTableID;					///< 数据表ID集合表
 	bool							m_bBuilded;						///< 数据表是否已经初始化完成
+	unsigned int					m_nUpdateTimeT;					///< 数据库最后一次更新time_t
 	Dll								m_oDllPlugin;					///< 插件加载类
 	IDBFactory*						m_pIDBFactoryPtr;				///< 内存数据插件库的工厂类
 	I_Database*						m_pIDatabase;					///< 数据库指针

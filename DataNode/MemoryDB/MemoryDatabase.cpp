@@ -1,3 +1,4 @@
+#include <time.h>
 #include <stdio.h>
 #include "MemoryDatabase.h"
 #include "../DataServer/SvrConfig.h"
@@ -10,6 +11,7 @@ typedef IDBFactory& __stdcall		TFunc_GetFactoryObject();
 DatabaseIO::DatabaseIO()
 : m_pIDBFactoryPtr( NULL ), m_pIDatabase( NULL ), m_bBuilded( false )
 {
+	m_nUpdateTimeT = ::time( NULL );
 }
 
 DatabaseIO::~DatabaseIO()
@@ -20,6 +22,21 @@ DatabaseIO::~DatabaseIO()
 bool DatabaseIO::IsBuilded()
 {
 	return m_bBuilded;
+}
+
+unsigned int DatabaseIO::GetLastUpdateTime()
+{
+	return m_nUpdateTimeT;
+}
+
+unsigned int DatabaseIO::GetTableCount()
+{
+	if( false == IsBuilded() )
+	{
+		return 0;
+	}
+
+	return m_mapTableID.size();
 }
 
 unsigned int DatabaseIO::GetTablesID( unsigned int* pIDList, unsigned int nMaxListSize, unsigned int* pWidthList, unsigned int nMaxWidthlistLen )
@@ -159,6 +176,8 @@ int DatabaseIO::UpdateQuotation( unsigned int nDataID, char* pData, unsigned int
 		return -3;
 	}
 
+	m_nUpdateTimeT = ::time( NULL );
+
 	return 0;
 }
 
@@ -198,6 +217,7 @@ int DatabaseIO::RecoverDatabase()
 		if( m_pIDatabase )
 		{
 			DataNodeService::GetSerivceObj().WriteInfo( "DatabaseIO::RecoverDatabase() : recovering ......" );
+			m_nUpdateTimeT = ::time( NULL );
 
 			if( 0 != m_pIDatabase->DeleteTables() )
 			{

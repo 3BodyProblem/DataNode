@@ -223,6 +223,7 @@ public:
 protected:
 	CriticalObject				m_oBuffLock;			///< 初始化数据推送缓存锁
 	std::set<unsigned int>		m_setNewReqLinkID;		///< 待初始化链路ID集合
+	unsigned int				m_nReqLinkCount;		///< 请求初始化的链路数量
 	PackagesBuffer				m_oDataBuffer;			///< 数据缓存队列
 	char*						m_pSendBuffer;			///< 数据发送缓存
 	unsigned int				m_nMaxSendBufSize;		///< 发送缓存最大长度

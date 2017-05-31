@@ -1,9 +1,11 @@
+#include <time.h>
 #include "LinkSession.h"
 #include "../DataEcho.h"
 #include "../NodeServer.h"
 
 
 LinkIDSet::LinkIDSet()
+ : nLinkIDCount( 0 )
 {}
 
 LinkIDSet& LinkIDSet::GetSetObject()
@@ -20,6 +22,7 @@ int LinkIDSet::NewLinkID( unsigned int nNewLinkID )
 	if( m_setLinkID.find( nNewLinkID ) == m_setLinkID.end() )
 	{
 		m_setLinkID.insert( nNewLinkID );
+		nLinkIDCount = m_setLinkID.size();
 		return 1;
 	}
 
@@ -34,7 +37,13 @@ void LinkIDSet::RemoveLinkID( unsigned int nRemoveLinkID )
 	if( m_setLinkID.find( nRemoveLinkID ) != m_setLinkID.end() )
 	{
 		m_setLinkID.erase( nRemoveLinkID );
+		nLinkIDCount = m_setLinkID.size();
 	}
+}
+
+int LinkIDSet::GetLinkCount()
+{
+	return nLinkIDCount;
 }
 
 unsigned int LinkIDSet::FetchLinkIDList( unsigned int * lpLinkNoArray, unsigned int uiArraySize )
@@ -63,12 +72,13 @@ LinkSessions::LinkSessions()
 {
 }
 
-int LinkSessions::Instance()
+int LinkSessions::Instance( DatabaseIO& refDbIO )
 {
 	DataNodeService::GetSerivceObj().WriteInfo( "LinkSessions::Instance() : initializing ......" );
 
 	int		nErrCode = m_oQuotationBuffer.Initialize();
 
+	m_pDatabase = &refDbIO;
 	if( 0 == nErrCode )
 	{
 		DataNodeService::GetSerivceObj().WriteInfo( "LinkSessions::Instance() : initialized ......" );
@@ -102,7 +112,18 @@ int LinkSessions::CloseLink( unsigned int uiLinkNo )
 
 void LinkSessions::OnReportStatus( char* szStatusInfo, unsigned int uiSize )
 {
-	::sprintf( szStatusInfo, ":working = %s,链路数 = 0 \n", DataNodeService::GetSerivceObj().OnInquireStatus()==true?"true":"false" );
+	if( NULL == m_pDatabase ) {
+		return;
+	}
+
+	unsigned int	nModuleVersion = Configuration::GetConfigObj().GetStartInParam().uiVersion;
+
+	::sprintf( szStatusInfo, ":working = %s, 版本 = V%.2f B%03d, 测试行情模式 = %s, 推送链路数 = %d(路), 初始化链路数 = %d(路), 数据表数量 = %d(张), 行情间隔 = %d(秒)\n"
+		, DataNodeService::GetSerivceObj().OnInquireStatus()==true?"true":"false"
+		, (float)(nModuleVersion>>16)/100.f, nModuleVersion&0xFF
+		, Configuration::GetConfigObj().GetTestFlag()==true?"是":"否"
+		, LinkIDSet::GetSetObject().GetLinkCount(), ImageRebuilder::GetRebuilder().GetReqSessionCount()
+		, m_pDatabase->GetTableCount(), ::time(NULL)-m_pDatabase->GetLastUpdateTime() );
 }
 
 bool LinkSessions::OnCommand( const char* szSrvUnitName, const char* szCommand, char* szResult, unsigned int uiSize )
