@@ -233,17 +233,18 @@ int DatabaseIO::RecoverDatabase( MkHoliday& refHoliday )
 				unsigned int	nDataID, nRecordLen, nKeyLen;
 				unsigned int	nTableCount = m_pIDatabase->GetTableCount();
 
-				if( false == refHoliday.IsValidDatabaseDate( nDBLoadDate ) )	///< 检查本地落盘数据是否有效
+				///< 检查本地落盘数据是否有效
+				if( false == refHoliday.IsValidDatabaseDate( nDBLoadDate ) )
 				{
 					m_mapTableID.clear();
 					DataNodeService::GetSerivceObj().WriteWarning( "DatabaseIO::RecoverDatabase() : invalid dump file, file date = %d", nDBLoadDate );
 					return -2000;
 				}
 
+				///< 统计从落盘文件加载的数据的数据类型+数据结构长度
 				for( unsigned int n = 0; n < nTableCount; n++ )
 				{
-					if( false == m_pIDatabase->GetTableMetaByPos( n, nDataID, nRecordLen, nKeyLen ) )
-					{
+					if( false == m_pIDatabase->GetTableMetaByPos( n, nDataID, nRecordLen, nKeyLen ) )	{
 						DataNodeService::GetSerivceObj().WriteWarning( "DatabaseIO::RecoverDatabase() : cannot fetch table with index (%u)", n );
 						return -1000 - n;
 					}

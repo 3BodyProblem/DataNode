@@ -31,7 +31,7 @@ typedef std::map<unsigned int,std::set<std::string>>	MAP_TABLEID_CODES;
  */
 class DataIOEngine : public I_DataHandle, public SimpleTask, public MServicePlug
 {
-public:
+public:///< 引擎构造和初始化相关功能
 	DataIOEngine();
 
 	/**
@@ -94,7 +94,7 @@ public:///< I_DataHandle接口实现: 用于给数据采集模块提供行情数据的回调方法
 	 */
 	virtual void			OnLog( unsigned char nLogLevel, const char* pszFormat, ... );
 
-protected:
+protected:///< 线程任务相关函数
 	/**
 	 * @brief				任务函数(内循环)
 	 * @return				==0					成功
@@ -108,7 +108,7 @@ protected:
 	 */
 	virtual int				OnIdle() = 0;
 
-public:
+protected:///< 私有功能函数
 	/**
 	 * @brief				从内存中加载所有数据表下关联的商品代码
 	 * @return				>=0					成功,返回数据表数量
@@ -122,12 +122,13 @@ public:
 	 */
 	int						RemoveCodeExpiredInDatabase();
 
-protected:
+protected:///< 逻辑数据成员
+	CriticalObject			m_oCodeMapLock;					///< CodeMap锁
 	MAP_TABLEID_CODES		m_mapID2Codes;					///< 记录各消息ID下的关联codes
 	InitializerFlag			m_oInitFlag;					///< 重新初始化标识
 	Spi4LinkCollection		m_oLinkSessions;				///< 下级的链路会话
 
-protected:
+protected:///< 挂载的相关功能插件
 	DatabaseIO				m_oDatabaseIO;					///< 内存数据插件管理
 	DataCollector			m_oDataCollector;				///< 行情采集模块接口
 //	XXXCompress				m_oCompressObj;					///< 行情压缩模块
@@ -201,7 +202,7 @@ public:
 	virtual void			WriteDetail( const char * szFormat,... );
 
 protected:
-	bool					m_bActivated;
+	bool					m_bActivated;					///< 服务激活标识
 };
 
 

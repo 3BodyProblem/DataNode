@@ -78,7 +78,7 @@ private:
  */
 class Spi4LinkCollection : public MServicePlug_Spi
 {
-public:
+public:///< 构造和初始化
 	Spi4LinkCollection();
 	~Spi4LinkCollection();
 
@@ -167,10 +167,10 @@ protected:///< 网络框架事件回调
 	 */
 	virtual bool				OnRecvData( unsigned int uiLinkNo, unsigned short usMessageNo, unsigned short usFunctionID, bool bErrorFlag, const char* lpData, unsigned int uiSize, unsigned int& uiAddtionData );
 
-protected:
+protected:///< 功能成员对象相关
 	DatabaseIO*					m_pDatabase;			///< 数据操作对象指针
 	QuotationSynchronizer		m_oQuotationBuffer;		///< 实时行情推送缓存
-protected:
+protected:///< 新到达的链路初始化逻辑相关
 	CriticalObject				m_oLock;				///< 初始化数据推送缓存锁
 	std::set<unsigned int>		m_setNewReqLinkID;		///< 待初始化链路ID集合
 	unsigned int				m_nReqLinkCount;		///< 请求初始化的链路数量

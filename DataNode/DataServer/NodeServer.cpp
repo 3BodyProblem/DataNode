@@ -58,30 +58,26 @@ void DataIOEngine::Release()
 
 int DataIOEngine::Execute()
 {
-	DataNodeService::GetSerivceObj().WriteInfo( "DataIOEngine::Execute() : enter into thread func ..." );
-
 	int			nErrorCode = 0;
 	bool		bInitPoint = false;
+	DataNodeService::GetSerivceObj().WriteInfo( "DataIOEngine::Execute() : enter into thread func ..." );
 
 	while( true == IsAlive() )
 	{
 		try
 		{
-			///< 初始化业务顺序的逻辑
-			if( true == m_oInitFlag.GetFlag() )
+			if( true == m_oInitFlag.GetFlag() )														///< 初始化业务顺序的逻辑
 			{
-				SimpleTask::Sleep( 1000*Configuration::GetConfigObj().GetInitInterval() );
+				SimpleTask::Sleep( 1000*Configuration::GetConfigObj().GetInitInterval() );			///< 重新初始化间隔，默认为3秒
 				DataNodeService::GetSerivceObj().WriteInfo( "DataIOEngine::Execute() : [NOTICE] Enter Service Initializing Time ......" );
 
-				///< 在非交易时段从文件恢复行情数据到内存
-				m_mapID2Codes.clear();
-				if( 0 != (nErrorCode=m_oDatabaseIO.RecoverDatabase( m_oInitFlag.GetHoliday() )) )
+				if( 0 != (nErrorCode=m_oDatabaseIO.RecoverDatabase( m_oInitFlag.GetHoliday() )) )	///< 从本地文件恢复历史行情数据到内存插件
 				{
 					DataNodeService::GetSerivceObj().WriteWarning( "DataIOEngine::Execute() : failed 2 recover quotations data from disk ..., errorcode=%d", nErrorCode );
 				}
 				else
-				{///< 从内存数据库中，查一遍已经存在的商品代码，供以后参考，是否有过期的代码需要删除
-					if( 0 >= (nErrorCode=LoadCodesListInDatabase()) )
+				{
+					if( 0 >= (nErrorCode=LoadCodesListInDatabase()) )								///< 查内存插件中已存在的商品代码，供是否有过期代码需作删除判断用
 					{
 						DataNodeService::GetSerivceObj().WriteWarning( "DataIOEngine::Execute() : failed 2 code list from database ..., errorcode=%d", nErrorCode );
 						m_oInitFlag.RedoInitialize();
@@ -89,16 +85,14 @@ int DataIOEngine::Execute()
 					}
 				}
 
-				///< 重新初始化行情采集模块
-				if( 0 != (nErrorCode=m_oDataCollector.RecoverDataCollector()) )
+				if( 0 != (nErrorCode=m_oDataCollector.RecoverDataCollector()) )						///< 重新初始化行情采集模块
 				{
 					DataNodeService::GetSerivceObj().WriteWarning( "DataIOEngine::Execute() : failed 2 initialize data collector module, errorcode=%d", nErrorCode );
 					m_oInitFlag.RedoInitialize();
 					continue;
 				}
 
-				///< 删除内存中过期的商品
-				if( (nErrorCode=RemoveCodeExpiredInDatabase()) < 0 )
+				if( (nErrorCode=RemoveCodeExpiredInDatabase()) < 0 )								///< 删除内存中过期的商品
 				{
 					DataNodeService::GetSerivceObj().WriteWarning( "DataIOEngine::Execute() : failed 2 remove expired code in database, errorcode=%d", nErrorCode );
 					m_oInitFlag.RedoInitialize();
@@ -109,8 +103,7 @@ int DataIOEngine::Execute()
 				continue;
 			}
 
-			///< 空闲处理函数
-			OnIdle();
+			OnIdle();		///< 空闲处理函数
 		}
 		catch( std::exception& err )
 		{
@@ -133,6 +126,7 @@ int DataIOEngine::LoadCodesListInDatabase()
 	unsigned int		lstTableID[64] = { 0 };
 	unsigned int		lstRecordWidth[64] = { 0 };
 	unsigned int		nTableCount = m_oDatabaseIO.GetTablesID( lstTableID, 64, lstRecordWidth, 64 );
+	CriticalLock		guard( m_oCodeMapLock );
 
 	if( 0 == nTableCount ) {
 		DataNodeService::GetSerivceObj().WriteWarning( "DataIOEngine::LoadCodesListInDatabase() : database is empty " );
@@ -166,6 +160,7 @@ int DataIOEngine::RemoveCodeExpiredInDatabase()
 	int					nErrorCode = 0;
 	unsigned int		lstTableID[64] = { 0 };
 	unsigned int		nTableCount = m_oDatabaseIO.GetTablesID( lstTableID, 64, NULL, 0 );
+	CriticalLock		guard( m_oCodeMapLock );
 
 	for( unsigned int n = 0; n < nTableCount; n++ )
 	{
@@ -207,6 +202,7 @@ int DataIOEngine::OnQuery( unsigned int nDataID, char* pData, unsigned int nData
 int DataIOEngine::OnImage( unsigned int nDataID, char* pData, unsigned int nDataLen, bool bLastFlag )
 {
 	unsigned __int64	nSerialNo = 0;
+	CriticalLock		guard( m_oCodeMapLock );
 
 	///< 删除所有合法的商品，记录下过期代码列表
 	if( m_mapID2Codes.find( nDataID ) != m_mapID2Codes.end() )
