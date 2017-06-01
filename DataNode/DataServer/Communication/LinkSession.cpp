@@ -197,7 +197,7 @@ void Spi4LinkCollection::OnReportStatus( char* szStatusInfo, unsigned int uiSize
 
 	::sprintf( szStatusInfo
 		, ":working = %s, 版本 = V%.2f B%03d, 测试行情模式 = %s, 推送链路数 = %d(路), \
-		 初始化链路数 = %u(路), 数据表数量 = %u(张), 行情间隔 = %d(秒), 缓存空闲比例 = %.2f(％)\n"
+		 初始化链路数 = %u(路), 数据表数量 = %u(张), 行情间隔 = %u(秒), 缓存空闲比例 = %.2f(％)\n"
 		, DataNodeService::GetSerivceObj().OnInquireStatus()==true?"true":"false"
 		, (float)(nModuleVersion>>16)/100.f, nModuleVersion&0xFF
 		, Configuration::GetConfigObj().GetTestFlag()==true?"是":"否"

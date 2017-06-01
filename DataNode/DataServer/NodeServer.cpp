@@ -70,7 +70,7 @@ int DataIOEngine::Execute()
 			///< 初始化业务顺序的逻辑
 			if( true == m_oInitFlag.GetFlag() )
 			{
-				SimpleTask::Sleep( 1000 );
+				SimpleTask::Sleep( 1000*Configuration::GetConfigObj().GetInitInterval() );
 				DataNodeService::GetSerivceObj().WriteInfo( "DataIOEngine::Execute() : [NOTICE] Enter Service Initializing Time ......" );
 
 				///< 在非交易时段从文件恢复行情数据到内存
@@ -378,8 +378,9 @@ int DataNodeService::OnIdle()
 	bool			bInitPoint = false;
 
 	///< 检查是否有新的链接到来请求初始化行情数据推送的
-	if( 0 == m_oLinkSessions.FlushImageData2NewSessions( 0 ) ) {		///< 对新到达的链接，推送"全量"初始化快照行情
-		SimpleTask::Sleep( 1000 );							///< 在没有新链接到来的情况下，sleep一秒
+	if( 0 == m_oLinkSessions.FlushImageData2NewSessions( 0 ) ) {///< 对新到达的链接，推送"全量"初始化快照行情
+		///< 在没有新链接到来的情况下，sleep一秒
+		SimpleTask::Sleep( 1000*Configuration::GetConfigObj().GetDumpInterval() );
 	}
 
 	///< 在交易时段，进行内存插件中的行情数据落盘

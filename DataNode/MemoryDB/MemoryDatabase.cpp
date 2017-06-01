@@ -216,6 +216,8 @@ int DatabaseIO::RecoverDatabase()
 	{
 		if( m_pIDatabase )
 		{
+			int				nDBLoadDate = 0;		///< 行情落盘文件日期
+
 			DataNodeService::GetSerivceObj().WriteInfo( "DatabaseIO::RecoverDatabase() : recovering ......" );
 			m_mapTableID.clear();
 			m_nUpdateTimeT = ::time( NULL );
@@ -226,11 +228,9 @@ int DatabaseIO::RecoverDatabase()
 				return -1;
 			}
 
-			if( true == m_pIDatabase->LoadFromDisk( Configuration::GetConfigObj().GetRecoveryFolderPath().c_str() ) )
+			if( 0 < (nDBLoadDate=m_pIDatabase->LoadFromDisk( Configuration::GetConfigObj().GetRecoveryFolderPath().c_str() )) )
 			{
-				unsigned int	nKeyLen = 0;
-				unsigned int	nDataID = 0;
-				unsigned int	nRecordLen = 0;
+				unsigned int	nDataID, nRecordLen, nKeyLen;
 				unsigned int	nTableCount = m_pIDatabase->GetTableCount();
 
 				for( unsigned int n = 0; n < nTableCount; n++ )

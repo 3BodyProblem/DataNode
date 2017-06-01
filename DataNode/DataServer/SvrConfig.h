@@ -84,10 +84,22 @@ public:
 	 */
 	const tagServicePlug_StartInParam&	GetStartInParam() const;
 
+	/**
+	 * @brief							行情落盘间隔
+	 */
+	unsigned int						GetDumpInterval() const;
+
+	/**
+	 * @brief							初始化间隔
+	 */
+	unsigned int						GetInitInterval() const;
+
 protected:
 	tagServicePlug_StartInParam			m_oStartInParam;				///< 服务引擎启动参数
 
 protected:
+	unsigned int						m_nInitializeInterval;			///< 初始化间隔时间(秒)
+	unsigned int						m_nQuotaDumpInterval;			///< 数据快照落盘间隔(秒)
 	bool								m_bTestFlag;					///< 测试标识
 	std::string							m_sNodeInHolidayFile;			///< 当前模块在holiday.ini文件里读的描述节点的名称
 	std::string							m_sHolidayFilePath;				///< 节假日文件路径

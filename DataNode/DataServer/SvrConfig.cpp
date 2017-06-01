@@ -58,7 +58,7 @@ std::string GetModulePath( void* hModule )
 
 
 Configuration::Configuration()
- : m_bTestFlag( false )
+ : m_bTestFlag( false ), m_nInitializeInterval( 5 ), m_nQuotaDumpInterval( 60*5 )
 {
 	///< ------------- config start arguments -----------------------
 	::memset( &m_oStartInParam, 0, sizeof(m_oStartInParam) );
@@ -115,6 +115,14 @@ int Configuration::Load()
 	m_sRecoveryFolder = oIniFile.getStringValue( std::string("ServerIO"), std::string("dumpfolder"), nErrCode );
 	if( false == m_sRecoveryFolder.empty() )	{
 		::printf( "Configuration::Load() : dump folder = %s\n", m_sRecoveryFolder.c_str() );
+	}
+	m_nInitializeInterval = oIniFile.getIntValue( std::string("ServerIO"), std::string("initinterval"), nErrCode );
+	if( 0 == m_nInitializeInterval )	{
+		m_nInitializeInterval = 5;
+	}
+	m_nQuotaDumpInterval = oIniFile.getIntValue( std::string("ServerIO"), std::string("dumpinterval"), nErrCode );
+	if( 0 == m_nQuotaDumpInterval )	{
+		m_nQuotaDumpInterval = 60*10;
 	}
 	m_oStartInParam.uiMaxLinkCount = oIniFile.getIntValue( std::string("ServerIO"), std::string("maxlinkcount"), nErrCode );
 	if( 0 == m_oStartInParam.uiMaxLinkCount )	{
@@ -199,6 +207,16 @@ Configuration& Configuration::GetConfigObj()
 	static Configuration		obj;
 
 	return obj;
+}
+
+unsigned int Configuration::GetDumpInterval() const
+{
+	return m_nQuotaDumpInterval;
+}
+
+unsigned int Configuration::GetInitInterval() const
+{
+	return m_nInitializeInterval;
 }
 
 bool Configuration::GetTestFlag() const
