@@ -15,6 +15,43 @@ int MkHoliday::Initialize( std::string sHolidayFilePath, bool bTestFlag )
 	return ReloadHoliday();
 }
 
+bool MkHoliday::IsValidDatabaseDate( unsigned int nDBDate )
+{
+	DateTime		oTodayDate = DateTime::Now();
+
+	///< 测试模式下，一直返回有效(true)
+	if( m_bHolidayTestFlag )
+	{
+		return true;
+	}
+
+	///< 日期即为当天日期，返回有效(true)
+	if( oTodayDate.DateToLong() == nDBDate )
+	{
+		return true;
+	}
+
+	///< 向前推前一个合法工作日
+	for( int n = 0; n < 30; n++ )
+	{
+		oTodayDate -= 24*60*60;		///< 推算出前一天，一天是24*60*60
+
+		unsigned int	nPrevDate = oTodayDate.DateToLong();
+
+		if( false == IsHoliday( nPrevDate ) || nPrevDate < nDBDate )
+		{
+			if( nPrevDate == nDBDate )
+			{
+				return true;
+			}
+
+			break;
+		}
+	}
+
+	return false;
+}
+
 bool MkHoliday::IsHoliday( int nDate )
 {
 	if( m_bHolidayTestFlag )

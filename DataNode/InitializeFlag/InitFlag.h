@@ -41,6 +41,15 @@ public:
     bool							IsHoliday( int nDate );
 
 	/**
+	 * @brief						判断数据库加载日期是否有效(即为当天日期，或为前一个有效工作日）
+	 * @param[in]					nDBDate				从文件加载的数据库日期
+	 * @return						true				合法落盘文件
+									false				非法落盘文件
+	 * @note						测试标识testflag打开的情况下，是个例外，一直返回true
+	 */
+	bool							IsValidDatabaseDate( unsigned int nDBDate );
+
+	/**
 	 * @brief						判断是长节日前一天，还是后一天
 	 * @param[in]					nDate			判断日期
 	 * @param[in]					bPrevious		往前判断/往后判断标识

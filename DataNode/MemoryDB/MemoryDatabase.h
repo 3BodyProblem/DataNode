@@ -7,6 +7,7 @@
 #include "Interface.h"
 #include "../Infrastructure/Dll.h"
 #include "../Infrastructure/Lock.h"
+#include "../InitializeFlag/InitFlag.h"
 
 
 #define			MAX_CODE_LENGTH							32						///< 最大代码长度
@@ -126,15 +127,16 @@ public:
 	 * @brief						从磁盘恢复行情数据到内存插件
 	 * @detail						需要从磁盘文件恢复最近一天的行情数据（检查本地文件日期是否有效）
 	 * @note						对日盘来说只能加载当天的日盘数据，对日盘来说只能加载前一个行情日期的数据
-	 * @return						==0				成功
-									!=0				失败
+	 * @param[in]					refHoliday			节假对集合对象
+	 * @return						==0					成功
+									!=0					失败
 	 */
-	int								RecoverDatabase();
+	int								RecoverDatabase( MkHoliday& refHoliday );
 
 	/**
 	 * @brief						将内存插件中的行情数据进行备份
-	 * @return						==0				成功
-									!=0				失败
+	 * @return						==0					成功
+									!=0					失败
 	 */
 	int								BackupDatabase();
 

@@ -210,7 +210,7 @@ int DatabaseIO::QueryQuotation( unsigned int nDataID, char* pData, unsigned int 
 	return refRecord.Length();
 }
 
-int DatabaseIO::RecoverDatabase()
+int DatabaseIO::RecoverDatabase( MkHoliday& refHoliday )
 {
 	try
 	{
@@ -232,6 +232,13 @@ int DatabaseIO::RecoverDatabase()
 			{
 				unsigned int	nDataID, nRecordLen, nKeyLen;
 				unsigned int	nTableCount = m_pIDatabase->GetTableCount();
+
+				if( false == refHoliday.IsValidDatabaseDate( nDBLoadDate ) )	///< 检查本地落盘数据是否有效
+				{
+					m_mapTableID.clear();
+					DataNodeService::GetSerivceObj().WriteWarning( "DatabaseIO::RecoverDatabase() : invalid dump file, file date = %d", nDBLoadDate );
+					return -2000;
+				}
 
 				for( unsigned int n = 0; n < nTableCount; n++ )
 				{
