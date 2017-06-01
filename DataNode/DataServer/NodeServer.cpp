@@ -1,3 +1,4 @@
+#pragma warning(disable:4996)
 #include <time.h>
 #include "../targetver.h"
 #include <exception>
@@ -175,11 +176,11 @@ int DataIOEngine::RemoveCodeExpiredInDatabase()
 		{
 			if( (nErrorCode=m_oDatabaseIO.DeleteRecord( nDataID, (char*)(it->c_str()), 32 )) < 0 )
 			{
-				DataNodeService::GetSerivceObj().WriteWarning( "DataIOEngine::RemoveCodeExpiredInDatabase() : failed delete code[] from table [%d] ", it->c_str(), nDataID );
+				DataNodeService::GetSerivceObj().WriteWarning( "DataIOEngine::RemoveCodeExpiredInDatabase() : failed delete code[] from table [%s] ", it->c_str(), nDataID );
 				return -1000 - nErrorCode;
 			}
 
-			DataNodeService::GetSerivceObj().WriteInfo( "DataIOEngine::RemoveCodeExpiredInDatabase() : DataType=%d, Code[%d] has erased!", nDataID, it->c_str() );
+			DataNodeService::GetSerivceObj().WriteInfo( "DataIOEngine::RemoveCodeExpiredInDatabase() : DataType=%d, Code[%s] has erased!", nDataID, it->c_str() );
 
 			nAffectNum++;
 		}

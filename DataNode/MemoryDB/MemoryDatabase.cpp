@@ -24,7 +24,7 @@ bool DatabaseIO::IsBuilded()
 	return m_bBuilded;
 }
 
-unsigned int DatabaseIO::GetLastUpdateTime()
+time_t DatabaseIO::GetLastUpdateTime()
 {
 	return m_nUpdateTimeT;
 }
@@ -217,6 +217,7 @@ int DatabaseIO::RecoverDatabase()
 		if( m_pIDatabase )
 		{
 			DataNodeService::GetSerivceObj().WriteInfo( "DatabaseIO::RecoverDatabase() : recovering ......" );
+			m_mapTableID.clear();
 			m_nUpdateTimeT = ::time( NULL );
 
 			if( 0 != m_pIDatabase->DeleteTables() )
@@ -227,7 +228,23 @@ int DatabaseIO::RecoverDatabase()
 
 			if( true == m_pIDatabase->LoadFromDisk( Configuration::GetConfigObj().GetRecoveryFolderPath().c_str() ) )
 			{
-				DataNodeService::GetSerivceObj().WriteInfo( "DatabaseIO::RecoverDatabase() : recovered ......" );
+				unsigned int	nKeyLen = 0;
+				unsigned int	nDataID = 0;
+				unsigned int	nRecordLen = 0;
+				unsigned int	nTableCount = m_pIDatabase->GetTableCount();
+
+				for( unsigned int n = 0; n < nTableCount; n++ )
+				{
+					if( false == m_pIDatabase->GetTableMetaByPos( n, nDataID, nRecordLen, nKeyLen ) )
+					{
+						DataNodeService::GetSerivceObj().WriteWarning( "DatabaseIO::RecoverDatabase() : cannot fetch table with index (%u)", n );
+						return -1000 - n;
+					}
+
+					m_mapTableID.insert( std::make_pair(nDataID, nRecordLen) );		///< 数据表ID集合，添加
+				}
+
+				DataNodeService::GetSerivceObj().WriteInfo( "DatabaseIO::RecoverDatabase() : recovered, table count=%d ......", nTableCount );
 				return 0;
 			}
 			else
@@ -237,7 +254,9 @@ int DatabaseIO::RecoverDatabase()
 			}
 		}
 
-		return 0;
+		DataNodeService::GetSerivceObj().WriteWarning( "DatabaseIO::RecoverDatabase() : invalid database pointer(NULL)" );
+
+		return -3;
 	}
 	catch( std::exception& err )
 	{

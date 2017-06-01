@@ -164,6 +164,23 @@ public:
 	 * @brief						取得数据更新自增流水号
 	 */
 	virtual unsigned __int64		GetUpdateSequence() = 0;
+
+	/**
+	 * @brief						取得数据表的数量
+	 * @return						返回统计值
+	 */
+	virtual unsigned int			GetTableCount() = 0;
+
+	/**
+	 * @brief						根据位置索引取得数据表元信息
+	 * @param[in]					想获取数据表的位置
+	 * @param[out]					nDataID				数据表ID
+	 * @param[out]					nRecordLen			数据表记录长度
+	 * @param[out]					nKeyStrLen			数据主键最大长度
+	 * @return						true				获取成功
+									false				获取出错
+	 */
+	virtual bool					GetTableMetaByPos( unsigned int nPos, unsigned int& nDataID, unsigned int& nRecordLen, unsigned int& nKeyStrLen ) = 0;
 };
 
 

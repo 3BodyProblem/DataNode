@@ -9,18 +9,21 @@ int _tmain( int argc, _TCHAR* argv[] )
 {
 	int		nErrorCode = 0;
 
-	if( argc <= 1 )
+	if( argc > 1 )
 	{
-		::printf( "--------------- [Service] ------------------------\n" );
-		nErrorCode = RunNodeServer();
-		::printf( "--------------- [DONE! %d] ------------------------\n", nErrorCode );
+		if( 0 == ::strncmp( argv[1], "test", 4 ) )
+		{
+			::printf( "--------------- [UnitTest] ------------------------\n" );
+			ExecuteUnitTest();
+			::printf( "--------------- [DONE!] ---------------------------\n" );
+
+			return nErrorCode;
+		}
 	}
-	else
-	{
-		::printf( "--------------- [UnitTest] ------------------------\n" );
-		ExecuteUnitTest();
-		::printf( "--------------- [DONE!] ---------------------------\n" );
-	}
+
+	::printf( "--------------- [Service] ------------------------\n" );
+	nErrorCode = RunNodeServer();
+	::printf( "--------------- [DONE! %d] ------------------------\n", nErrorCode );
 
 	return nErrorCode;
 }
