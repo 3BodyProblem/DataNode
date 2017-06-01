@@ -166,7 +166,7 @@ bool PackagesBuffer::IsEmpty()
 
 
 QuotationSynchronizer::QuotationSynchronizer()
- : m_pSendBuffer( NULL ), m_nMaxSendBufSize( 0 )
+ : m_pSendBuffer( NULL ), m_nMaxSendBufSize( 0 ), m_nLinkCount( 0 )
 {
 }
 
@@ -247,16 +247,21 @@ int QuotationSynchronizer::PutMessage( unsigned short nMsgID, const char *pData,
 	return nErrorCode;
 }
 
+void QuotationSynchronizer::SetLinkNoList( void* pListPtr, unsigned int nLinkCount )
+{
+	CriticalLock		guard( m_oLock );
+
+	::memcpy( m_vctLinkNo+0, pListPtr, nLinkCount );
+	m_nLinkCount = nLinkCount;
+}
+
 void QuotationSynchronizer::FlushQuotation2Client()
 {
-	LinkIDRegister::LINKID_VECTOR	vctLinkID;
-	unsigned int				nLinkCount = LinkIDRegister::GetSetObject().FetchLinkIDList( vctLinkID+0, 32 );
-
-	if( false == m_oDataBuffer.IsEmpty() && nLinkCount > 0 )
+	if( false == m_oDataBuffer.IsEmpty() && m_nLinkCount > 0 )
 	{
-		unsigned int	nDataID = 0;
+		CriticalLock	guard( m_oLock );
 		int				nDataSize = m_oDataBuffer.GetOnePkg( m_pSendBuffer, m_nMaxSendBufSize );
-		DataNodeService::GetSerivceObj().PushData( vctLinkID+0, nLinkCount, 1000, 0, m_pSendBuffer, nDataSize );
+		DataNodeService::GetSerivceObj().PushData( m_vctLinkNo+0, m_nLinkCount, 1000, 0, m_pSendBuffer, nDataSize );
 	}
 }
 

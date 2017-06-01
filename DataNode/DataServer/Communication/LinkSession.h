@@ -18,18 +18,10 @@
  */
 class LinkIDRegister
 {
-private:
+public:
 	LinkIDRegister();
 
 public:
-	#define						MAX_LINKID_NUM			32
-	typedef						unsigned int			LINKID_VECTOR[MAX_LINKID_NUM];
-
-	/**
-	 * @brief					获取对单键的引用
-	 */
-	static LinkIDRegister&		GetSetObject();
-
 	/**
 	 * @brief					添加一个新到的链路ID
 	 * @detail					只需要添加新ID，不需要关心是否有重复，内部有作防预性判断
@@ -72,8 +64,6 @@ private:
  * @detail						通讯链路会话集合事件回调逻辑
 								+
 								实时行情推送业务
-								+
-								初始化行情推送业务
  * @author						barry
  */
 class Spi4LinkCollection : public MServicePlug_Spi
@@ -81,6 +71,41 @@ class Spi4LinkCollection : public MServicePlug_Spi
 public:///< 构造和初始化
 	Spi4LinkCollection();
 	~Spi4LinkCollection();
+
+	/**
+	 * @brief					初始化
+	 * @return					!= 0				失败
+	 */
+	int							Instance( DatabaseIO& refDbIO );
+
+	/**
+	 * @brief					释放资源
+	 */
+	void						Release();
+
+public:///< 行情推送接口
+	/**
+	 * @brief					将实时推送的数据放进缓存
+	 */
+	void						PushQuotation( unsigned short usMessageNo, unsigned short usFunctionID, const char* lpInBuf, unsigned int uiInSize, bool bPushFlag, unsigned __int64 nSerialNo );
+
+protected:///< 功能成员对象相关
+	LinkIDRegister				m_oLinkNoTable;			///< 链路号集合
+	DatabaseIO*					m_pDatabase;			///< 数据操作对象指针
+	QuotationSynchronizer		m_oQuotationBuffer;		///< 实时行情推送缓存（带推送线程)
+};
+
+
+/**
+ * @class						SessionCollection
+ * @brief						继承了实时行情推送类 + 并封装了初始化行情推送
+ * @author						barry
+ */
+class SessionCollection : public Spi4LinkCollection
+{
+public:
+	SessionCollection();
+	~SessionCollection();
 
 	/**
 	 * @brief					初始化
@@ -103,11 +128,6 @@ public:///< 初始化行情推送接口
 	int							FlushImageData2NewSessions( unsigned __int64 nSerialNo = 0 );
 
 	/**
-	 * @brief					将实时推送的数据放进缓存
-	 */
-	void						PushQuotation( unsigned short usMessageNo, unsigned short usFunctionID, const char* lpInBuf, unsigned int uiInSize, bool bPushFlag, unsigned __int64 nSerialNo );
-
-	/**
 	 * @brief					获取内存数据库某数据表的的所有商品主键
 	 * @param[in]				nDataID					数据表ID
 	 * @param[in]				nRecordLen				数据表对应数据包长度
@@ -118,6 +138,15 @@ public:///< 初始化行情推送接口
 	int							QueryCodeListInDatabase( unsigned int nDataID, unsigned int nRecordLen, std::set<std::string>& setCode );
 
 protected:///< 网络框架事件回调
+	/**
+	 * @brief					新连接到达响应函数，返回false表示不接受该连接，服务器会断开该连接
+	 * @param[in]				uiLinkNo				链路描述号
+	 * @param[in]				uiIpAddr				ip
+	 * @param[in]				uiPort					端口
+	 * @return					false					返回false表示不接受该连接，服务器会断开该连接
+	 */
+	virtual bool				OnNewLink( unsigned int uiLinkNo, unsigned int uiIpAddr, unsigned int uiPort );
+
 	/**
 	 * @brief					本进程状态响应函数，报告状态时回调
 	 * @param[out]				szStatusInfo			服务器状态信息（字符串形式），服务器状态信息可填写最大控件
@@ -139,15 +168,6 @@ protected:///< 网络框架事件回调
 	virtual bool				OnCommand( const char* szSrvUnitName, const char* szCommand, char* szResult, unsigned int uiSize );
 
 	/**
-	 * @brief					新连接到达响应函数，返回false表示不接受该连接，服务器会断开该连接
-	 * @param[in]				uiLinkNo				链路描述号
-	 * @param[in]				uiIpAddr				ip
-	 * @param[in]				uiPort					端口
-	 * @return					false					返回false表示不接受该连接，服务器会断开该连接
-	 */
-	virtual bool				OnNewLink( unsigned int uiLinkNo, unsigned int uiIpAddr, unsigned int uiPort );
-
-	/**
 	 * @brief					连接关闭响应函数
 	 * @param[in]				uiLinkNo				链路描述号
 	 * @param[in]				iCloseType				关闭类型: 0 结束通讯服务 1 WSARECV发生错误 2 服务端主动关闭 3 客户端主动关闭 4 处理数据错误而关闭
@@ -167,9 +187,6 @@ protected:///< 网络框架事件回调
 	 */
 	virtual bool				OnRecvData( unsigned int uiLinkNo, unsigned short usMessageNo, unsigned short usFunctionID, bool bErrorFlag, const char* lpData, unsigned int uiSize, unsigned int& uiAddtionData );
 
-protected:///< 功能成员对象相关
-	DatabaseIO*					m_pDatabase;			///< 数据操作对象指针
-	QuotationSynchronizer		m_oQuotationBuffer;		///< 实时行情推送缓存
 protected:///< 新到达的链路初始化逻辑相关
 	CriticalObject				m_oLock;				///< 初始化数据推送缓存锁
 	std::set<unsigned int>		m_setNewReqLinkID;		///< 待初始化链路ID集合
@@ -181,8 +198,10 @@ protected:///< 新到达的链路初始化逻辑相关
 
 
 
-
 #endif
+
+
+
 
 
 

@@ -9,12 +9,6 @@ LinkIDRegister::LinkIDRegister()
  : nLinkIDCount( 0 )
 {}
 
-LinkIDRegister& LinkIDRegister::GetSetObject()
-{
-	static	LinkIDRegister	obj;
-	return obj;
-}
-
 int LinkIDRegister::NewLinkID( unsigned int nNewLinkID )
 {
 	CriticalLock	guard( m_oLock );
@@ -69,7 +63,7 @@ unsigned int LinkIDRegister::FetchLinkIDList( unsigned int * lpLinkNoArray, unsi
 
 
 Spi4LinkCollection::Spi4LinkCollection()
- : m_pDatabase( NULL ), m_pSendBuffer( NULL ), m_nMaxSendBufSize( 0 )
+ : m_pDatabase( NULL )
 {
 }
 
@@ -83,24 +77,16 @@ int Spi4LinkCollection::Instance( DatabaseIO& refDbIO )
 	DataNodeService::GetSerivceObj().WriteInfo( "Spi4LinkCollection::Instance() : initializing ......" );
 
 	Release();
-
-	if( NULL == (m_pSendBuffer = new char[MAX_IMAGE_BUFFER_SIZE]) )
-	{
-		DataNodeService::GetSerivceObj().WriteError( "Spi4LinkCollection::Instance() : failed 2 initialize send data buffer, size = %d", MAX_IMAGE_BUFFER_SIZE );
-		return -1;
-	}
-	m_nMaxSendBufSize = MAX_IMAGE_BUFFER_SIZE;
+	m_pDatabase = &refDbIO;
 
 	int		nErrCode = m_oQuotationBuffer.Initialize();
-
-	m_pDatabase = &refDbIO;
 	if( 0 == nErrCode )
 	{
 		DataNodeService::GetSerivceObj().WriteInfo( "Spi4LinkCollection::Instance() : initialized ......" );
 	}
 	else
 	{
-		DataNodeService::GetSerivceObj().WriteError( "Spi4LinkCollection::Instance() : failed 2 initialize ..." );
+		DataNodeService::GetSerivceObj().WriteError( "Spi4LinkCollection::Instance() : failed 2 initialize ..., errorcode=%d", nErrCode );
 		return nErrCode;
 	}
 
@@ -109,6 +95,42 @@ int Spi4LinkCollection::Instance( DatabaseIO& refDbIO )
 
 void Spi4LinkCollection::Release()
 {
+	m_oQuotationBuffer.Release();
+}
+
+void Spi4LinkCollection::PushQuotation( unsigned short usMessageNo, unsigned short usFunctionID, const char* lpInBuf, unsigned int uiInSize, bool bPushFlag, unsigned __int64 nSerialNo )
+{
+	m_oQuotationBuffer.PutMessage( usMessageNo, lpInBuf, uiInSize, nSerialNo );
+}
+
+
+SessionCollection::SessionCollection()
+ : m_pSendBuffer( NULL ), m_nMaxSendBufSize( 0 )
+{
+}
+
+SessionCollection::~SessionCollection()
+{
+}
+
+int SessionCollection::Instance( DatabaseIO& refDbIO )
+{
+	DataNodeService::GetSerivceObj().WriteInfo( "SessionCollection::Instance() : initializing ......" );
+
+	Release();
+
+	if( NULL == (m_pSendBuffer = new char[MAX_IMAGE_BUFFER_SIZE]) )
+	{
+		DataNodeService::GetSerivceObj().WriteError( "SessionCollection::Instance() : failed 2 initialize send data buffer, size = %d", MAX_IMAGE_BUFFER_SIZE );
+		return -1;
+	}
+	m_nMaxSendBufSize = MAX_IMAGE_BUFFER_SIZE;
+
+	return Spi4LinkCollection::Instance( refDbIO );
+}
+
+void SessionCollection::Release()
+{
 	if( NULL != m_pSendBuffer )
 	{
 		delete []m_pSendBuffer;
@@ -116,9 +138,11 @@ void Spi4LinkCollection::Release()
 	}
 
 	m_nMaxSendBufSize = 0;
+
+	Spi4LinkCollection::Release();
 }
 
-int Spi4LinkCollection::FlushImageData2NewSessions( unsigned __int64 nSerialNo )
+int SessionCollection::FlushImageData2NewSessions( unsigned __int64 nSerialNo )
 {
 	CriticalLock		lock( m_oLock );
 
@@ -140,27 +164,32 @@ int Spi4LinkCollection::FlushImageData2NewSessions( unsigned __int64 nSerialNo )
 
 			if( nDataLen < 0 )
 			{
-				DataNodeService::GetSerivceObj().WriteWarning( "ImageDataQuery::FlushImageData2NewSessions() : failed 2 fetch image of table, errorcode=%d", nDataLen );
+				DataNodeService::GetSerivceObj().WriteWarning( "SessionCollection::FlushImageData2NewSessions() : failed 2 fetch image of table, errorcode=%d", nDataLen );
 				return -1 * (n*100);
 			}
 
 			nDataLen = DataNodeService::GetSerivceObj().SendData( *it, 0, 0, m_pSendBuffer, nDataLen/*, nSerialNo*/ );
 			if( nDataLen < 0 )
 			{
-				DataNodeService::GetSerivceObj().WriteWarning( "ImageDataQuery::FlushImageData2NewSessions() : failed 2 send image data, errorcode=%d", nDataLen );
+				DataNodeService::GetSerivceObj().WriteWarning( "SessionCollection::FlushImageData2NewSessions() : failed 2 send image data, errorcode=%d", nDataLen );
 				return -2 * (n*100);
 			}
 		}
 
-		LinkIDRegister::GetSetObject().NewLinkID( *it );
+		m_oLinkNoTable.NewLinkID( *it );
 		m_setNewReqLinkID.erase( it++ );
 
+		LINKID_VECTOR	vctLinkNo = { 0 };
+		unsigned int	nLinkNoCount = m_oLinkNoTable.FetchLinkIDList( vctLinkNo+0, MAX_LINKID_NUM );
+		if( nLinkNoCount > 0 ) {
+			m_oQuotationBuffer.SetLinkNoList( vctLinkNo+0, nLinkNoCount );
+		}
 	}
 
 	return nReqLinkCount;
 }
 
-int Spi4LinkCollection::QueryCodeListInDatabase( unsigned int nDataID, unsigned int nRecordLen, std::set<std::string>& setCode )
+int SessionCollection::QueryCodeListInDatabase( unsigned int nDataID, unsigned int nRecordLen, std::set<std::string>& setCode )
 {
 	unsigned __int64	nSerialNoOfAnchor = 0;
 	CriticalLock		lock( m_oLock );
@@ -168,7 +197,7 @@ int Spi4LinkCollection::QueryCodeListInDatabase( unsigned int nDataID, unsigned 
 
 	setCode.clear();
 	if( nDataLen < 0 )	{
-		DataNodeService::GetSerivceObj().WriteWarning( "ImageDataQuery::QueryCodeListInDatabase() : failed 2 fetch image of table, errorcode=%d", nDataLen );
+		DataNodeService::GetSerivceObj().WriteWarning( "SessionCollection::QueryCodeListInDatabase() : failed 2 fetch image of table, errorcode=%d", nDataLen );
 		return -1;
 	}
 
@@ -180,12 +209,7 @@ int Spi4LinkCollection::QueryCodeListInDatabase( unsigned int nDataID, unsigned 
 	return setCode.size();
 }
 
-void Spi4LinkCollection::PushQuotation( unsigned short usMessageNo, unsigned short usFunctionID, const char* lpInBuf, unsigned int uiInSize, bool bPushFlag, unsigned __int64 nSerialNo )
-{
-	m_oQuotationBuffer.PutMessage( usMessageNo, lpInBuf, uiInSize, nSerialNo );
-}
-
-void Spi4LinkCollection::OnReportStatus( char* szStatusInfo, unsigned int uiSize )
+void SessionCollection::OnReportStatus( char* szStatusInfo, unsigned int uiSize )
 {
 	if( NULL == m_pDatabase ) {
 		return;
@@ -201,11 +225,29 @@ void Spi4LinkCollection::OnReportStatus( char* szStatusInfo, unsigned int uiSize
 		, DataNodeService::GetSerivceObj().OnInquireStatus()==true?"true":"false"
 		, (float)(nModuleVersion>>16)/100.f, nModuleVersion&0xFF
 		, Configuration::GetConfigObj().GetTestFlag()==true?"ÊÇ":"·ñ"
-		, LinkIDRegister::GetSetObject().GetLinkCount(), m_nReqLinkCount
+		, m_oLinkNoTable.GetLinkCount(), m_nReqLinkCount
 		, m_pDatabase->GetTableCount(), nUpdateInterval, dFreePer );
 }
 
-bool Spi4LinkCollection::OnCommand( const char* szSrvUnitName, const char* szCommand, char* szResult, unsigned int uiSize )
+bool SessionCollection::OnNewLink( unsigned int uiLinkNo, unsigned int uiIpAddr, unsigned int uiPort )
+{
+	CriticalLock		lock( m_oLock );
+
+	if( m_setNewReqLinkID.find( uiLinkNo ) == m_setNewReqLinkID.end() )
+	{
+		DataNodeService::GetSerivceObj().WriteInfo( "SessionCollection::AddNewReqSession() : [WARNING] duplicate link number & new link will be disconnected..." );
+
+		return false;
+	}
+
+	m_setNewReqLinkID.insert( uiLinkNo );
+	m_nReqLinkCount = m_setNewReqLinkID.size();
+
+	return true;
+}
+
+
+bool SessionCollection::OnCommand( const char* szSrvUnitName, const char* szCommand, char* szResult, unsigned int uiSize )
 {
 	int							nArgc = 32;
 	char*						pArgv[32] = { 0 };
@@ -223,33 +265,32 @@ bool Spi4LinkCollection::OnCommand( const char* szSrvUnitName, const char* szCom
 	return objEcho4CTPDL( pArgv, nArgc, szResult, uiSize );
 }
 
-bool Spi4LinkCollection::OnNewLink( unsigned int uiLinkNo, unsigned int uiIpAddr, unsigned int uiPort )
+void SessionCollection::OnCloseLink( unsigned int uiLinkNo, int iCloseType )
 {
+	m_oLinkNoTable.RemoveLinkID( uiLinkNo );
+
 	CriticalLock		lock( m_oLock );
+	LINKID_VECTOR		vctLinkNo = { 0 };
+	unsigned int		nLinkNoCount = m_oLinkNoTable.FetchLinkIDList( vctLinkNo+0, MAX_LINKID_NUM );
 
-	if( m_setNewReqLinkID.find( uiLinkNo ) == m_setNewReqLinkID.end() )
+	if( nLinkNoCount > 0 )
 	{
-		DataNodeService::GetSerivceObj().WriteInfo( "Spi4LinkCollection::AddNewReqSession() : [WARNING] duplicate link number & new link will be disconnected..." );
-
-		return false;
+		m_oQuotationBuffer.SetLinkNoList( vctLinkNo+0, nLinkNoCount );
 	}
-
-	m_setNewReqLinkID.insert( uiLinkNo );
-	m_nReqLinkCount = m_setNewReqLinkID.size();
-
-	return true;
 }
 
-void Spi4LinkCollection::OnCloseLink( unsigned int uiLinkNo, int iCloseType )
-{
-	LinkIDRegister::GetSetObject().RemoveLinkID( uiLinkNo );
-}
-
-bool Spi4LinkCollection::OnRecvData( unsigned int uiLinkNo, unsigned short usMessageNo, unsigned short usFunctionID, bool bErrorFlag, const char* lpData, unsigned int uiSize, unsigned int& uiAddtionData )
+bool SessionCollection::OnRecvData( unsigned int uiLinkNo, unsigned short usMessageNo, unsigned short usFunctionID, bool bErrorFlag, const char* lpData, unsigned int uiSize, unsigned int& uiAddtionData )
 {
 
 	return false;
 }
+
+
+
+
+
+
+
 
 
 

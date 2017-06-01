@@ -39,6 +39,10 @@ typedef struct
 #pragma pack()
 
 
+#define						MAX_LINKID_NUM			32
+typedef						unsigned int			LINKID_VECTOR[MAX_LINKID_NUM];
+
+
 /**
  * @class							PackagesBuffer
  * @brief							数据包队列缓存
@@ -152,8 +156,8 @@ public:
 
 	/**
 	 * @brief					从缓存中取数据 & 推送给下级客户端
-	 * @param[in]				lpLinkNoSet				链路号队列地址，需要被广播的所有链路的ID集合
-	 * @param[in]				uiLinkNoCount			链路号队列长度
+	 * @param[in]				arrayLinkNo				链路号队列地址，需要被广播的所有链路的ID集合
+	 * @param[in]				nLinkCount				链路号队列长度
 	 */
 	void						FlushQuotation2Client();
 
@@ -162,12 +166,21 @@ public:
 	 */
 	float						GetFreePercent();
 
+	/**
+	 * @brief					设置当前链路号到列表
+	 */
+	void						SetLinkNoList( void* pListPtr, unsigned int nLinkCount );
+
 protected:
 	WaitEvent					m_oWaitEvent;			///< 条件等待
 	PackagesBuffer				m_oDataBuffer;			///< 数据缓存队列
 protected:
 	char*						m_pSendBuffer;			///< 数据发送缓存
 	unsigned int				m_nMaxSendBufSize;		///< 发送缓存最大长度
+protected:
+	CriticalObject				m_oLock;				///< 锁
+	LINKID_VECTOR				m_vctLinkNo;			///< 发送链路表
+	unsigned int				m_nLinkCount;			///< 发送链路表长度
 };
 
 

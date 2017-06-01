@@ -126,7 +126,7 @@ protected:///< 逻辑数据成员
 	CriticalObject			m_oCodeMapLock;					///< CodeMap锁
 	MAP_TABLEID_CODES		m_mapID2Codes;					///< 记录各消息ID下的关联codes
 	InitializerFlag			m_oInitFlag;					///< 重新初始化标识
-	Spi4LinkCollection		m_oLinkSessions;				///< 下级的链路会话
+	SessionCollection		m_oLinkSessions;				///< 下级的链路会话
 
 protected:///< 挂载的相关功能插件
 	DatabaseIO				m_oDatabaseIO;					///< 内存数据插件管理
