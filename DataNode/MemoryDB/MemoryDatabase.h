@@ -67,6 +67,7 @@ public:
 
 	/**
 	 * @brief						判断数据表是否已经建立完成
+	 * @note						包括从本地加载，和从行情中加载的都属于true的情况
 	 */
 	bool							IsBuilded();
 

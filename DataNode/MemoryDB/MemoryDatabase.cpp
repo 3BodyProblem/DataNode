@@ -223,6 +223,7 @@ int DatabaseIO::RecoverDatabase( MkHoliday& refHoliday )
 			m_mapTableID.clear();
 			m_nUpdateTimeT = ::time( NULL );
 
+			m_bBuilded = false;
 			if( 0 != m_pIDatabase->DeleteTables() )
 			{
 				DataNodeService::GetSerivceObj().WriteWarning( "DatabaseIO::RecoverDatabase() : failed 2 clean mem-database" );
@@ -253,6 +254,7 @@ int DatabaseIO::RecoverDatabase( MkHoliday& refHoliday )
 					m_mapTableID.insert( std::make_pair(nDataID, nRecordLen) );		///< 数据表ID集合，添加
 				}
 
+				m_bBuilded = true;
 				DataNodeService::GetSerivceObj().WriteInfo( "DatabaseIO::RecoverDatabase() : recovered [FileDate=%d], table count=%d ......", nDBLoadDate, nTableCount );
 				return 0;
 			}

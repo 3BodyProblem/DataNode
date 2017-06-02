@@ -32,6 +32,7 @@ int DataIOEngine::Initialize( const std::string& sDataCollectorPluginPath, const
 		return nErrorCode;
 	}
 
+	m_oDatabaseIO.RecoverDatabase( m_oInitFlag.GetHoliday() );
 	if( 0 != (nErrorCode = m_oDataCollector.Initialize( this )) )
 	{
 		DataNodeService::GetSerivceObj().WriteError( "DataIOEngine::Initialize() : failed 2 initialize data collector plugin, errorcode=%d", nErrorCode );
@@ -395,12 +396,13 @@ int DataNodeService::OnIdle()
 	static time_t		s_nLastDumpTime = ::time( NULL );
 	bool				bInitPoint = false;
 	unsigned int		nDumpInterval = Configuration::GetConfigObj().GetDumpInterval();
+	int					nPertiodIndex = m_oInitFlag.InTradingPeriod( bInitPoint );
 
 	///< 检查是否有新的链接到来请求初始化行情数据推送的
 	m_oLinkSessions.FlushImageData2NewSessions( 0 );///< 对新到达的链接，推送"全量"初始化快照行情
 
 	///< 在交易时段，进行内存插件中的行情数据落盘
-	if( 0 <= m_oInitFlag.InTradingPeriod( bInitPoint ) && true == m_oDatabaseIO.IsBuilded() )
+	if( 0 <= nPertiodIndex && true == m_oDatabaseIO.IsBuilded() )
 	{
 		int		nNowTime = (int)::time( NULL );
 
@@ -411,14 +413,28 @@ int DataNodeService::OnIdle()
 		}
 	}
 
+	///< 非交易时段，停止数据采集模块的工作
+	if( nPertiodIndex < 0 )
+	{
+		m_oDataCollector.HaltDataCollector();
+	}
+
 	return 0;
 }
 
 bool DataNodeService::OnInquireStatus()
 {
+	bool				bInitPoint = false;
 	bool				bDataBuilded = m_oDatabaseIO.IsBuilded();
 	enum E_SS_Status	eStatus = m_oDataCollector.InquireDataCollectorStatus();
 
+	///< 非交易时段的工作状态
+	if( m_oInitFlag.InTradingPeriod( bInitPoint ) < 0 )
+	{
+		return  bDataBuilded;
+	}
+
+	///< 交易时段的工作状态
 	if( ET_SS_WORKING == eStatus && true == bDataBuilded )
 	{
 		return true;

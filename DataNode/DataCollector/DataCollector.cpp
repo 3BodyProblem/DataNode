@@ -28,7 +28,7 @@ bool CollectorStatus::Set( enum E_SS_Status eNewStatus )
 DataCollector::DataCollector()
  : m_pFuncInitialize( NULL ), m_pFuncRelease( NULL )
  , m_pFuncRecoverQuotation( NULL ), m_pFuncGetStatus( NULL )
- , m_nMarketID( 0 )
+ , m_nMarketID( 0 ), m_bActivated( false )
 {
 }
 
@@ -87,6 +87,7 @@ void DataCollector::Release()
 		m_pFuncHaltQuotation = NULL;
 		m_pFuncRelease();
 		m_pFuncRelease = NULL;
+		m_bActivated = false;
 		DataNodeService::GetSerivceObj().WriteInfo( "DataCollector::Release() : memory database plugin is released ......" );
 	}
 
@@ -98,11 +99,12 @@ void DataCollector::Release()
 
 void DataCollector::HaltDataCollector()
 {
-	if( NULL != m_pFuncRelease )
+	if( NULL != m_pFuncRelease && true == m_bActivated )
 	{
 		DataNodeService::GetSerivceObj().WriteInfo( "DataCollector::HaltDataCollector() : [NOTICE] data collector is Halting ......" );
 
 		m_pFuncHaltQuotation();
+		m_bActivated = false;
 
 		DataNodeService::GetSerivceObj().WriteInfo( "DataCollector::HaltDataCollector() : [NOTICE] data collector Halted ......" );
 	}
@@ -126,6 +128,7 @@ int DataCollector::RecoverDataCollector()
 		return nErrorCode;
 	}
 
+	m_bActivated = true;
 	DataNodeService::GetSerivceObj().WriteInfo( "DataCollector::RecoverDataCollector() : data collector recovered ......" );
 
 	return nErrorCode;
