@@ -38,6 +38,11 @@ public:
 	 */
 	void							Release();
 
+	/**
+	 * @brief						单元测试
+	 */
+	void							UnitTest();
+
 public:
 	/**
 	 * @brief						取得存在的数据表id列表

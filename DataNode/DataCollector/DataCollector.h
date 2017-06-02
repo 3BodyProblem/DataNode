@@ -55,11 +55,6 @@ public:
 	 */
 	void					Release();
 
-	/**
-	 * @brief				获取市场编号
-	 */
-	unsigned int			GetMarketID();
-
 public:///< 数据采集模块事件定义
 	/**
  	 * @brief				初始化/重新初始化回调
@@ -78,6 +73,11 @@ public:///< 数据采集模块事件定义
 	 * @biref				取得当前数据采集模块状态
 	 */
 	enum E_SS_Status		InquireDataCollectorStatus();
+
+	/**
+	 * @brief				获取市场编号
+	 */
+	unsigned int			GetMarketID();
 
 private:
 	CollectorStatus			m_oCollectorStatus;				///< 数据采集模块的状态

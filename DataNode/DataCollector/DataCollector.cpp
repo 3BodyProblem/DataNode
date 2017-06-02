@@ -43,7 +43,8 @@ int DataCollector::Initialize( I_DataHandle* pIDataCallBack )
 
 	DataNodeService::GetSerivceObj().WriteInfo( "DataCollector::Initialize() : initializing data collector plugin ......" );
 
-	int			nErrorCode = m_oDllPlugin.LoadDll( Configuration::GetConfigObj().GetDataCollectorPluginPath() );
+	std::string		sModulePath = GetModulePath(NULL) + Configuration::GetConfigObj().GetDataCollectorPluginPath();
+	int				nErrorCode = m_oDllPlugin.LoadDll( sModulePath );
 
 	if( 0 != nErrorCode )
 	{

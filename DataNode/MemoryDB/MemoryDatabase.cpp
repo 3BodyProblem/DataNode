@@ -6,6 +6,7 @@
 
 
 typedef IDBFactory& __stdcall		TFunc_GetFactoryObject();
+typedef void						(__stdcall *T_Func_DBUnitTest)();
 
 
 DatabaseIO::DatabaseIO()
@@ -309,6 +310,23 @@ int DatabaseIO::BackupDatabase()
 	}
 
 	return -1;
+}
+
+void DatabaseIO::UnitTest()
+{
+	T_Func_DBUnitTest		funcUnitTest = NULL;
+	int						nErrorCode = m_oDllPlugin.LoadDll( Configuration::GetConfigObj().GetMemPluginPath() );
+
+	if( 0 != nErrorCode )
+	{
+		::printf( "DatabaseIO::Initialize() : failed 2 load memoryplugin module, errorcode=%d", nErrorCode );
+		return;
+	}
+
+	funcUnitTest = (T_Func_DBUnitTest)m_oDllPlugin.GetDllFunction( "ExecuteUnitTest" );
+	funcUnitTest();
+
+	m_oDllPlugin.CloseDll();
 }
 
 int DatabaseIO::Initialize()
