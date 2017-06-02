@@ -8,6 +8,7 @@
 #include "../ServiceIO/MServicePlug.h"
 #include "../ServiceIO/MServicePlug.hpp"
 #include "../../MemoryDB/MemoryDatabase.h"
+#include "../../DataCollector/DataCollector.h"
 
 
 /**
@@ -100,7 +101,7 @@ protected:///< 功能成员对象相关
 class SessionCollection : public RealTimeQuote4LinksSpi
 {
 public:
-	SessionCollection();
+	SessionCollection( DataCollector& oDataCollector );
 	~SessionCollection();
 
 	/**
@@ -184,6 +185,7 @@ protected:///< 网络框架事件回调
 	virtual bool				OnRecvData( unsigned int uiLinkNo, unsigned short usMessageNo, unsigned short usFunctionID, bool bErrorFlag, const char* lpData, unsigned int uiSize, unsigned int& uiAddtionData );
 
 protected:///< 新到达的链路初始化逻辑相关
+	DataCollector&				m_refDataCollector;		///< 行情采集模块接口
 	DatabaseIO*					m_pDatabase;			///< 数据操作对象指针
 	CriticalObject				m_oLock;				///< 初始化数据推送缓存锁
 	std::set<unsigned int>		m_setNewReqLinkID;		///< 待初始化链路ID集合

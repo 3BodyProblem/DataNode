@@ -102,8 +102,8 @@ void RealTimeQuote4LinksSpi::PushQuotation( unsigned short usMessageNo, unsigned
 }
 
 
-SessionCollection::SessionCollection()
- : m_pSendBuffer( NULL ), m_pDatabase( NULL )
+SessionCollection::SessionCollection( DataCollector& oDataCollector )
+ : m_pSendBuffer( NULL ), m_pDatabase( NULL ), m_refDataCollector( oDataCollector )
 {
 }
 
@@ -246,18 +246,34 @@ bool SessionCollection::OnCommand( const char* szSrvUnitName, const char* szComm
 {
 	int							nArgc = 32;
 	char*						pArgv[32] = { 0 };
+	unsigned int				nMarketID = m_refDataCollector.GetMarketID();
+	static ModuleControl		objControl4Module;		///< 模块控制类，如重启，补数据等
+	static CTP_DL_Echo			objEcho4CTPDL;			///< 商品期货期权(大连)
 
 	///< 拆解出关键字和参数字符
 	if( false == SplitString( pArgv, nArgc, szCommand ) )
 	{
-		::sprintf( szResult, "RealTimeQuote4LinksSpi::OnCommand : [ERR] parse command string failed" );
+		::sprintf( szResult, "RealTimeQuote4LinksSpi::OnCommand : [ERR] parse command string failed, [%s]", szCommand );
 		return true;
 	}
 
-	CTP_DL_Echo					objEcho4CTPDL;
+	///< 先判断是否为系统控制命令，如果是就执行，否则继续往下执行，判断是否为回显命令
+	if( true == objControl4Module( pArgv, nArgc, szResult, uiSize ) )
+	{
+		return true;
+	}
 
-	///< 执行回显命令串
-	return objEcho4CTPDL( pArgv, nArgc, szResult, uiSize );
+	///< 根据挂载的数据采集器对应的市场ID，使用对应的数据监控
+	switch( nMarketID )
+	{
+	case 14:
+		return objEcho4CTPDL( pArgv, nArgc, szResult, uiSize );	///< 执行回显命令串
+	default:
+		::sprintf( szResult, "不能识别的市场ID [%u]", nMarketID );
+		break;
+	}
+
+	return true;
 }
 
 void SessionCollection::OnCloseLink( unsigned int uiLinkNo, int iCloseType )

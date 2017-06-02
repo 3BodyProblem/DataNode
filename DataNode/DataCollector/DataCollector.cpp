@@ -54,10 +54,11 @@ int DataCollector::Initialize( I_DataHandle* pIDataCallBack )
 	m_pFuncInitialize = (T_Func_Initialize)m_oDllPlugin.GetDllFunction( "Initialize" );
 	m_pFuncRelease = (T_Func_Release)m_oDllPlugin.GetDllFunction( "Release" );
 	m_pFuncRecoverQuotation = (T_Func_RecoverQuotation)m_oDllPlugin.GetDllFunction( "RecoverQuotation" );
+	m_pFuncHaltQuotation = (T_Func_HaltQuotation)m_oDllPlugin.GetDllFunction( "HaltQuotation" );
 	m_pFuncGetStatus = (T_Func_GetStatus)m_oDllPlugin.GetDllFunction( "GetStatus" );
 	m_pFuncGetMarketID = (T_Func_GetMarketID)m_oDllPlugin.GetDllFunction( "GetMarketID" );
 
-	if( NULL == m_pFuncInitialize || NULL == m_pFuncRelease || NULL == m_pFuncRecoverQuotation || NULL == m_pFuncGetStatus || NULL == m_pFuncGetMarketID )
+	if( NULL == m_pFuncInitialize || NULL == m_pFuncRelease || NULL == m_pFuncRecoverQuotation || NULL == m_pFuncGetStatus || NULL == m_pFuncGetMarketID || NULL == m_pFuncHaltQuotation )
 	{
 		DataNodeService::GetSerivceObj().WriteError( "DataCollector::Initialize() : invalid fuction pointer(NULL)" );
 		return -10;
@@ -81,6 +82,8 @@ void DataCollector::Release()
 	if( NULL != m_pFuncRelease )
 	{
 		DataNodeService::GetSerivceObj().WriteInfo( "DataCollector::Release() : releasing memory database plugin ......" );
+		m_pFuncHaltQuotation();
+		m_pFuncHaltQuotation = NULL;
 		m_pFuncRelease();
 		m_pFuncRelease = NULL;
 		DataNodeService::GetSerivceObj().WriteInfo( "DataCollector::Release() : memory database plugin is released ......" );
@@ -90,6 +93,18 @@ void DataCollector::Release()
 	m_pFuncInitialize = NULL;
 	m_pFuncRecoverQuotation = NULL;
 	m_oDllPlugin.CloseDll();
+}
+
+void DataCollector::HaltDataCollector()
+{
+	if( NULL != m_pFuncRelease )
+	{
+		DataNodeService::GetSerivceObj().WriteInfo( "DataCollector::HaltDataCollector() : [NOTICE] data collector is Halting ......" );
+
+		m_pFuncHaltQuotation();
+
+		DataNodeService::GetSerivceObj().WriteInfo( "DataCollector::HaltDataCollector() : [NOTICE] data collector Halted ......" );
+	}
 }
 
 int DataCollector::RecoverDataCollector()
@@ -119,7 +134,6 @@ enum E_SS_Status DataCollector::InquireDataCollectorStatus()
 {
 	if( NULL == m_pFuncGetStatus )
 	{
-		DataNodeService::GetSerivceObj().WriteError( "DataCollector::InquireDataCollectorStatus() : invalid fuction pointer(NULL)" );
 		return ET_SS_UNACTIVE;
 	}
 

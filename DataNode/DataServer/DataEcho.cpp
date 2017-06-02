@@ -1,9 +1,8 @@
-#include "DataEcho.h"
-#include "NodeServer.h"
-
-
 #pragma warning(disable:4996)
 #pragma warning(disable:4244)
+#include "DataEcho.h"
+#include "NodeServer.h"
+#include "../Infrastructure/DateTime.h"
 
 
 ///< 字符串转小写
@@ -92,6 +91,36 @@ bool IDataEcho::operator()( char** pArgv, unsigned int nArgc, char* szResult, un
 
 	return ExcuteCommand( pArgv, nArgc, szResult, uiSize );
 }
+
+ModuleControl::ModuleControl()
+ : IDataEcho( "模块控制器" )
+{
+}
+
+bool ModuleControl::ExcuteCommand( char** pArgv, unsigned int nArgc, char* szResult, unsigned int uiSize )
+{
+	std::string		sCmd = Str2Lower( std::string( pArgv[0] ) );
+
+	if( sCmd == "help" )
+	{
+		::sprintf( szResult, "%s", "命令字说明：\nhelp	帮助命令。\nreload	重新初始化。" );
+		return true;
+	}
+	else if( sCmd == "reload" )
+	{
+		DataNodeService::GetSerivceObj().GetInitFlag().RedoInitialize();
+		::sprintf( szResult, "重新初始化命令已下发! [%u]", DateTime::Now().TimeToLong() );
+		return true;
+	}
+	else if( sCmd == "push" )
+	{
+		::sprintf( szResult, "数据已补发! [%u]", DateTime::Now().TimeToLong() );
+		return true;
+	}
+
+	return false;
+}
+
 
 CTP_DL_Echo::CTP_DL_Echo()
  : IDataEcho( "CTP_大连" )

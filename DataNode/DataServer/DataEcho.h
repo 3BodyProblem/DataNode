@@ -64,6 +64,30 @@ protected:
 
 /**
  * @class						CTP_DL_Echo
+ * @brief						控制命令执行类
+ * @date						2017/5/19
+ * @author						barry
+ */
+class ModuleControl : public IDataEcho
+{
+public:
+	ModuleControl();
+
+protected:
+	/**
+	 * @brief					执行解析命令进行回显操作
+	 * @param[in]				pArgv					命令字数组地址
+	 * @param[in]				nArgc					命令字数组长度
+	 * @param[out]				szResult				回显缓存地址
+	 * @param[in]				uiSize					回显缓存长度
+	 * @return					true					执行成功
+	 */
+	virtual bool				ExcuteCommand( char** pArgv, unsigned int nArgc, char* szResult, unsigned int uiSize );
+};
+
+
+/**
+ * @class						CTP_DL_Echo
  * @brief						大连CTP行情回显命令类
  * @date						2017/5/19
  * @author						barry

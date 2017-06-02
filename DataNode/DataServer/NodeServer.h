@@ -54,51 +54,51 @@ public:///< I_DataHandle接口实现: 用于给数据采集模块提供行情数据的回调方法
 	/**
  	 * @brief				初始化性质的行情数据回调
 	 * @note				只是更新构造好行情数据的内存初始结构，不推送
-	 * @param[in]			nDataID				消息ID
-	 * @param[in]			pData				数据内容
-	 * @param[in]			nDataLen			长度
-	 * @param[in]			bLastFlag			是否所有初始化数据已经发完，本条为最后一条的，标识
-	 * @return				==0					成功
-							!=0					错误
+	 * @param[in]			nDataID						消息ID
+	 * @param[in]			pData						数据内容
+	 * @param[in]			nDataLen					长度
+	 * @param[in]			bLastFlag					是否所有初始化数据已经发完，本条为最后一条的，标识
+	 * @return				==0							成功
+							!=0							错误
 	 */
 	virtual int				OnImage( unsigned int nDataID, char* pData, unsigned int nDataLen, bool bLastFlag );
 
 	/**
 	 * @brief				实行行情数据回调
 	 * @note				更新行情内存块，并推送
-	 * @param[in]			nDataID				消息ID
-	 * @param[in]			pData				数据内容
-	 * @param[in]			nDataLen			长度
-	 * @param[in]			bPushFlag			推送标识
-	 * @return				==0					成功
-							!=0					错误
+	 * @param[in]			nDataID						消息ID
+	 * @param[in]			pData						数据内容
+	 * @param[in]			nDataLen					长度
+	 * @param[in]			bPushFlag					推送标识
+	 * @return				==0							成功
+							!=0							错误
 	 */
 	virtual int				OnData( unsigned int nDataID, char* pData, unsigned int nDataLen, bool bPushFlag );
 
 	/**
 	 * @brief				内存数据查询接口
-	 * @param[in]			nDataID				消息ID
-	 * @param[in,out]		pData				数据内容(包含查询主键)
-	 * @param[in]			nDataLen			长度
-	 * @return				>0					成功,返回数据结构的大小
-							==0					没查到结果
-							!=0					错误
+	 * @param[in]			nDataID						消息ID
+	 * @param[in,out]		pData						数据内容(包含查询主键)
+	 * @param[in]			nDataLen					长度
+	 * @return				>0							成功,返回数据结构的大小
+							==0							没查到结果
+							!=0							错误
 	 * @note				如果pData的缓存为“全零”缓存，则返回表内的所有数据
 	 */
 	virtual int				OnQuery( unsigned int nDataID, char* pData, unsigned int nDataLen );
 
 	/**
 	 * @brief				日志函数
-	 * @param[in]			nLogLevel			日志类型[0=信息、1=警告日志、2=错误日志、3=详细日志]
-	 * @param[in]			pszFormat			字符串格式化串
+	 * @param[in]			nLogLevel					日志类型[0=信息、1=警告日志、2=错误日志、3=详细日志]
+	 * @param[in]			pszFormat					字符串格式化串
 	 */
 	virtual void			OnLog( unsigned char nLogLevel, const char* pszFormat, ... );
 
 protected:///< 线程任务相关函数
 	/**
 	 * @brief				任务函数(内循环)
-	 * @return				==0					成功
-							!=0					失败
+	 * @return				==0							成功
+							!=0							失败
 	 */
 	virtual int				Execute();
 
@@ -111,8 +111,8 @@ protected:///< 线程任务相关函数
 protected:///< 私有功能函数
 	/**
 	 * @brief				从内存中加载所有数据表下关联的商品代码
-	 * @return				>=0					成功,返回数据表数量
-							<0					失败
+	 * @return				>=0							成功,返回数据表数量
+							<0							失败
 	 */
 	int						LoadCodesListInDatabase();
 
@@ -122,12 +122,21 @@ protected:///< 私有功能函数
 	 */
 	int						RemoveCodeExpiredInDatabase();
 
+	/**
+	 * @brief				重新加载/初始化行情(内存插件、数据采集器)
+	 * @return				true						初始化成功
+							false						失败
+	 */
+	bool					PrepareQuotation();
+
+public:
+	InitializerFlag&		GetInitFlag();
+
 protected:///< 逻辑数据成员
 	CriticalObject			m_oCodeMapLock;					///< CodeMap锁
 	MAP_TABLEID_CODES		m_mapID2Codes;					///< 记录各消息ID下的关联codes
 	InitializerFlag			m_oInitFlag;					///< 重新初始化标识
 	SessionCollection		m_oLinkSessions;				///< 下级的链路会话
-
 protected:///< 挂载的相关功能插件
 	DatabaseIO				m_oDatabaseIO;					///< 内存数据插件管理
 	DataCollector			m_oDataCollector;				///< 行情采集模块接口
@@ -159,16 +168,16 @@ public:
 
 	/**
 	 * @brief				线程是否工作中
-	 * @return				true				还在工作中
-							false				非工作状态
+	 * @return				true					还在工作中
+							false					非工作状态
 	 */
 	bool					IsServiceAlive();
 
 public:
 	/**
 	 * @brief				初始化&启动行情服务
-	 * @return				==0				启动成功
-							!=0				启动出错
+	 * @return				==0						启动成功
+							!=0						启动出错
 	 */
 	int						Activate();
 
@@ -191,7 +200,7 @@ public:
 
 	/**
 	 * @brief				询问数据采集模块的状态
-	 * @return				true				可服务
+	 * @return				true					可服务
 	 */
 	bool					OnInquireStatus();
 

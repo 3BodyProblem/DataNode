@@ -70,6 +70,11 @@ public:///< 数据采集模块事件定义
 	int						RecoverDataCollector();
 
 	/**
+	 * @brief				暂停数据采集器
+	 */
+	void					HaltDataCollector();
+
+	/**
 	 * @biref				取得当前数据采集模块状态
 	 */
 	enum E_SS_Status		InquireDataCollectorStatus();
@@ -82,6 +87,7 @@ private:
 	T_Func_Initialize		m_pFuncInitialize;				///< 数据采集器初始化接口
 	T_Func_Release			m_pFuncRelease;					///< 数据采集器释放接口
 	T_Func_RecoverQuotation	m_pFuncRecoverQuotation;		///< 数据采集器行情数据重新初始化接口
+	T_Func_HaltQuotation	m_pFuncHaltQuotation;			///< 数据采集器暂停接口
 	T_Func_GetStatus		m_pFuncGetStatus;				///< 数据采集器状态获取接口
 	T_Func_GetMarketID		m_pFuncGetMarketID;				///< 数据采集器对应的市场ID获取接口
 };

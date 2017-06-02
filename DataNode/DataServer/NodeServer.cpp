@@ -8,7 +8,7 @@
 
 
 DataIOEngine::DataIOEngine()
- : SimpleTask( "DataIOEngine::Thread" )
+ : m_oLinkSessions( m_oDataCollector ), SimpleTask( "DataIOEngine::Thread" )
 {
 }
 
@@ -56,46 +56,61 @@ void DataIOEngine::Release()
 	SimpleTask::StopThread();
 }
 
-int DataIOEngine::Execute()
+bool DataIOEngine::PrepareQuotation()
 {
 	int			nErrorCode = 0;
-	bool		bInitPoint = false;
+
+	DataNodeService::GetSerivceObj().WriteInfo( "DataIOEngine::PrepareQuotation() : reloading quotation........" );
+
+	m_oDataCollector.HaltDataCollector();												///< 1) 先事先停止数据采集模块
+	if( 0 != (nErrorCode=m_oDatabaseIO.RecoverDatabase( m_oInitFlag.GetHoliday() )) )	///< 2) 从本地文件恢复历史行情数据到内存插件
+	{
+		DataNodeService::GetSerivceObj().WriteWarning( "DataIOEngine::PrepareQuotation() : failed 2 recover quotations data from disk ..., errorcode=%d", nErrorCode );
+	}
+	else
+	{
+		if( 0 >= (nErrorCode=LoadCodesListInDatabase()) )								///< 查内存插件中已存在的商品代码，供是否有过期代码需作删除判断用
+		{
+			DataNodeService::GetSerivceObj().WriteWarning( "DataIOEngine::PrepareQuotation() : failed 2 code list from database ..., errorcode=%d", nErrorCode );
+			return false;
+		}
+	}
+
+	if( 0 != (nErrorCode=m_oDataCollector.RecoverDataCollector()) )						///< 3) 重新初始化行情采集模块
+	{
+		DataNodeService::GetSerivceObj().WriteWarning( "DataIOEngine::PrepareQuotation() : failed 2 initialize data collector module, errorcode=%d", nErrorCode );
+		return false;;
+	}
+
+	if( (nErrorCode=RemoveCodeExpiredInDatabase()) < 0 )								///< 4) 删除内存中过期的商品
+	{
+		DataNodeService::GetSerivceObj().WriteWarning( "DataIOEngine::PrepareQuotation() : failed 2 remove expired code in database, errorcode=%d", nErrorCode );
+		return false;;
+	}
+
+	DataNodeService::GetSerivceObj().WriteInfo( "DataIOEngine::PrepareQuotation() : quotation reloaded ........" );
+
+	return true;
+}
+
+int DataIOEngine::Execute()
+{
+	bool			bInitPoint = false;
+	unsigned int	nInitInterval = 1000*Configuration::GetConfigObj().GetInitInterval();
 	DataNodeService::GetSerivceObj().WriteInfo( "DataIOEngine::Execute() : enter into thread func ..." );
 
 	while( true == IsAlive() )
 	{
 		try
 		{
-			if( true == m_oInitFlag.GetFlag() )														///< 初始化业务顺序的逻辑
+			if( true == m_oInitFlag.GetFlag() )			///< 初始化业务顺序的逻辑
 			{
-				SimpleTask::Sleep( 1000*Configuration::GetConfigObj().GetInitInterval() );			///< 重新初始化间隔，默认为3秒
+				SimpleTask::Sleep( nInitInterval );		///< 重新初始化间隔，默认为3秒
 				DataNodeService::GetSerivceObj().WriteInfo( "DataIOEngine::Execute() : [NOTICE] Enter Service Initializing Time ......" );
 
-				if( 0 != (nErrorCode=m_oDatabaseIO.RecoverDatabase( m_oInitFlag.GetHoliday() )) )	///< 从本地文件恢复历史行情数据到内存插件
+				if( false == PrepareQuotation() )		///< 重新加载行情数据
 				{
-					DataNodeService::GetSerivceObj().WriteWarning( "DataIOEngine::Execute() : failed 2 recover quotations data from disk ..., errorcode=%d", nErrorCode );
-				}
-				else
-				{
-					if( 0 >= (nErrorCode=LoadCodesListInDatabase()) )								///< 查内存插件中已存在的商品代码，供是否有过期代码需作删除判断用
-					{
-						DataNodeService::GetSerivceObj().WriteWarning( "DataIOEngine::Execute() : failed 2 code list from database ..., errorcode=%d", nErrorCode );
-						m_oInitFlag.RedoInitialize();
-						continue;
-					}
-				}
-
-				if( 0 != (nErrorCode=m_oDataCollector.RecoverDataCollector()) )						///< 重新初始化行情采集模块
-				{
-					DataNodeService::GetSerivceObj().WriteWarning( "DataIOEngine::Execute() : failed 2 initialize data collector module, errorcode=%d", nErrorCode );
-					m_oInitFlag.RedoInitialize();
-					continue;
-				}
-
-				if( (nErrorCode=RemoveCodeExpiredInDatabase()) < 0 )								///< 删除内存中过期的商品
-				{
-					DataNodeService::GetSerivceObj().WriteWarning( "DataIOEngine::Execute() : failed 2 remove expired code in database, errorcode=%d", nErrorCode );
-					m_oInitFlag.RedoInitialize();
+					m_oInitFlag.RedoInitialize();		///< 重置为需要初始化标识为
 					continue;
 				}
 
@@ -103,7 +118,8 @@ int DataIOEngine::Execute()
 				continue;
 			}
 
-			OnIdle();		///< 空闲处理函数
+			OnIdle();									///< 空闲处理函数
+			SimpleTask::Sleep( 1000 );					///< 一秒循环一次
 		}
 		catch( std::exception& err )
 		{
@@ -118,6 +134,11 @@ int DataIOEngine::Execute()
 	DataNodeService::GetSerivceObj().WriteInfo( "DataIOEngine::Execute() : exit thread func ..." );
 
 	return 0;
+}
+
+InitializerFlag& DataIOEngine::GetInitFlag()
+{
+	return m_oInitFlag;
 }
 
 int DataIOEngine::LoadCodesListInDatabase()
@@ -371,17 +392,23 @@ bool DataNodeService::IsServiceAlive()
 
 int DataNodeService::OnIdle()
 {
-	bool			bInitPoint = false;
+	static time_t		s_nLastDumpTime = ::time( NULL );
+	bool				bInitPoint = false;
+	unsigned int		nDumpInterval = Configuration::GetConfigObj().GetDumpInterval();
 
 	///< 检查是否有新的链接到来请求初始化行情数据推送的
-	if( 0 == m_oLinkSessions.FlushImageData2NewSessions( 0 ) ) {///< 对新到达的链接，推送"全量"初始化快照行情
-		///< 在没有新链接到来的情况下，sleep一秒
-		SimpleTask::Sleep( 1000*Configuration::GetConfigObj().GetDumpInterval() );
-	}
+	m_oLinkSessions.FlushImageData2NewSessions( 0 );///< 对新到达的链接，推送"全量"初始化快照行情
 
 	///< 在交易时段，进行内存插件中的行情数据落盘
-	if( 0 <= m_oInitFlag.InTradingPeriod( bInitPoint ) && true == m_oDatabaseIO.IsBuilded() )	{
-		OnBackupDatabase();
+	if( 0 <= m_oInitFlag.InTradingPeriod( bInitPoint ) && true == m_oDatabaseIO.IsBuilded() )
+	{
+		int		nNowTime = (int)::time( NULL );
+
+		if( (nNowTime-=(int)s_nLastDumpTime) >= nDumpInterval )
+		{
+			OnBackupDatabase();
+			s_nLastDumpTime = ::time( NULL );
+		}
 	}
 
 	return 0;
