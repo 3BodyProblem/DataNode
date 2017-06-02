@@ -11,15 +11,15 @@
 
 
 /**
- * @class						LinkIDRegister
+ * @class						LinkNoRegister
  * @brief						管理/维护各链路的ID号
  * @detail						新连接到达时添加新ID，删除失效的链路ID
  * @author						barry
  */
-class LinkIDRegister
+class LinkNoRegister
 {
 public:
-	LinkIDRegister();
+	LinkNoRegister();
 
 public:
 	/**
@@ -59,24 +59,21 @@ private:
 
 
 /**
- * @class						Spi4LinkCollection
- * @brief						链路数据回调/推送类
- * @detail						通讯链路会话集合事件回调逻辑
-								+
-								实时行情推送业务
+ * @class						RealTimeQuote4LinksSpi
+ * @brief						下级链路数据回调事件 + 实时行情推送类
  * @author						barry
  */
-class Spi4LinkCollection : public MServicePlug_Spi
+class RealTimeQuote4LinksSpi : public MServicePlug_Spi
 {
 public:///< 构造和初始化
-	Spi4LinkCollection();
-	~Spi4LinkCollection();
+	RealTimeQuote4LinksSpi();
+	~RealTimeQuote4LinksSpi();
 
 	/**
 	 * @brief					初始化
 	 * @return					!= 0				失败
 	 */
-	int							Instance( DatabaseIO& refDbIO );
+	int							Instance();
 
 	/**
 	 * @brief					释放资源
@@ -90,18 +87,17 @@ public:///< 行情推送接口
 	void						PushQuotation( unsigned short usMessageNo, unsigned short usFunctionID, const char* lpInBuf, unsigned int uiInSize, bool bPushFlag, unsigned __int64 nSerialNo );
 
 protected:///< 功能成员对象相关
-	LinkIDRegister				m_oLinkNoTable;			///< 链路号集合
-	DatabaseIO*					m_pDatabase;			///< 数据操作对象指针
+	LinkNoRegister				m_oLinkNoTable;			///< 链路号集合
 	QuotationSynchronizer		m_oQuotationBuffer;		///< 实时行情推送缓存（带推送线程)
 };
 
 
 /**
  * @class						SessionCollection
- * @brief						继承了实时行情推送类 + 并封装了初始化行情推送
+ * @brief						下级链路数据回调事件 + 实时行情推送类 + 并封装了初始化行情推送
  * @author						barry
  */
-class SessionCollection : public Spi4LinkCollection
+class SessionCollection : public RealTimeQuote4LinksSpi
 {
 public:
 	SessionCollection();
@@ -188,11 +184,11 @@ protected:///< 网络框架事件回调
 	virtual bool				OnRecvData( unsigned int uiLinkNo, unsigned short usMessageNo, unsigned short usFunctionID, bool bErrorFlag, const char* lpData, unsigned int uiSize, unsigned int& uiAddtionData );
 
 protected:///< 新到达的链路初始化逻辑相关
+	DatabaseIO*					m_pDatabase;			///< 数据操作对象指针
 	CriticalObject				m_oLock;				///< 初始化数据推送缓存锁
 	std::set<unsigned int>		m_setNewReqLinkID;		///< 待初始化链路ID集合
 	unsigned int				m_nReqLinkCount;		///< 请求初始化的链路数量
 	char*						m_pSendBuffer;			///< 数据发送缓存
-	unsigned int				m_nMaxSendBufSize;		///< 发送缓存最大长度
 };
 
 

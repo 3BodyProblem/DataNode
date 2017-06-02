@@ -252,12 +252,13 @@ int DatabaseIO::RecoverDatabase( MkHoliday& refHoliday )
 					m_mapTableID.insert( std::make_pair(nDataID, nRecordLen) );		///< 数据表ID集合，添加
 				}
 
-				DataNodeService::GetSerivceObj().WriteInfo( "DatabaseIO::RecoverDatabase() : recovered, table count=%d ......", nTableCount );
+				DataNodeService::GetSerivceObj().WriteInfo( "DatabaseIO::RecoverDatabase() : recovered [FileDate=%d], table count=%d ......", nDBLoadDate, nTableCount );
 				return 0;
 			}
 			else
 			{
-				DataNodeService::GetSerivceObj().WriteWarning( "DatabaseIO::RecoverDatabase() : failed 2 recover quotation data ......" );
+				DataNodeService::GetSerivceObj().WriteWarning( "DatabaseIO::RecoverDatabase() : failed 2 recover quotation data, %s"
+																, Configuration::GetConfigObj().GetRecoveryFolderPath().c_str() );
 				return -2;
 			}
 		}

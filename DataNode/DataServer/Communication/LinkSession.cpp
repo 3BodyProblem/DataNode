@@ -5,11 +5,11 @@
 #include "../NodeServer.h"
 
 
-LinkIDRegister::LinkIDRegister()
+LinkNoRegister::LinkNoRegister()
  : nLinkIDCount( 0 )
 {}
 
-int LinkIDRegister::NewLinkID( unsigned int nNewLinkID )
+int LinkNoRegister::NewLinkID( unsigned int nNewLinkID )
 {
 	CriticalLock	guard( m_oLock );
 
@@ -24,7 +24,7 @@ int LinkIDRegister::NewLinkID( unsigned int nNewLinkID )
 	return 0;
 }
 
-void LinkIDRegister::RemoveLinkID( unsigned int nRemoveLinkID )
+void LinkNoRegister::RemoveLinkID( unsigned int nRemoveLinkID )
 {
 	CriticalLock	guard( m_oLock );
 
@@ -36,12 +36,12 @@ void LinkIDRegister::RemoveLinkID( unsigned int nRemoveLinkID )
 	}
 }
 
-int LinkIDRegister::GetLinkCount()
+int LinkNoRegister::GetLinkCount()
 {
 	return nLinkIDCount;
 }
 
-unsigned int LinkIDRegister::FetchLinkIDList( unsigned int * lpLinkNoArray, unsigned int uiArraySize )
+unsigned int LinkNoRegister::FetchLinkIDList( unsigned int * lpLinkNoArray, unsigned int uiArraySize )
 {
 	unsigned int	nLinkNum = 0;				///< 有效链路数量
 	static	int		s_nLastLinkNoNum = 0;		///< 上一次的链路数量
@@ -49,7 +49,7 @@ unsigned int LinkIDRegister::FetchLinkIDList( unsigned int * lpLinkNoArray, unsi
 
 	if( m_setLinkID.size() != s_nLastLinkNoNum )
 	{
-		DataNodeService::GetSerivceObj().WriteInfo( "LinkIDRegister::FetchLinkIDList() : TCP connection number of QServer fluctuated! new no. = %d, old no. = %d", m_setLinkID.size(), s_nLastLinkNoNum );
+		DataNodeService::GetSerivceObj().WriteInfo( "LinkNoRegister::FetchLinkIDList() : TCP connection number of QServer fluctuated! new no. = %d, old no. = %d", m_setLinkID.size(), s_nLastLinkNoNum );
 		s_nLastLinkNoNum = m_setLinkID.size();
 	}
 
@@ -62,50 +62,48 @@ unsigned int LinkIDRegister::FetchLinkIDList( unsigned int * lpLinkNoArray, unsi
 }
 
 
-Spi4LinkCollection::Spi4LinkCollection()
- : m_pDatabase( NULL )
+RealTimeQuote4LinksSpi::RealTimeQuote4LinksSpi()
 {
 }
 
-Spi4LinkCollection::~Spi4LinkCollection()
+RealTimeQuote4LinksSpi::~RealTimeQuote4LinksSpi()
 {
 	Release();
 }
 
-int Spi4LinkCollection::Instance( DatabaseIO& refDbIO )
+int RealTimeQuote4LinksSpi::Instance()
 {
-	DataNodeService::GetSerivceObj().WriteInfo( "Spi4LinkCollection::Instance() : initializing ......" );
+	DataNodeService::GetSerivceObj().WriteInfo( "RealTimeQuote4LinksSpi::Instance() : initializing ......" );
 
 	Release();
-	m_pDatabase = &refDbIO;
 
 	int		nErrCode = m_oQuotationBuffer.Initialize();
 	if( 0 == nErrCode )
 	{
-		DataNodeService::GetSerivceObj().WriteInfo( "Spi4LinkCollection::Instance() : initialized ......" );
+		DataNodeService::GetSerivceObj().WriteInfo( "RealTimeQuote4LinksSpi::Instance() : initialized ......" );
 	}
 	else
 	{
-		DataNodeService::GetSerivceObj().WriteError( "Spi4LinkCollection::Instance() : failed 2 initialize ..., errorcode=%d", nErrCode );
+		DataNodeService::GetSerivceObj().WriteError( "RealTimeQuote4LinksSpi::Instance() : failed 2 initialize ..., errorcode=%d", nErrCode );
 		return nErrCode;
 	}
 
 	return 0;
 }
 
-void Spi4LinkCollection::Release()
+void RealTimeQuote4LinksSpi::Release()
 {
 	m_oQuotationBuffer.Release();
 }
 
-void Spi4LinkCollection::PushQuotation( unsigned short usMessageNo, unsigned short usFunctionID, const char* lpInBuf, unsigned int uiInSize, bool bPushFlag, unsigned __int64 nSerialNo )
+void RealTimeQuote4LinksSpi::PushQuotation( unsigned short usMessageNo, unsigned short usFunctionID, const char* lpInBuf, unsigned int uiInSize, bool bPushFlag, unsigned __int64 nSerialNo )
 {
 	m_oQuotationBuffer.PutMessage( usMessageNo, lpInBuf, uiInSize, nSerialNo );
 }
 
 
 SessionCollection::SessionCollection()
- : m_pSendBuffer( NULL ), m_nMaxSendBufSize( 0 )
+ : m_pSendBuffer( NULL ), m_pDatabase( NULL )
 {
 }
 
@@ -118,15 +116,15 @@ int SessionCollection::Instance( DatabaseIO& refDbIO )
 	DataNodeService::GetSerivceObj().WriteInfo( "SessionCollection::Instance() : initializing ......" );
 
 	Release();
+	m_pDatabase = &refDbIO;
 
 	if( NULL == (m_pSendBuffer = new char[MAX_IMAGE_BUFFER_SIZE]) )
 	{
 		DataNodeService::GetSerivceObj().WriteError( "SessionCollection::Instance() : failed 2 initialize send data buffer, size = %d", MAX_IMAGE_BUFFER_SIZE );
 		return -1;
 	}
-	m_nMaxSendBufSize = MAX_IMAGE_BUFFER_SIZE;
 
-	return Spi4LinkCollection::Instance( refDbIO );
+	return RealTimeQuote4LinksSpi::Instance();
 }
 
 void SessionCollection::Release()
@@ -137,9 +135,7 @@ void SessionCollection::Release()
 		m_pSendBuffer = NULL;
 	}
 
-	m_nMaxSendBufSize = 0;
-
-	Spi4LinkCollection::Release();
+	RealTimeQuote4LinksSpi::Release();
 }
 
 int SessionCollection::FlushImageData2NewSessions( unsigned __int64 nSerialNo )
@@ -246,7 +242,6 @@ bool SessionCollection::OnNewLink( unsigned int uiLinkNo, unsigned int uiIpAddr,
 	return true;
 }
 
-
 bool SessionCollection::OnCommand( const char* szSrvUnitName, const char* szCommand, char* szResult, unsigned int uiSize )
 {
 	int							nArgc = 32;
@@ -255,7 +250,7 @@ bool SessionCollection::OnCommand( const char* szSrvUnitName, const char* szComm
 	///< 拆解出关键字和参数字符
 	if( false == SplitString( pArgv, nArgc, szCommand ) )
 	{
-		::sprintf( szResult, "Spi4LinkCollection::OnCommand : [ERR] parse command string failed" );
+		::sprintf( szResult, "RealTimeQuote4LinksSpi::OnCommand : [ERR] parse command string failed" );
 		return true;
 	}
 
