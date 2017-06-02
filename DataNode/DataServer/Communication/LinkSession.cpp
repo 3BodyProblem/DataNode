@@ -269,7 +269,7 @@ bool SessionCollection::OnCommand( const char* szSrvUnitName, const char* szComm
 	case 14:
 		return objEcho4CTPDL( pArgv, nArgc, szResult, uiSize );	///< 执行回显命令串
 	default:
-		::sprintf( szResult, "不能识别的市场ID [%u]", nMarketID );
+		::sprintf( szResult, "不能识别命令[%s]或市场ID[%u]", szCommand, nMarketID );
 		break;
 	}
 
