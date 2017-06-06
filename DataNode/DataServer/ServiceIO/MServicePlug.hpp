@@ -63,7 +63,6 @@ public:
 		return(false);
 	}
 };
-
 //-----------------------------------------------------------------------------------------------------------------------------
 typedef struct
 {
@@ -162,6 +161,8 @@ typedef struct													//启动入口参数
 	unsigned int						uiLinkTimeOut;			//连接超时时间【秒】
 	bool								bCompress;				//是否需要进行压缩
 	bool								bSSL;					//是否启用SSL加密
+	char								szCrtFileName[256];		//OpenSSL .crt证书文件路径，仅SSL使用【仅限SSL加密】
+	char								szPfxFileName[256];		//OpenSSL .pfx证书文件路径，仅SSL使用【仅限SSL加密】
 	char								szPfxFilePasswrod[32];	//OpenSSL .pfx证书密码【仅限SSL加密】
 	bool								bDetailLog;				//是否打印详细日志
 
@@ -170,7 +171,7 @@ typedef struct													//启动入口参数
 	unsigned int						uiPageCount;			//内存池页面数量
 
 	//保留
-	char								szReserved[256];		//保留
+	char								szReserved[4096];		//保留
 } tagServicePlug_StartInParam;
 //.............................................................................................................................
 typedef struct													//启动出口参数
@@ -185,19 +186,17 @@ typedef struct													//启动出口参数
 	tagServicePlug_SendError		*	lpSendError;			//发送错误函数
 	tagServicePlug_PushData			*	lpPushData;				//推送数据函数
 	tagServicePlug_CloseLink		*	lpCloseLink;			//关闭连接函数
-
-	//【内存池】
-	tagServicePlug_Malloc			*	lpMalloc;				//从内存池中分配内存
-	tagServicePlug_Free				*	lpFree;					//释放从内存池中分配的内存
-
-	//【通讯接口扩展】（20170517 by lumy）
 	tagServicePlug_SetAddtionData	*	lpSetAddtionData;		//设置连接附加数据
 	tagServicePlug_GetAddtionData	*	lpGetAddtionData;		//获取连接附加数据
 	tagServicePlug_GetLinkInfo		*	lpGetLinkInfo;			//获取连接详细数据
 	tagServicePlug_GetStatus		*	lpGetStatus;			//获取状态信息
 
+	//【内存池】
+	tagServicePlug_Malloc			*	lpMalloc;				//从内存池中分配内存
+	tagServicePlug_Free				*	lpFree;					//释放从内存池中分配的内存
+
 	//保留
-	char								szReserved[240];		//保留
+	char								szReserved[4096];		//保留
 } tagServicePlug_StartOutParam;
 //.............................................................................................................................
 //动态连接库输出函数
