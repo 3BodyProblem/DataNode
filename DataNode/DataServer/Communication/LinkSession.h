@@ -134,6 +134,18 @@ public:///< 初始化行情推送接口
 	 */
 	int							QueryCodeListInDatabase( unsigned int nDataID, unsigned int nRecordLen, std::set<std::string>& setCode );
 
+	/**
+	 * @brief					设置市场编号
+	 */
+	void						SetMkID();
+
+protected:
+	/**
+	 * @brief					格式化快照数据缓存
+	 * @return					返回格式化后的数据长度
+	 */
+	unsigned int				FormatImageBuffer( unsigned int nSeqNo, unsigned int nDataID, unsigned int nDataWidth, unsigned int nBuffDataLen );
+
 protected:///< 网络框架事件回调
 	/**
 	 * @brief					新连接到达响应函数，返回false表示不接受该连接，服务器会断开该连接

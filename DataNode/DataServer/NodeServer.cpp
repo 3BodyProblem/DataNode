@@ -89,6 +89,8 @@ bool DataIOEngine::PrepareQuotation()
 		return false;;
 	}
 
+	m_oLinkSessions.SetMkID();															///< 5) 从数据采集插件更新"市场ID"
+
 	DataNodeService::GetSerivceObj().WriteInfo( "DataIOEngine::PrepareQuotation() : quotation reloaded ........" );
 
 	return true;

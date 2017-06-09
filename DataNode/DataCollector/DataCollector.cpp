@@ -129,6 +129,7 @@ int DataCollector::RecoverDataCollector()
 	}
 
 	m_bActivated = true;
+	m_nMarketID = m_pFuncGetMarketID();
 	DataNodeService::GetSerivceObj().WriteInfo( "DataCollector::RecoverDataCollector() : data collector recovered ......" );
 
 	return nErrorCode;

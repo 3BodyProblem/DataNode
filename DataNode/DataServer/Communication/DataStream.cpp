@@ -7,6 +7,7 @@
 PackagesBuffer::PackagesBuffer()
  : m_pPkgBuffer( NULL ), m_nMaxPkgBufSize( 0 )
  , m_nFirstPosition( 0 ), m_nLastPosition( 0 )
+ , m_nMarketID( 0 )
 {
 }
 
@@ -46,6 +47,11 @@ void PackagesBuffer::Release()
 	}
 }
 
+void PackagesBuffer::SetMkID( unsigned int nMkID )
+{
+	m_nMarketID = nMkID;
+}
+
 float PackagesBuffer::GetPercentOfFreeSize()
 {
 	CriticalLock		guard( m_oLock );
@@ -77,6 +83,7 @@ int PackagesBuffer::PushBlock( unsigned int nDataID, const char* pData, unsigned
 	{
 		m_nLastPosition += sizeof(tagPackageHead);
 		((tagPackageHead*)(m_pPkgBuffer+m_nFirstPosition))->nSeqNo = nSeqNo;
+		((tagPackageHead*)(m_pPkgBuffer+m_nFirstPosition))->nMarketID = m_nMarketID;
 		((tagPackageHead*)(m_pPkgBuffer+m_nFirstPosition))->nBodyLen = sizeof(tagPackageHead) + nDataSize;
 		((tagPackageHead*)(m_pPkgBuffer+m_nFirstPosition))->nMsgCount = 1;
 	}
@@ -247,6 +254,11 @@ int QuotationSynchronizer::PutMessage( unsigned short nMsgID, const char *pData,
 	return nErrorCode;
 }
 
+void QuotationSynchronizer::SetMkID( unsigned int nMkID )
+{
+	m_oDataBuffer.SetMkID( nMkID );
+}
+
 void QuotationSynchronizer::SetLinkNoList( void* pListPtr, unsigned int nLinkCount )
 {
 	CriticalLock		guard( m_oLock );
@@ -261,7 +273,7 @@ void QuotationSynchronizer::FlushQuotation2Client()
 	{
 		CriticalLock	guard( m_oLock );
 		int				nDataSize = m_oDataBuffer.GetOnePkg( m_pSendBuffer, m_nMaxSendBufSize );
-		DataNodeService::GetSerivceObj().PushData( m_vctLinkNo+0, m_nLinkCount, 1000, 0, m_pSendBuffer, nDataSize );
+		DataNodeService::GetSerivceObj().PushData( m_vctLinkNo+0, m_nLinkCount, MESSAGENO, 0, m_pSendBuffer, nDataSize );
 	}
 }
 

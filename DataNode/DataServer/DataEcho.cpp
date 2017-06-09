@@ -140,10 +140,10 @@ bool CTP_DL_Echo::ExcuteCommand( char** pArgv, unsigned int nArgc, char* szResul
 		unsigned int	nEndPos = nBeginPos + ::atol( sParam2.c_str() );
 		unsigned int	nIndex = 0;
 
-		int		nDataLen = DataNodeService::GetSerivceObj().OnQuery( 1000, s_pEchoDataBuf, s_nMaxEchoBufLen );
-		for( unsigned int nOffset = 0; nOffset < s_nMaxEchoBufLen && nOffset < nDataLen; nOffset+=sizeof(tagCTPReferenceData), nIndex++ )
+		int		nDataLen = DataNodeService::GetSerivceObj().OnQuery( 1003, s_pEchoDataBuf, s_nMaxEchoBufLen );
+		for( unsigned int nOffset = 0; nOffset < s_nMaxEchoBufLen && nOffset < nDataLen; nOffset+=sizeof(tagDLReferenceData_LF1003), nIndex++ )
 		{
-			tagCTPReferenceData*	pEchoData = (tagCTPReferenceData*)(s_pEchoDataBuf+nOffset);
+			tagDLReferenceData_LF1003*	pEchoData = (tagDLReferenceData_LF1003*)(s_pEchoDataBuf+nOffset);
 
 			if( nIndex >= nEndPos )
 			{
@@ -159,23 +159,29 @@ bool CTP_DL_Echo::ExcuteCommand( char** pArgv, unsigned int nArgc, char* szResul
 	}
 	else if( sCmd == "snaptable" )
 	{
-		std::string		sParam1 = pArgv[1];
+		std::string				sParam1 = pArgv[1];
+		tagDLSnapData_LF1004	tagSnapLF = { 0 };
+		tagDLSnapData_HF1005	tagSnapHF = { 0 };
+		tagDLSnapBuySell_HF1006	tagBSHF = { 0 };
 
-		::memcpy( s_pEchoDataBuf, sParam1.c_str(), sParam1.length() );
-		int		nDataLen = DataNodeService::GetSerivceObj().OnQuery( 1002, s_pEchoDataBuf, s_nMaxEchoBufLen );
-		if( nDataLen > 0 )
+		::memcpy( tagSnapLF.Code, sParam1.c_str(), sParam1.length() );
+		::memcpy( tagSnapHF.Code, sParam1.c_str(), sParam1.length() );
+		::memcpy( tagBSHF.Code, sParam1.c_str(), sParam1.length() );
+		int		a = DataNodeService::GetSerivceObj().OnQuery( 1005, (char*)&tagSnapHF, sizeof(tagSnapHF) );
+		int		b = DataNodeService::GetSerivceObj().OnQuery( 1004, (char*)&tagSnapLF, sizeof(tagSnapLF) );
+		int		c = DataNodeService::GetSerivceObj().OnQuery( 1006, (char*)&tagBSHF, sizeof(tagBSHF) );
+
+		if( a > 0 && b > 0 && c > 0 )
 		{
-			tagCTPSnapData*		pEchoData = (tagCTPSnapData*)s_pEchoDataBuf;
-
-			nWritePos += ::sprintf( szResult+nWritePos, "代码:%s   时间:%u\n\n", pEchoData->Code, pEchoData->DataTimeStamp );
-			nWritePos += ::sprintf( szResult+nWritePos, "最新:%u, 最高:%u, 最低:%u, 昨收:%u\n", pEchoData->Now, pEchoData->High, pEchoData->Low, pEchoData->PreClose );
-			nWritePos += ::sprintf( szResult+nWritePos, "昨结:%u, 今结:%u\n", pEchoData->PreSettlePrice, pEchoData->SettlePrice );
-			nWritePos += ::sprintf( szResult+nWritePos, "金额:%f, 成交量:%I64d\n\n", pEchoData->Amount, pEchoData->Volume );
+			nWritePos += ::sprintf( szResult+nWritePos, "代码:%s \n\n", tagSnapHF.Code );
+			nWritePos += ::sprintf( szResult+nWritePos, "最新:%u, 最高:%u, 最低:%u\n", tagSnapHF.Now, tagSnapHF.High, tagSnapHF.Low );
+			nWritePos += ::sprintf( szResult+nWritePos, "昨结:%u, 今结:%u\n", tagSnapLF.PreSettlePrice, tagSnapLF.SettlePrice );
+			nWritePos += ::sprintf( szResult+nWritePos, "金额:%f, 成交量:%I64d\n\n", tagSnapHF.Amount, tagSnapHF.Volume );
 
 			for( int i = 1; i <= 5; i++ )
 			{
 				nWritePos += ::sprintf( szResult+nWritePos, "买%d价:%u, 买%d量:%I64d\t卖%d价:%d,卖%i量:%I64d\n"
-					, i, pEchoData->Buy[i].Price, i, pEchoData->Buy[i].Volume, i, pEchoData->Sell[i].Price, i, pEchoData->Sell[i].Volume );
+					, i, tagBSHF.Buy[i].Price, i, tagBSHF.Buy[i].Volume, i, tagBSHF.Sell[i].Price, i, tagBSHF.Sell[i].Volume );
 			}
 
 			return true;

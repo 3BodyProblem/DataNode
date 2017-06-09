@@ -10,6 +10,9 @@
 #include "../../MemoryDB/MemoryDatabase.h"
 
 
+#define			MESSAGENO		1000
+
+
 #pragma pack(1)
 
 /**
@@ -20,6 +23,7 @@
 typedef struct
 {
 	unsigned __int64				nSeqNo;				///< 自增序号
+	unsigned int					nMarketID;			///< 市场编号
 	unsigned int					nBodyLen;			///< 数据部分长度
 	unsigned int					nMsgCount;			///< 包内的Message数量
 } tagPackageHead;
@@ -70,6 +74,11 @@ public:
 
 public:
 	/**
+	 * @brief						设置市场编号
+	 */
+	void							SetMkID( unsigned int nMkID );
+
+	/**
 	 * @brief						存储数据
 	 * @param[in]					nDataID					数据ID
 	 * @param[in]					pData					数据指针
@@ -101,6 +110,7 @@ public:
 	float							GetPercentOfFreeSize();
 
 protected:
+	unsigned int					m_nMarketID;			///< 市场ID
 	CriticalObject					m_oLock;				///< 锁
 	char*							m_pPkgBuffer;			///< 数据包缓存地址
 	unsigned int					m_nMaxPkgBufSize;		///< 数据包缓存大小
@@ -170,6 +180,11 @@ public:
 	 * @brief					设置当前链路号到列表
 	 */
 	void						SetLinkNoList( void* pListPtr, unsigned int nLinkCount );
+
+	/**
+	 * @brief					设置市场编号
+	 */
+	void						SetMkID( unsigned int nMkID );
 
 protected:
 	WaitEvent					m_oWaitEvent;			///< 条件等待
