@@ -84,13 +84,13 @@ int PackagesBuffer::PushBlock( unsigned int nDataID, const char* pData, unsigned
 		m_nLastPosition += sizeof(tagPackageHead);
 		((tagPackageHead*)(m_pPkgBuffer+m_nFirstPosition))->nSeqNo = nSeqNo;
 		((tagPackageHead*)(m_pPkgBuffer+m_nFirstPosition))->nMarketID = m_nMarketID;
-		((tagPackageHead*)(m_pPkgBuffer+m_nFirstPosition))->nBodyLen = sizeof(tagPackageHead) + nDataSize;
+		((tagPackageHead*)(m_pPkgBuffer+m_nFirstPosition))->nBodyLen = nBlockSize;
 		((tagPackageHead*)(m_pPkgBuffer+m_nFirstPosition))->nMsgCount = 1;
 	}
 	else
 	{
 		((tagPackageHead*)(m_pPkgBuffer+m_nFirstPosition))->nMsgCount++;
-		((tagPackageHead*)(m_pPkgBuffer+m_nFirstPosition))->nBodyLen += nDataSize;
+		((tagPackageHead*)(m_pPkgBuffer+m_nFirstPosition))->nBodyLen += nBlockSize;
 	}
 
 	int				nConsecutiveFreeSize = m_nMaxPkgBufSize - m_nLastPosition;

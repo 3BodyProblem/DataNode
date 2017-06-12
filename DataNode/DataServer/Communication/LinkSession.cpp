@@ -167,7 +167,7 @@ unsigned int SessionCollection::FormatImageBuffer( unsigned int nSeqNo, unsigned
 	///< 数据包头构建
 	pPkgHead->nSeqNo = nSeqNo;
 	pPkgHead->nMarketID = m_refDataCollector.GetMarketID();
-	pPkgHead->nBodyLen = sizeof(tagPackageHead) + nOffset;
+	pPkgHead->nBodyLen = nOffset;
 	pPkgHead->nMsgCount = nMsgCount;
 
 	return nOffset;
@@ -190,6 +190,7 @@ int SessionCollection::FlushImageData2NewSessions( unsigned __int64 nSerialNo )
 	{
 		unsigned int		nTableID = lstTableID[n];
 		unsigned int		nTableWidth = lstTableWidth[n];
+		int					nFunctionID = ((n+1)==nTableCount) ? 100 : 0;
 		unsigned __int64	nSerialNoOfAnchor = nSerialNo;
 		int					nDataLen = m_pDatabase->FetchRecordsByID( nTableID, m_pSendBuffer, MAX_IMAGE_BUFFER_SIZE, nSerialNoOfAnchor );
 
@@ -201,32 +202,27 @@ int SessionCollection::FlushImageData2NewSessions( unsigned __int64 nSerialNo )
 
 		unsigned int	nSendLen = FormatImageBuffer( n, nTableID, nTableWidth, nDataLen );
 
-		for( std::set<unsigned int>::iterator it = m_setNewReqLinkID.begin(); it != m_setNewReqLinkID.end(); it++ )
+		for( std::set<unsigned int>::iterator it = m_setNewReqLinkID.begin(); it != m_setNewReqLinkID.end(); )
 		{
-			int	nErrCode = DataNodeService::GetSerivceObj().SendData( *it, MESSAGENO, 0, m_pSendBuffer, nSendLen/*, nSerialNo*/ );
+			int	nErrCode = DataNodeService::GetSerivceObj().SendData( *it, MESSAGENO, nFunctionID, m_pSendBuffer, nSendLen/*, nSerialNo*/ );
 			if( nErrCode < 0 )
 			{
 				DataNodeService::GetSerivceObj().WriteWarning( "SessionCollection::FlushImageData2NewSessions() : failed 2 send image data, errorcode=%d", nErrCode );
 				return -2 * (n*10000);
 			}
+
+			if( 100 == nFunctionID )
+			{
+				m_oLinkNoTable.NewLinkID( *it );
+				it = m_setNewReqLinkID.erase( it );
+				m_nReqLinkCount--;
+			}
+			else
+			{
+				it++;
+			}
 		}
 	}
-
-	for( std::set<unsigned int>::iterator it = m_setNewReqLinkID.begin(); it != m_setNewReqLinkID.end(); it++ )
-	{
-		///< 下发初始化完成通知
-		tagBlockHead	tagMsg = { 0 };
-		int				nErrorCode = DataNodeService::GetSerivceObj().SendData( *it, MESSAGENO, 1, (char*)&tagMsg, sizeof(tagMsg) );
-		if( nErrorCode < 0 )	{
-			DataNodeService::GetSerivceObj().WriteWarning( "SessionCollection::FlushImageData2NewSessions() : failed 2 send image data, errorcode=%d", nErrorCode );
-			return -200;
-		}
-
-		m_oLinkNoTable.NewLinkID( *it );
-	}
-
-	m_setNewReqLinkID.clear();
-	m_nReqLinkCount = 0;
 
 	LINKID_VECTOR	vctLinkNo = { 0 };
 	unsigned int	nLinkNoCount = m_oLinkNoTable.FetchLinkIDList( vctLinkNo+0, MAX_LINKID_NUM );

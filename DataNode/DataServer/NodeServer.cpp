@@ -449,23 +449,11 @@ bool DataNodeService::OnInquireStatus()
 
 void DataNodeService::OnBackupDatabase()
 {
-	static time_t	nLastTimeT = ::time( NULL );
-	time_t			nTimeNowT = ::time( NULL );
-
-	///< 每十分钟落盘一次
-	if( nTimeNowT - nLastTimeT < 60 * 15 )
-	{
-		return;
-	}
-
 	///< 开始落盘备份操作
 	if( 0 != m_oDatabaseIO.BackupDatabase() )
 	{
 		DataNodeService::GetSerivceObj().WriteWarning( "DataNodeService::BackupDatabase() : failed 2 backup quotation data" );
-		return;
 	}
-
-	nLastTimeT = nTimeNowT;
 }
 
 void DataNodeService::WriteInfo( const char * szFormat,... )
