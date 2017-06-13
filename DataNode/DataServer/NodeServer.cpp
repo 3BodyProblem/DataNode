@@ -9,6 +9,7 @@
 
 DataIOEngine::DataIOEngine()
  : m_oLinkSessions( m_oDataCollector ), SimpleTask( "DataIOEngine::Thread" )
+ , m_nPushSerialNo( 0 ), m_nHeartBeatCount( 0 )
 {
 }
 
@@ -52,6 +53,8 @@ int DataIOEngine::Initialize( const std::string& sDataCollectorPluginPath, const
 
 void DataIOEngine::Release()
 {
+	m_nPushSerialNo = 0;
+	m_nHeartBeatCount = 0;
 	m_oDataCollector.Release();
 	m_oDatabaseIO.Release();
 	SimpleTask::StopThread();
@@ -225,7 +228,6 @@ int DataIOEngine::OnQuery( unsigned int nDataID, char* pData, unsigned int nData
 
 int DataIOEngine::OnImage( unsigned int nDataID, char* pData, unsigned int nDataLen, bool bLastFlag )
 {
-	unsigned __int64	nSerialNo = 0;
 	CriticalLock		guard( m_oCodeMapLock );
 
 	///< 删除所有合法的商品，记录下过期代码列表
@@ -236,20 +238,19 @@ int DataIOEngine::OnImage( unsigned int nDataID, char* pData, unsigned int nData
 		setCode.erase( std::string( pData ) );
 	}
 
-	return m_oDatabaseIO.BuildMessageTable( nDataID, pData, nDataLen, bLastFlag, nSerialNo );
+	return m_oDatabaseIO.BuildMessageTable( nDataID, pData, nDataLen, bLastFlag, m_nPushSerialNo );
 }
 
 int DataIOEngine::OnData( unsigned int nDataID, char* pData, unsigned int nDataLen, bool bPushFlag )
 {
-	unsigned __int64	nSerialNo = 0;
-	int					nErrorCode = m_oDatabaseIO.UpdateQuotation( nDataID, pData, nDataLen, nSerialNo );
+	int					nErrorCode = m_oDatabaseIO.UpdateQuotation( nDataID, pData, nDataLen, m_nPushSerialNo );
 
 	if( 0 >= nErrorCode )
 	{
 		return nErrorCode;
 	}
 
-	m_oLinkSessions.PushQuotation( nDataID, 0, pData, nDataLen, bPushFlag, nSerialNo );
+	m_oLinkSessions.PushQuotation( nDataID, 0, pData, nDataLen, bPushFlag, m_nPushSerialNo );
 
 	return nErrorCode;
 }
@@ -402,6 +403,8 @@ int DataNodeService::OnIdle()
 
 	///< 检查是否有新的链接到来请求初始化行情数据推送的
 	m_oLinkSessions.FlushImageData2NewSessions( 0 );///< 对新到达的链接，推送"全量"初始化快照行情
+	///< 链路维持：心跳包发送
+	OnHeartBeat();
 
 	///< 在交易时段，进行内存插件中的行情数据落盘
 	if( 0 <= nPertiodIndex && true == m_oDatabaseIO.IsBuilded() )
@@ -422,6 +425,45 @@ int DataNodeService::OnIdle()
 	}
 
 	return 0;
+}
+
+void DataNodeService::OnHeartBeat()
+{
+	static bool					s_bBeginCheck = false;
+	static unsigned __int64		s_nPushSerialNo = 0;
+	static time_t				s_nLastTime = ::time( NULL );
+	unsigned int				nNowT = ::time( NULL );
+
+	if( s_nPushSerialNo == m_nPushSerialNo )
+	{
+		if( false == s_bBeginCheck )
+		{
+			s_bBeginCheck = true;
+			s_nLastTime = nNowT;
+		}
+		else
+		{
+			time_t	nTimeDiff = nNowT - s_nLastTime;
+
+			if( nTimeDiff > 15 )
+			{
+				m_nHeartBeatCount++;
+				s_bBeginCheck = false;
+				m_oLinkSessions.PushQuotation( 0, 0, (char*)&nNowT, sizeof(nNowT), true, m_nPushSerialNo );
+			}
+		}
+	}
+	else
+	{
+		s_bBeginCheck = false;
+	}
+
+	return;
+}
+
+unsigned int DataNodeService::OnInquireHeartBeatCount()
+{
+	return m_nHeartBeatCount;
 }
 
 bool DataNodeService::OnInquireStatus()

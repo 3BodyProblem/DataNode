@@ -126,7 +126,7 @@ int Configuration::Load()
 	}
 	m_oStartInParam.uiMaxLinkCount = oIniFile.getIntValue( std::string("ServerIO"), std::string("maxlinkcount"), nErrCode );
 	if( 0 == m_oStartInParam.uiMaxLinkCount )	{
-		m_oStartInParam.uiMaxLinkCount = 8;
+		m_oStartInParam.uiMaxLinkCount = 128;
 	}
 	m_oStartInParam.uiListenPort = oIniFile.getIntValue( std::string("ServerIO"), std::string("listenport"), nErrCode );
 	if( 0 == m_oStartInParam.uiListenPort )	{
@@ -134,15 +134,15 @@ int Configuration::Load()
 	}
 	m_oStartInParam.uiListenCount = oIniFile.getIntValue( std::string("ServerIO"), std::string("listenqueuesize"), nErrCode );
 	if( 0 == m_oStartInParam.uiListenCount )	{
-		m_oStartInParam.uiListenCount = m_oStartInParam.uiMaxLinkCount;
+		m_oStartInParam.uiListenCount = 100;
 	}
 	m_oStartInParam.uiSendBufCount = oIniFile.getIntValue( std::string("ServerIO"), std::string("sendbufcount"), nErrCode );
 	if( 0 == m_oStartInParam.uiSendBufCount )	{
-		m_oStartInParam.uiSendBufCount = 1024*1024*8;
+		m_oStartInParam.uiSendBufCount = m_oStartInParam.uiMaxLinkCount*10;
 	}
 	m_oStartInParam.uiThreadCount = oIniFile.getIntValue( std::string("ServerIO"), std::string("threadcount"), nErrCode );
 	if( 0 == m_oStartInParam.uiThreadCount )	{
-		m_oStartInParam.uiThreadCount = 1;
+		m_oStartInParam.uiThreadCount = 20;
 	}
 	m_oStartInParam.uiSendTryTimes = oIniFile.getIntValue( std::string("ServerIO"), std::string("sendtrytimes"), nErrCode );
 	if( 0 == m_oStartInParam.uiSendTryTimes )	{
@@ -154,19 +154,17 @@ int Configuration::Load()
 	}
 	int	nCompressFlag = oIniFile.getIntValue( std::string("ServerIO"), std::string("compressflag"), nErrCode );
 	m_oStartInParam.bCompress = nCompressFlag==1?true:false;
-	int	nSSLFlag = oIniFile.getIntValue( std::string("ServerIO"), std::string("sslflag"), nErrCode );
-	m_oStartInParam.bSSL = nSSLFlag==1?true:false;
-	std::string	sPfxFilePswd = oIniFile.getStringValue( std::string("ServerIO"), std::string("pfxfilepassword"), nErrCode );
-	::strncpy( m_oStartInParam.szPfxFilePasswrod, sPfxFilePswd.c_str(), sPfxFilePswd.length() );
+	m_oStartInParam.bSSL = false;
+
 	int	nDetailLog = oIniFile.getIntValue( std::string("ServerIO"), std::string("isdetaillog"), nErrCode );
 	m_oStartInParam.bDetailLog = nDetailLog==1?true:false;
 	m_oStartInParam.uiPageSize = oIniFile.getIntValue( std::string("ServerIO"), std::string("pagesize"), nErrCode );
 	if( 0 == m_oStartInParam.uiPageSize )	{
-		m_oStartInParam.uiPageSize = 1024*1024;
+		m_oStartInParam.uiPageSize = 1024;
 	}
 	m_oStartInParam.uiPageCount = oIniFile.getIntValue( std::string("ServerIO"), std::string("pagecount"), nErrCode );
 	if( 0 == m_oStartInParam.uiPageCount )	{
-		m_oStartInParam.uiPageCount = 10;
+		m_oStartInParam.uiPageCount = 1024 * 100;
 	}
 
 	///< [trading periods configuration]

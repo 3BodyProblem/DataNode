@@ -100,7 +100,8 @@ public:
 	 * @param[in]					pData				数据内容
 	 * @param[in]					nDataLen			长度
 	 * @param[out]					nDbSerialNo			数据库新增，更新操作流水号
-	 * @return						==0					成功
+	 * @return						>0					有更新到记录内容
+									==0					成功,但没有实际更新
 									!=0					错误
 	 */
 	int								UpdateQuotation( unsigned int nDataID, char* pData, unsigned int nDataLen, unsigned __int64& nDbSerialNo );

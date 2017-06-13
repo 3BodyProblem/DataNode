@@ -145,92 +145,96 @@ void SessionCollection::SetMkID()
 
 unsigned int SessionCollection::FormatImageBuffer( unsigned int nSeqNo, unsigned int nDataID, unsigned int nDataWidth, unsigned int nBuffDataLen )
 {
-	unsigned int		nOffset = 0;
 	unsigned int		nMsgCount = 0;
+	unsigned int		nOffset = sizeof(tagPackageHead);
 	tagPackageHead*		pPkgHead = (tagPackageHead*)m_pSendBuffer;
 
+	if( 0 == nBuffDataLen ) {
+		return 0;
+	}
+
 	///< 构建发送格式数据包
-	::memmove( m_pSendBuffer+sizeof(tagPackageHead)+sizeof(tagBlockHead), m_pSendBuffer, nBuffDataLen );
+	::memmove( m_pSendBuffer+nOffset, m_pSendBuffer, nBuffDataLen );
 	while( nBuffDataLen > 0 )
 	{
-		tagBlockHead*	pMsgHead = (tagBlockHead*)(m_pSendBuffer + sizeof(tagPackageHead) + nOffset);
+		tagBlockHead*	pMsgHead = (tagBlockHead*)(m_pSendBuffer + nOffset);
+
+		::memmove( m_pSendBuffer+nOffset+sizeof(tagBlockHead), m_pSendBuffer+nOffset, nBuffDataLen );
 
 		pMsgHead->nDataType = nDataID;
 		pMsgHead->nDataLen = nDataWidth;
-
 		nBuffDataLen -= pMsgHead->nDataLen;
-		nOffset += (pMsgHead->nDataLen + sizeof(tagBlockHead));
-		::memmove( m_pSendBuffer+sizeof(tagPackageHead)+nOffset, m_pSendBuffer+sizeof(tagPackageHead)+nOffset+sizeof(tagBlockHead), nBuffDataLen );
+
 		nMsgCount++;
+		nOffset += (pMsgHead->nDataLen + sizeof(tagBlockHead));
 	}
 
 	///< 数据包头构建
 	pPkgHead->nSeqNo = nSeqNo;
-	pPkgHead->nMarketID = m_refDataCollector.GetMarketID();
-	pPkgHead->nBodyLen = nOffset;
 	pPkgHead->nMsgCount = nMsgCount;
+	pPkgHead->nMarketID = m_refDataCollector.GetMarketID();
+	pPkgHead->nBodyLen = ( nOffset - sizeof(tagPackageHead) );
 
 	return nOffset;
 }
 
 int SessionCollection::FlushImageData2NewSessions( unsigned __int64 nSerialNo )
 {
-	CriticalLock		lock( m_oLock );
+	CriticalLock				lock( m_oLock );
 
-	if( 0 == m_nReqLinkCount ) {
-		return 0;
-	}
-
-	unsigned int		lstTableID[64] = { 0 };
-	unsigned int		lstTableWidth[64] = { 0 };
-	unsigned int		nTableCount = m_pDatabase->GetTablesID( lstTableID, 64, lstTableWidth, 64 );
-	unsigned int		nReqLinkCount = m_setNewReqLinkID.size();
-
-	for( unsigned int n = 0; n < nTableCount && m_setNewReqLinkID.size() > 0; n++ )
+	if( m_nReqLinkCount > 0 )
 	{
-		unsigned int		nTableID = lstTableID[n];
-		unsigned int		nTableWidth = lstTableWidth[n];
-		int					nFunctionID = ((n+1)==nTableCount) ? 100 : 0;
-		unsigned __int64	nSerialNoOfAnchor = nSerialNo;
-		int					nDataLen = m_pDatabase->FetchRecordsByID( nTableID, m_pSendBuffer, MAX_IMAGE_BUFFER_SIZE, nSerialNoOfAnchor );
+		unsigned int			lstTableID[64] = { 0 };
+		unsigned int			lstTableWidth[64] = { 0 };
+		unsigned int			nTableCount = m_pDatabase->GetTablesID( lstTableID, 64, lstTableWidth, 64 );
+		unsigned int			nReqLinkCount = m_setNewReqLinkID.size();
 
-		if( nDataLen < 0 )
+		for( unsigned int n = 0; n < nTableCount && m_setNewReqLinkID.size() > 0; n++ )
 		{
-			DataNodeService::GetSerivceObj().WriteWarning( "SessionCollection::FlushImageData2NewSessions() : failed 2 fetch image of table, errorcode=%d", nDataLen );
-			return -1 * (n*100);
+			unsigned int		nTableID = lstTableID[n];
+			unsigned int		nTableWidth = lstTableWidth[n];
+			int					nFunctionID = ((n+1)==nTableCount) ? 100 : 0;
+			unsigned __int64	nSerialNoOfAnchor = nSerialNo;
+			int					nDataLen = m_pDatabase->FetchRecordsByID( nTableID, m_pSendBuffer, MAX_IMAGE_BUFFER_SIZE, nSerialNoOfAnchor );
+
+			if( nDataLen < 0 )
+			{
+				DataNodeService::GetSerivceObj().WriteWarning( "SessionCollection::FlushImageData2NewSessions() : failed 2 fetch image of table, errorcode=%d", nDataLen );
+				return -1 * (n*100);
+			}
+
+			///< 将查询出的数据重新格式到m_pSendBuffer发送缓存
+			unsigned int	nSendLen = FormatImageBuffer( n, nTableID, nTableWidth, nDataLen );
+
+			for( std::set<unsigned int>::iterator it = m_setNewReqLinkID.begin(); it != m_setNewReqLinkID.end(); )
+			{
+				int	nErrCode = DataNodeService::GetSerivceObj().SendData( *it, MESSAGENO, nFunctionID, m_pSendBuffer, nSendLen/*, nSerialNo*/ );
+				if( nErrCode < 0 )
+				{
+					DataNodeService::GetSerivceObj().WriteWarning( "SessionCollection::FlushImageData2NewSessions() : failed 2 send image data, errorcode=%d", nErrCode );
+					return -2 * (n*10000);
+				}
+
+				if( 100 == nFunctionID )					///< 最后一个数据包的function id是100
+				{
+					m_oLinkNoTable.NewLinkID( *it );		///< 将新会话的id加入推送列表
+					it = m_setNewReqLinkID.erase( it );		///< 将新会话的id删除
+					m_nReqLinkCount--;						///< 重计引用计数
+				}
+				else
+				{
+					it++;
+				}
+			}
 		}
 
-		unsigned int	nSendLen = FormatImageBuffer( n, nTableID, nTableWidth, nDataLen );
+		m_oQuotationBuffer.SetLinkNoList( m_oLinkNoTable );
+		m_nReqLinkCount = m_setNewReqLinkID.size();
 
-		for( std::set<unsigned int>::iterator it = m_setNewReqLinkID.begin(); it != m_setNewReqLinkID.end(); )
-		{
-			int	nErrCode = DataNodeService::GetSerivceObj().SendData( *it, MESSAGENO, nFunctionID, m_pSendBuffer, nSendLen/*, nSerialNo*/ );
-			if( nErrCode < 0 )
-			{
-				DataNodeService::GetSerivceObj().WriteWarning( "SessionCollection::FlushImageData2NewSessions() : failed 2 send image data, errorcode=%d", nErrCode );
-				return -2 * (n*10000);
-			}
-
-			if( 100 == nFunctionID )
-			{
-				m_oLinkNoTable.NewLinkID( *it );
-				it = m_setNewReqLinkID.erase( it );
-				m_nReqLinkCount--;
-			}
-			else
-			{
-				it++;
-			}
-		}
+		return nReqLinkCount;
 	}
 
-	LINKID_VECTOR	vctLinkNo = { 0 };
-	unsigned int	nLinkNoCount = m_oLinkNoTable.FetchLinkIDList( vctLinkNo+0, MAX_LINKID_NUM );
-	if( nLinkNoCount > 0 ) {
-		m_oQuotationBuffer.SetLinkNoList( vctLinkNo+0, nLinkNoCount );
-	}
-
-	return nReqLinkCount;
+	return 0;
 }
 
 int SessionCollection::QueryCodeListInDatabase( unsigned int nDataID, unsigned int nRecordLen, std::set<std::string>& setCode )
@@ -264,11 +268,12 @@ void SessionCollection::OnReportStatus( char* szStatusInfo, unsigned int uiSize 
 	int				nUpdateInterval = (int)(::time(NULL)-m_pDatabase->GetLastUpdateTime());
 
 	::sprintf( szStatusInfo
-		, ":working = %s, 版本 = V%.2f B%03d, 测试行情模式 = %s, 推送链路数 = %d(路), \
+		, ":working = %s, 版本 = V%.2f B%03d, 测试行情模式 = %s, 发送心跳包数 = %u, 推送链路数 = %d(路), \
 		 初始化链路数 = %u(路), 数据表数量 = %u(张), 行情间隔 = %u(秒), 缓存空闲比例 = %.2f(％)\n"
 		, DataNodeService::GetSerivceObj().OnInquireStatus()==true?"true":"false"
 		, (float)(nModuleVersion>>16)/100.f, nModuleVersion&0xFF
 		, Configuration::GetConfigObj().GetTestFlag()==true?"是":"否"
+		, DataNodeService::GetSerivceObj().OnInquireHeartBeatCount()
 		, m_oLinkNoTable.GetLinkCount(), m_nReqLinkCount
 		, m_pDatabase->GetTableCount(), nUpdateInterval, dFreePer );
 }
@@ -326,16 +331,10 @@ bool SessionCollection::OnCommand( const char* szSrvUnitName, const char* szComm
 
 void SessionCollection::OnCloseLink( unsigned int uiLinkNo, int iCloseType )
 {
+	DataNodeService::GetSerivceObj().WriteWarning( "SessionCollection::OnCloseLink() : link [%u] closed, errorcode=%d", uiLinkNo, iCloseType );
+
 	m_oLinkNoTable.RemoveLinkID( uiLinkNo );
-
-	CriticalLock		lock( m_oLock );
-	LINKID_VECTOR		vctLinkNo = { 0 };
-	unsigned int		nLinkNoCount = m_oLinkNoTable.FetchLinkIDList( vctLinkNo+0, MAX_LINKID_NUM );
-
-	if( nLinkNoCount > 0 )
-	{
-		m_oQuotationBuffer.SetLinkNoList( vctLinkNo+0, nLinkNoCount );
-	}
+	m_oQuotationBuffer.SetLinkNoList( m_oLinkNoTable );
 }
 
 bool SessionCollection::OnRecvData( unsigned int uiLinkNo, unsigned short usMessageNo, unsigned short usFunctionID, bool bErrorFlag, const char* lpData, unsigned int uiSize, unsigned int& uiAddtionData )

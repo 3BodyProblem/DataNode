@@ -110,7 +110,7 @@ int PackagesBuffer::PushBlock( unsigned int nDataID, const char* pData, unsigned
 
 		pBlockHead->nDataType = nDataID;
 		pBlockHead->nDataLen = nDataSize;
-		::memcpy( pszFullData, pData, nDataSize );
+		::memcpy( pszFullData+sizeof(tagBlockHead), pData, nDataSize );
 
 		::memcpy( &m_pPkgBuffer[m_nLastPosition], pszFullData, nConsecutiveFreeSize );
 		::memcpy( &m_pPkgBuffer[0], pszFullData + nConsecutiveFreeSize, (nBlockSize - nConsecutiveFreeSize) );
@@ -135,7 +135,7 @@ int PackagesBuffer::GetOnePkg( char* pBuff, unsigned int nBuffSize )
 		return -2;
 	}
 
-	tagPackageHead*		pPkgHead = (tagPackageHead*)m_pPkgBuffer[m_nFirstPosition];
+	tagPackageHead*		pPkgHead = (tagPackageHead*)(m_pPkgBuffer+m_nFirstPosition);
 
 	nBuffSize = pPkgHead->nBodyLen + sizeof(tagPackageHead);
 	if( nBuffSize < nDataLen )
@@ -214,7 +214,7 @@ int QuotationSynchronizer::Initialize( unsigned int nNewBuffSize )
 		return -2;
 	}
 
-	return 0;
+	return SimpleTask::Activate();
 }
 
 int QuotationSynchronizer::Execute()
@@ -238,7 +238,7 @@ float QuotationSynchronizer::GetFreePercent()
 
 int QuotationSynchronizer::PutMessage( unsigned short nMsgID, const char *pData, unsigned int nLen, unsigned __int64 nSeqNo )
 {
-	if( NULL == pData || 0 == nLen )
+	if( NULL == pData  )
 	{
 		return -12345;
 	}
@@ -259,12 +259,16 @@ void QuotationSynchronizer::SetMkID( unsigned int nMkID )
 	m_oDataBuffer.SetMkID( nMkID );
 }
 
-void QuotationSynchronizer::SetLinkNoList( void* pListPtr, unsigned int nLinkCount )
+void QuotationSynchronizer::SetLinkNoList( LinkNoRegister& refLinkNoTable )
 {
+	LINKID_VECTOR		vctLinkNo = { 0 };
 	CriticalLock		guard( m_oLock );
+	unsigned int		nLinkNoCount = refLinkNoTable.FetchLinkIDList( vctLinkNo+0, MAX_LINKID_NUM );
 
-	::memcpy( m_vctLinkNo+0, pListPtr, nLinkCount );
-	m_nLinkCount = nLinkCount;
+	if( nLinkNoCount > 0 ) {
+		::memcpy( m_vctLinkNo+0, vctLinkNo, nLinkNoCount );
+		m_nLinkCount = nLinkNoCount;
+	}
 }
 
 void QuotationSynchronizer::FlushQuotation2Client()
@@ -273,6 +277,7 @@ void QuotationSynchronizer::FlushQuotation2Client()
 	{
 		CriticalLock	guard( m_oLock );
 		int				nDataSize = m_oDataBuffer.GetOnePkg( m_pSendBuffer, m_nMaxSendBufSize );
+
 		DataNodeService::GetSerivceObj().PushData( m_vctLinkNo+0, m_nLinkCount, MESSAGENO, 0, m_pSendBuffer, nDataSize );
 	}
 }

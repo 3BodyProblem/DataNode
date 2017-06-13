@@ -179,7 +179,7 @@ int DatabaseIO::UpdateQuotation( unsigned int nDataID, char* pData, unsigned int
 
 	m_nUpdateTimeT = ::time( NULL );
 
-	return 0;
+	return nAffectNum;
 }
 
 int DatabaseIO::QueryQuotation( unsigned int nDataID, char* pData, unsigned int nDataLen, unsigned __int64& nDbSerialNo )

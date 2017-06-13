@@ -132,6 +132,9 @@ protected:///< 私有功能函数
 public:
 	InitializerFlag&		GetInitFlag();
 
+protected:///< 统计成员变量
+	unsigned __int64		m_nPushSerialNo;				///< 实时行情更新流水
+	unsigned int			m_nHeartBeatCount;				///< 发送的心跳包数量
 protected:///< 逻辑数据成员
 	CriticalObject			m_oCodeMapLock;					///< CodeMap锁
 	MAP_TABLEID_CODES		m_mapID2Codes;					///< 记录各消息ID下的关联codes
@@ -194,15 +197,27 @@ public:
 	virtual int				OnIdle();
 
 	/**
+	 * @brief				心跳包：链路维持
+	 */
+	void					OnHeartBeat();
+
+	/**
 	 * @brief				备份内存插件中的行情数据
 	 */
 	void					OnBackupDatabase();
 
+public:
 	/**
 	 * @brief				询问数据采集模块的状态
 	 * @return				true					可服务
 	 */
 	bool					OnInquireStatus();
+
+	/**
+	 * @brief				获取发送的心跳包数量
+	 * @return				心跳包统计数量
+	 */
+	unsigned int			OnInquireHeartBeatCount();
 
 public:
 	virtual void			WriteInfo( const char * szFormat,... );

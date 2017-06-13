@@ -10,7 +10,7 @@
 #include "../../MemoryDB/MemoryDatabase.h"
 
 
-#define			MESSAGENO		1000
+#define			MESSAGENO			100
 
 
 #pragma pack(1)
@@ -119,6 +119,9 @@ protected:
 };
 
 
+class LinkNoRegister;
+
+
 /**
  * @class						QuotationSynchronizer
  * @brief						行情流实时推送缓存
@@ -179,7 +182,7 @@ public:
 	/**
 	 * @brief					设置当前链路号到列表
 	 */
-	void						SetLinkNoList( void* pListPtr, unsigned int nLinkCount );
+	void						SetLinkNoList( LinkNoRegister& refLinkNoTable );
 
 	/**
 	 * @brief					设置市场编号
