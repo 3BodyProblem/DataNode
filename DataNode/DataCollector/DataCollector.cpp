@@ -135,14 +135,14 @@ int DataCollector::RecoverDataCollector()
 	return nErrorCode;
 }
 
-enum E_SS_Status DataCollector::InquireDataCollectorStatus()
+enum E_SS_Status DataCollector::InquireDataCollectorStatus( char* pszStatusDesc, unsigned int& nStrLen )
 {
 	if( NULL == m_pFuncGetStatus )
 	{
 		return ET_SS_UNACTIVE;
 	}
 
-	m_oCollectorStatus.Set( (enum E_SS_Status)m_pFuncGetStatus() );
+	m_oCollectorStatus.Set( (enum E_SS_Status)m_pFuncGetStatus( pszStatusDesc, nStrLen ) );
 
 	return m_oCollectorStatus.Get();
 }

@@ -132,7 +132,25 @@ bool CTP_DL_Echo::ExcuteCommand( char** pArgv, unsigned int nArgc, char* szResul
 	unsigned int	nWritePos = 0;
 	std::string		sCmd = Str2Lower( std::string( pArgv[0] ) );
 
-	if( sCmd == "nametable" )
+	if( sCmd == "marketinfo" )
+	{
+		tagDLMarketInfo_LF1000			tagMkInfo = { 0 };
+		tagDLMarketStatus_HF1007		tagMkStatus = { 0 };
+
+		::strcpy( tagMkInfo.Key, "mkinfo" );
+		::strcpy( tagMkStatus.Key, "mkstatus" );
+
+		int		a = DataNodeService::GetSerivceObj().OnQuery( 1000, (char*)&tagMkInfo, sizeof(tagMkInfo) );
+		int		b = DataNodeService::GetSerivceObj().OnQuery( 1007, (char*)&tagMkStatus, sizeof(tagMkStatus) );
+
+		if( a > 0 && b > 0 )
+		{
+			nWritePos += ::sprintf( szResult+nWritePos, "行情日期:%u, 时间:%u \n", tagMkStatus.MarketDate, tagMkStatus.MarketTime );
+			nWritePos += ::sprintf( szResult+nWritePos, "行情状态:%s \n", (0==tagMkStatus.MarketStatus)?"初始化":"行情中" );
+			nWritePos += ::sprintf( szResult+nWritePos, "市场ID:%u, 商品总数:%u\n", tagMkInfo.MarketID, tagMkInfo.WareCount );
+		}
+	}
+	else if( sCmd == "nametable" )
 	{
 		std::string		sParam1 = Str2Lower( std::string( pArgv[1] ) );
 		std::string		sParam2 = Str2Lower( std::string( pArgv[2] ) );

@@ -7,9 +7,6 @@ typedef struct
 {
 	char						Key[32];					///< 索引键值
 	unsigned int				MarketID;					///< 市场编号
-	unsigned char				MarketStatus;				///< 市场状态[0初始化 1行情中]
-	unsigned int				MarketDate;					///< 市场日期
-	unsigned int				MarketTime;					///< 市场时间
 	unsigned int				KindCount;					///< 类别数量
 	unsigned int				WareCount;					///< 商品数量
 	unsigned int				PeriodsCount;				///< 交易时段信息列表长度
@@ -101,6 +98,7 @@ typedef struct
 typedef struct
 {
 	char						Key[32];					///< 索引键值
+	unsigned int				MarketDate;					///< 市场日期
 	unsigned int				MarketTime;					///< 市场时间
 	unsigned char				MarketStatus;				///< 市场状态[0初始化 1行情中]
 } tagDLMarketStatus_HF1007;

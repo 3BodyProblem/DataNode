@@ -71,8 +71,11 @@ public:///< 数据采集模块事件定义
 
 	/**
 	 * @biref				取得当前数据采集模块状态
+	 * @param[out]			pszStatusDesc				返回出状态描述串
+	 * @param[in,out]		nStrLen						输入描述串缓存长度，输出描述串有效内容长度
+	 * @return				E_SS_Status状态值
 	 */
-	enum E_SS_Status		InquireDataCollectorStatus();
+	enum E_SS_Status		InquireDataCollectorStatus( char* pszStatusDesc, unsigned int& nStrLen );
 
 	/**
 	 * @brief				获取市场编号

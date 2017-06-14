@@ -200,15 +200,15 @@ int DatabaseIO::QueryQuotation( unsigned int nDataID, char* pData, unsigned int 
 		return -2;
 	}
 
-	RecordBlock&	refRecord = pTable->SelectRecord( pData, ::strlen(pData) );
-	if( true == refRecord.IsNone() )
+	RecordBlock	oRecord = pTable->SelectRecord( pData, ::strlen(pData) );
+	if( true == oRecord.IsNone() )
 	{
 		return 0;
 	}
 
-	::memcpy( pData, refRecord.GetPtr(), refRecord.Length() );
+	::memcpy( pData, oRecord.GetPtr(), oRecord.Length() );
 
-	return refRecord.Length();
+	return oRecord.Length();
 }
 
 int DatabaseIO::RecoverDatabase( MkHoliday& refHoliday )

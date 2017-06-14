@@ -466,11 +466,11 @@ unsigned int DataNodeService::OnInquireHeartBeatCount()
 	return m_nHeartBeatCount;
 }
 
-bool DataNodeService::OnInquireStatus()
+bool DataNodeService::OnInquireStatus( char* pszStatusDesc, unsigned int& nStrLen )
 {
 	bool				bInitPoint = false;
 	bool				bDataBuilded = m_oDatabaseIO.IsBuilded();
-	enum E_SS_Status	eStatus = m_oDataCollector.InquireDataCollectorStatus();
+	enum E_SS_Status	eStatus = m_oDataCollector.InquireDataCollectorStatus( pszStatusDesc, nStrLen );
 
 	///< 非交易时段的工作状态
 	if( m_oInitFlag.InTradingPeriod( bInitPoint ) < 0 )

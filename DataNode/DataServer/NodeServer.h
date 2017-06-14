@@ -209,9 +209,11 @@ public:
 public:
 	/**
 	 * @brief				询问数据采集模块的状态
+	 * @param[out]			pszStatusDesc			返回出状态描述串
+	 * @param[in,out]		nStrLen					输入描述串缓存长度，输出描述串有效内容长度
 	 * @return				true					可服务
 	 */
-	bool					OnInquireStatus();
+	bool					OnInquireStatus( char* pszStatusDesc, unsigned int& nStrLen );
 
 	/**
 	 * @brief				获取发送的心跳包数量

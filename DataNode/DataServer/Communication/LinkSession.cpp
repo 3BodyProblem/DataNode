@@ -263,19 +263,23 @@ void SessionCollection::OnReportStatus( char* szStatusInfo, unsigned int uiSize 
 		return;
 	}
 
+	char			pszStatusDesc[1024*2] = { 0 };
+	unsigned int	nDescLen = sizeof(pszStatusDesc);
 	unsigned int	nModuleVersion = Configuration::GetConfigObj().GetStartInParam().uiVersion;
 	float			dFreePer = m_oQuotationBuffer.GetFreePercent();
 	int				nUpdateInterval = (int)(::time(NULL)-m_pDatabase->GetLastUpdateTime());
 
 	::sprintf( szStatusInfo
-		, ":working = %s, 版本 = V%.2f B%03d, 测试行情模式 = %s, 发送心跳包数 = %u, 推送链路数 = %d(路), \
-		 初始化链路数 = %u(路), 数据表数量 = %u(张), 行情间隔 = %u(秒), 缓存空闲比例 = %.2f(％)\n"
-		, DataNodeService::GetSerivceObj().OnInquireStatus()==true?"true":"false"
+		, ":working = %s,[NodeServer],版本 = V%.2f B%03d,测试行情模式 = %s,发送心跳包数 = %u,推送链路数 = %d(路),\
+		  初始化链路数 = %u(路),数据表数量 = %u(张), 行情间隔 = %u(秒), 缓存空闲比例 = %.2f(％)\
+		  ,[QuotationPlugin],%s"
+		, DataNodeService::GetSerivceObj().OnInquireStatus( pszStatusDesc, nDescLen )==true?"true":"false"
 		, (float)(nModuleVersion>>16)/100.f, nModuleVersion&0xFF
 		, Configuration::GetConfigObj().GetTestFlag()==true?"是":"否"
 		, DataNodeService::GetSerivceObj().OnInquireHeartBeatCount()
 		, m_oLinkNoTable.GetLinkCount(), m_nReqLinkCount
-		, m_pDatabase->GetTableCount(), nUpdateInterval, dFreePer );
+		, m_pDatabase->GetTableCount(), nUpdateInterval, dFreePer
+		, pszStatusDesc );
 }
 
 bool SessionCollection::OnNewLink( unsigned int uiLinkNo, unsigned int uiIpAddr, unsigned int uiPort )

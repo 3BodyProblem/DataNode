@@ -80,7 +80,7 @@ typedef int					(__stdcall *T_Func_Initialize)( I_DataHandle* pIDataHandle );
 typedef void				(__stdcall *T_Func_Release)();
 typedef int					(__stdcall *T_Func_RecoverQuotation)();
 typedef void				(__stdcall *T_Func_HaltQuotation)();
-typedef int					(__stdcall *T_Func_GetStatus)();
+typedef int					(__stdcall *T_Func_GetStatus)( char* pszStatusDesc, unsigned int& nStrLen );
 typedef int					(__stdcall *T_Func_GetMarketID)();
 
 
