@@ -7,6 +7,7 @@
 #include <string>
 #include <utility>
 #include "../Infrastructure/Lock.h"
+#include "../DataCollector/DataCollector.h"
 
 
 /**
@@ -88,7 +89,7 @@ typedef std::vector<T_TRADING_PERIOD>			T_VECTOR_PERIODS;		///< 所有交易时段信息
 class InitializerFlag
 {
 public:
-	InitializerFlag();
+	InitializerFlag( DataCollector& refDataCellector );
 
 	/**
 	 * @brief						初始化交易时间段，节假日表，测试标识
@@ -129,6 +130,7 @@ public:
 private:
 	CriticalObject					m_oLock;
 	MkHoliday						m_oHoliday;						///< 节假日记录
+	DataCollector&					m_refDataCellector;				///< 行情采集插件
 	T_VECTOR_PERIODS				m_vctTradingPeriod;				///< 交易时段列表，用于判断是否该初始化了
 	int								m_nLastTradingTimeStatus;		///< 最后一次交易状态记录
 };

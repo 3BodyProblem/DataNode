@@ -175,8 +175,8 @@ int MkHoliday::ReloadHoliday()
 }
 
 
-InitializerFlag::InitializerFlag()
- : m_nLastTradingTimeStatus( -1 )
+InitializerFlag::InitializerFlag( DataCollector& refDataCellector )
+ : m_nLastTradingTimeStatus( -1 ), m_refDataCellector( refDataCellector )
 {
 }
 
@@ -216,6 +216,22 @@ bool InitializerFlag::GetFlag()
 	CriticalLock		guard( m_oLock );
 	bool				bInitFlag = false;
 	int					nTradingTimeStatus = InTradingPeriod( bInitFlag );
+
+	if( true == m_refDataCellector.IsProxy() )						///< 特化处理行情采集插件是传输代理的情况
+	{
+		static char			s_pszTmp[2048] = { 0 };
+		unsigned int		nBufLen = sizeof(s_pszTmp);
+		enum E_SS_Status	eStatus = m_refDataCellector.InquireDataCollectorStatus( s_pszTmp, nBufLen );
+
+		if( ET_SS_DISCONNECTED == eStatus )							///< 在传输断开的时候，需要重新连接请求并订阅行情
+		{
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	}
 
 	if( nTradingTimeStatus < 0 )									///< 不在交易时段内
 	{

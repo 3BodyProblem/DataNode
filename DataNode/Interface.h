@@ -82,6 +82,7 @@ typedef int					(__stdcall *T_Func_RecoverQuotation)();
 typedef void				(__stdcall *T_Func_HaltQuotation)();
 typedef int					(__stdcall *T_Func_GetStatus)( char* pszStatusDesc, unsigned int& nStrLen );
 typedef int					(__stdcall *T_Func_GetMarketID)();
+typedef bool				(__stdcall *T_Func_IsProxy)();
 
 
 

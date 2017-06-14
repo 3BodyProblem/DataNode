@@ -26,15 +26,20 @@ bool CollectorStatus::Set( enum E_SS_Status eNewStatus )
 
 
 DataCollector::DataCollector()
- : m_pFuncInitialize( NULL ), m_pFuncRelease( NULL )
+ : m_pFuncInitialize( NULL ), m_pFuncRelease( NULL ), m_pFuncIsProxy( NULL )
  , m_pFuncRecoverQuotation( NULL ), m_pFuncGetStatus( NULL )
- , m_nMarketID( 0 ), m_bActivated( false )
+ , m_nMarketID( 0 ), m_bActivated( false ), m_bIsProxyPlugin( false )
 {
 }
 
 unsigned int DataCollector::GetMarketID()
 {
 	return m_nMarketID;
+}
+
+bool DataCollector::IsProxy()
+{
+	return m_bIsProxyPlugin;
 }
 
 int DataCollector::Initialize( I_DataHandle* pIDataCallBack )
@@ -58,8 +63,9 @@ int DataCollector::Initialize( I_DataHandle* pIDataCallBack )
 	m_pFuncHaltQuotation = (T_Func_HaltQuotation)m_oDllPlugin.GetDllFunction( "HaltQuotation" );
 	m_pFuncGetStatus = (T_Func_GetStatus)m_oDllPlugin.GetDllFunction( "GetStatus" );
 	m_pFuncGetMarketID = (T_Func_GetMarketID)m_oDllPlugin.GetDllFunction( "GetMarketID" );
+	m_pFuncIsProxy = (T_Func_IsProxy)m_oDllPlugin.GetDllFunction( "IsProxy" );
 
-	if( NULL == m_pFuncInitialize || NULL == m_pFuncRelease || NULL == m_pFuncRecoverQuotation || NULL == m_pFuncGetStatus || NULL == m_pFuncGetMarketID || NULL == m_pFuncHaltQuotation )
+	if( NULL == m_pFuncInitialize || NULL == m_pFuncRelease || NULL == m_pFuncRecoverQuotation || NULL == m_pFuncGetStatus || NULL == m_pFuncGetMarketID || NULL == m_pFuncHaltQuotation || NULL == m_pFuncIsProxy )
 	{
 		DataNodeService::GetSerivceObj().WriteError( "DataCollector::Initialize() : invalid fuction pointer(NULL)" );
 		return -10;
@@ -72,6 +78,7 @@ int DataCollector::Initialize( I_DataHandle* pIDataCallBack )
 	}
 
 	m_nMarketID = m_pFuncGetMarketID();
+	m_bIsProxyPlugin = m_pFuncIsProxy();
 
 	DataNodeService::GetSerivceObj().WriteInfo( "DataCollector::Initialize() : data collector plugin is initialized ......" );
 

@@ -7,6 +7,7 @@
 #include "../DataNode.h"
 #include "../DataServer/SvrConfig.h"
 #include "../InitializeFlag/InitFlag.h"
+#include "../DataCollector/DataCollector.h"
 
 
 ///< --------------------- 单元测试类定义 --------------------------------
@@ -38,13 +39,14 @@ void TestLogic::TearDown()
 ///< ------------------------ 测试用例定义 ----------------------------------------------------
 ///< ------------------------ 测试用例定义 ----------------------------------------------------
 
+DataCollector		oDataCollector;
 
 TEST_F( TestLogic, CheckConfiguration )
 {
 	///< 配置文件信息加载测试
 	int						n = 0;
 	bool					bInitPoint = false;
-	InitializerFlag			oInitPolicy;
+	InitializerFlag			oInitPolicy( oDataCollector );
 	MkHoliday&				setHoliday = oInitPolicy.GetHoliday();
 	Configuration&			refCnf = Configuration::GetConfigObj();
 	int						nErrCode = refCnf.Load();

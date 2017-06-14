@@ -9,7 +9,7 @@
 
 DataIOEngine::DataIOEngine()
  : m_oLinkSessions( m_oDataCollector ), SimpleTask( "DataIOEngine::Thread" )
- , m_nPushSerialNo( 0 ), m_nHeartBeatCount( 0 )
+ , m_nPushSerialNo( 0 ), m_nHeartBeatCount( 0 ), m_oInitFlag( m_oDataCollector )
 {
 }
 

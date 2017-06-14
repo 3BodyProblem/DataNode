@@ -82,10 +82,16 @@ public:///< 数据采集模块事件定义
 	 */
 	unsigned int			GetMarketID();
 
+	/**
+	 * @brief				是否为行情传输的采集插件
+	 */
+	bool					IsProxy();
+
 private:
 	CollectorStatus			m_oCollectorStatus;				///< 数据采集模块的状态
 	unsigned int			m_nMarketID;					///< 数据采集器对应的市场ID
 	bool					m_bActivated;					///< 是否已经激活
+	bool					m_bIsProxyPlugin;				///< 是否为传输代理插件
 private:
 	Dll						m_oDllPlugin;					///< 插件加载类
 	T_Func_Initialize		m_pFuncInitialize;				///< 数据采集器初始化接口
@@ -94,6 +100,7 @@ private:
 	T_Func_HaltQuotation	m_pFuncHaltQuotation;			///< 数据采集器暂停接口
 	T_Func_GetStatus		m_pFuncGetStatus;				///< 数据采集器状态获取接口
 	T_Func_GetMarketID		m_pFuncGetMarketID;				///< 数据采集器对应的市场ID获取接口
+	T_Func_IsProxy			m_pFuncIsProxy;					///< 数据采集器对应的模块类型获取接口
 };
 
 
