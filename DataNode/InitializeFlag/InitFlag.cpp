@@ -223,14 +223,7 @@ bool InitializerFlag::GetFlag()
 		unsigned int		nBufLen = sizeof(s_pszTmp);
 		enum E_SS_Status	eStatus = m_refDataCellector.InquireDataCollectorStatus( s_pszTmp, nBufLen );
 
-		if( ET_SS_DISCONNECTED == eStatus )							///< 在传输断开的时候，需要重新连接请求并订阅行情
-		{
-			return true;
-		}
-		else
-		{
-			return false;
-		}
+		return ( ET_SS_DISCONNECTED == eStatus ) ? true : false;	///< 在传输断开的时候，需要重新连接请求并订阅行情
 	}
 
 	if( nTradingTimeStatus < 0 )									///< 不在交易时段内

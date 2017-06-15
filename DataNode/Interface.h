@@ -73,15 +73,52 @@ public:
 };
 
 
+///< -------------------------- 数据采集插件接口 ----------------------------------
 
 
-
+/**
+ * @brief					初始化数据采集模块
+ * @param[in]				pIDataHandle				行情功能回调
+ * @return					==0							初始化成功
+							!=							出错
+ */
 typedef int					(__stdcall *T_Func_Initialize)( I_DataHandle* pIDataHandle );
+
+/**
+ * @brief					释放数据采集模块
+ */
 typedef void				(__stdcall *T_Func_Release)();
+
+/**
+ * @brief					重新初始化并加载行情数据
+ * @note					是一个同步的函数，在行情初始化完成后才会返回
+ * @return					==0							成功
+							!=0							出错
+ */
 typedef int					(__stdcall *T_Func_RecoverQuotation)();
+
+/**
+ * @brief					暂时数据采集
+ */
 typedef void				(__stdcall *T_Func_HaltQuotation)();
+
+/**
+ * @brief					获取模块的当前状态
+ * @param[out]				pszStatusDesc				返回出状态描述串
+ * @param[in,out]			nStrLen						输入描述串缓存长度，输出描述串有效内容长度
+ * @return					返回模块当前状态值
+ */
 typedef int					(__stdcall *T_Func_GetStatus)( char* pszStatusDesc, unsigned int& nStrLen );
+
+/**
+ * @brief					获取市场编号
+ * @return					市场ID
+ */
 typedef int					(__stdcall *T_Func_GetMarketID)();
+
+/**
+ * @brief					单元测试导出函数
+ */
 typedef bool				(__stdcall *T_Func_IsProxy)();
 
 
