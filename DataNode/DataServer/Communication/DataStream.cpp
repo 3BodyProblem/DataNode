@@ -273,7 +273,7 @@ void QuotationSynchronizer::SetLinkNoList( LinkNoRegister& refLinkNoTable )
 
 void QuotationSynchronizer::FlushQuotation2Client()
 {
-	if( false == m_oDataBuffer.IsEmpty() && m_nLinkCount > 0 )
+	if( false == m_oDataBuffer.IsEmpty() )
 	{
 		CriticalLock	guard( m_oLock );
 		int				nDataSize = m_oDataBuffer.GetOnePkg( m_pSendBuffer, m_nMaxSendBufSize );
