@@ -67,29 +67,37 @@ bool DataIOEngine::PrepareQuotation()
 	DataNodeService::GetSerivceObj().WriteInfo( "DataIOEngine::PrepareQuotation() : reloading quotation........" );
 
 	m_oDataCollector.HaltDataCollector();												///< 1) 先事先停止数据采集模块
-	if( 0 != (nErrorCode=m_oDatabaseIO.RecoverDatabase( m_oInitFlag.GetHoliday() )) )	///< 2) 从本地文件恢复历史行情数据到内存插件
-	{
-		DataNodeService::GetSerivceObj().WriteWarning( "DataIOEngine::PrepareQuotation() : failed 2 recover quotations data from disk ..., errorcode=%d", nErrorCode );
-	}
-	else
-	{
-		if( 0 >= (nErrorCode=LoadCodesListInDatabase()) )								///< 查内存插件中已存在的商品代码，供是否有过期代码需作删除判断用
+
+	if( false == m_oDataCollector.IsProxy() )
+	{	///< 对于非传输插件，需要事先加载落盘快照
+		if( 0 != (nErrorCode=m_oDatabaseIO.RecoverDatabase(m_oInitFlag.GetHoliday())) )	///< 2) 从本地文件恢复历史行情数据到内存插件
 		{
-			DataNodeService::GetSerivceObj().WriteWarning( "DataIOEngine::PrepareQuotation() : failed 2 code list from database ..., errorcode=%d", nErrorCode );
-			return false;
+			DataNodeService::GetSerivceObj().WriteWarning( "DataIOEngine::PrepareQuotation() : failed 2 recover quotations data from disk ..., errorcode=%d", nErrorCode );
+		}
+		else
+		{
+			if( 0 >= (nErrorCode=LoadCodesListInDatabase()) )							///< 查内存插件中已存在的商品代码，供是否有过期代码需作删除判断用
+			{
+				DataNodeService::GetSerivceObj().WriteWarning( "DataIOEngine::PrepareQuotation() : failed 2 code list from database ..., errorcode=%d", nErrorCode );
+				return false;
+			}
 		}
 	}
 
+	///< 所有类型的数据采集插件都需要调此逻辑
 	if( 0 != (nErrorCode=m_oDataCollector.RecoverDataCollector()) )						///< 3) 重新初始化行情采集模块
 	{
 		DataNodeService::GetSerivceObj().WriteWarning( "DataIOEngine::PrepareQuotation() : failed 2 initialize data collector module, errorcode=%d", nErrorCode );
 		return false;;
 	}
 
-	if( (nErrorCode=RemoveCodeExpiredInDatabase()) < 0 )								///< 4) 删除内存中过期的商品
-	{
-		DataNodeService::GetSerivceObj().WriteWarning( "DataIOEngine::PrepareQuotation() : failed 2 remove expired code in database, errorcode=%d", nErrorCode );
-		return false;;
+	if( false == m_oDataCollector.IsProxy() )
+	{	///< 对于非传输插件，需要事先加载落盘快照
+		if( (nErrorCode=RemoveCodeExpiredInDatabase()) < 0 )							///< 4) 删除内存中过期的商品
+		{
+			DataNodeService::GetSerivceObj().WriteWarning( "DataIOEngine::PrepareQuotation() : failed 2 remove expired code in database, errorcode=%d", nErrorCode );
+			return false;;
+		}
 	}
 
 	m_oLinkSessions.SetMkID();															///< 5) 从数据采集插件更新"市场ID"
