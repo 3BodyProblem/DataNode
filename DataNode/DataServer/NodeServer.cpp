@@ -69,7 +69,7 @@ bool DataIOEngine::PrepareQuotation()
 	m_oDataCollector.HaltDataCollector();												///< 1) 先事先停止数据采集模块
 
 	if( false == m_oDataCollector.IsProxy() )
-	{	///< 对于非传输插件，需要事先加载落盘快照
+	{	///< 对于非传输插件，需要事先加载落盘快照，需要这种插件不需要从落盘文件中恢复历史行情数据表
 		if( 0 != (nErrorCode=m_oDatabaseIO.RecoverDatabase(m_oInitFlag.GetHoliday())) )	///< 2) 从本地文件恢复历史行情数据到内存插件
 		{
 			DataNodeService::GetSerivceObj().WriteWarning( "DataIOEngine::PrepareQuotation() : failed 2 recover quotations data from disk ..., errorcode=%d", nErrorCode );
