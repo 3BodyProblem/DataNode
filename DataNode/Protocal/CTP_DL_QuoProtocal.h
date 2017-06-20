@@ -17,7 +17,7 @@ typedef struct
 typedef struct
 {
 	char						Key[20];					///< 索引键值
-	char						KindName[32];				///< 类别的名称
+	char						KindName[64];				///< 类别的名称
 	unsigned int				PriceRate;					///< 价格放大倍数[10的多少次方]
 	unsigned int				LotFactor;					///< “手”比率
 	unsigned int				WareCount;					///< 该分类的商品数量
@@ -35,12 +35,11 @@ typedef struct
 typedef struct
 {
 	char						Code[20];					///< 合约代码
-	char						Name[32];					///< 合约名称
-	unsigned int				Kind;						///< 证券类型
-	char						DerivativeType;				///< 衍生品类型：欧式美式+认购认沽
+	char						Name[64];					///< 合约名称
+	unsigned char				Kind;						///< 证券类型
+	unsigned char				DerivativeType;				///< 衍生品类型：欧式美式+认购认沽
 	unsigned int				LotSize;					///< 一手等于几张合约
-	unsigned char				ObjectMId;					///< 上海期货 0  大连期货 1  郑州期货 2 上海期权 3  大连期权 4  郑州期权 5
-	char						UnderlyingCode[32];			///< 标的证券代码
+	char						UnderlyingCode[20];			///< 标的证券代码
 	unsigned int				ContractMult;				///< 合约乘数
 	unsigned int				XqPrice;					///< 行权价格[*放大倍数]
 	unsigned int				StartDate;					///< 首个交易日(YYYYMMDD)

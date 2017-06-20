@@ -166,6 +166,14 @@ int Configuration::Load()
 	if( 0 == m_oStartInParam.uiPageCount )	{
 		m_oStartInParam.uiPageCount = 1024 * 100;
 	}
+	m_sCheckName = oIniFile.getStringValue( std::string("ServerIO"), std::string("loginname"), nErrCode );
+	if( 0 != nErrCode )	{
+		m_sCheckName = "default";
+	}
+	m_sCheckPassword = oIniFile.getStringValue( std::string("ServerIO"), std::string("loginpswd"), nErrCode );
+	if( 0 != nErrCode )	{
+		m_sCheckPassword = "default";
+	}
 
 	///< [trading periods configuration]
 	int	nTradingPeriodsCount = oIniFile.getIntValue( std::string("TradingPeriods"), std::string("count"), nErrCode );
@@ -260,6 +268,16 @@ const std::string& Configuration::GetDataCollectorPluginPath() const
 const tagServicePlug_StartInParam& Configuration::GetStartInParam() const
 {
 	return m_oStartInParam;
+}
+
+const std::string& Configuration::GetCheckName() const
+{
+	return m_sCheckName;
+}
+
+const std::string& Configuration::GetCheckPassword() const
+{
+	return m_sCheckPassword;
 }
 
 

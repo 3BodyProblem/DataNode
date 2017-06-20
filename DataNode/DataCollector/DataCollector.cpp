@@ -104,6 +104,11 @@ void DataCollector::Release()
 	m_oDllPlugin.CloseDll();
 }
 
+bool DataCollector::IsAlive()
+{
+	return m_bActivated;
+}
+
 void DataCollector::HaltDataCollector()
 {
 	if( NULL != m_pFuncRelease && true == m_bActivated )

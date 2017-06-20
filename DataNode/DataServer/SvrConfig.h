@@ -80,6 +80,16 @@ public:
 	const std::string&					GetDataCollectorPluginPath() const;
 
 	/**
+	 * @brief							登录名
+	 */
+	const std::string&					GetCheckName() const;
+
+	/**
+	 * @brief							登录密码
+	 */
+	const std::string&					GetCheckPassword() const;
+
+	/**
 	 * @brief							服务框架启动参数
 	 */
 	const tagServicePlug_StartInParam&	GetStartInParam() const;
@@ -98,6 +108,8 @@ protected:
 	tagServicePlug_StartInParam			m_oStartInParam;				///< 服务引擎启动参数
 
 protected:
+	std::string							m_sCheckName;					///< 下级登录名
+	std::string							m_sCheckPassword;				///< 下级登录密码
 	unsigned int						m_nInitializeInterval;			///< 初始化间隔时间(秒)
 	unsigned int						m_nQuotaDumpInterval;			///< 数据快照落盘间隔(秒)
 	bool								m_bTestFlag;					///< 测试标识

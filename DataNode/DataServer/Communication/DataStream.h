@@ -40,6 +40,22 @@ typedef struct
 	unsigned int					nDataLen;			///< 数据块长度
 } tagBlockHead;
 
+
+/**
+ * @class							tagCommonLoginData_LF299
+ * @brief							登录数据块
+ * @author							barry
+ */
+typedef struct
+{
+	char							pszActionKey[20];	///< 指令字符串: request:请求登录 success:登录成功 failure:登录失败
+	char							pszUserName[32];	///< 用户名
+	char							pszPassword[64];	///< 密码
+	unsigned int					nReqDBSerialNo;		///< 请求多少流水号之后的增量数据
+	char							Reserve[1024];		///< 保留
+} tagCommonLoginData_LF299;
+
+
 #pragma pack()
 
 

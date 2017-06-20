@@ -87,6 +87,11 @@ public:///< 数据采集模块事件定义
 	 */
 	bool					IsProxy();
 
+	/**
+	 * @brief				是否在活动中
+	 */
+	bool					IsAlive();
+
 private:
 	CollectorStatus			m_oCollectorStatus;				///< 数据采集模块的状态
 	unsigned int			m_nMarketID;					///< 数据采集器对应的市场ID

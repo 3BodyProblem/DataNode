@@ -135,9 +135,9 @@ public:///< 初始化行情推送接口
 	int							QueryCodeListInDatabase( unsigned int nDataID, unsigned int nRecordLen, std::set<std::string>& setCode );
 
 	/**
-	 * @brief					设置市场编号
+	 * @brief					从行情数据采集模块更新同步市场编号
 	 */
-	void						SetMkID();
+	void						SyncFromDataCollector();
 
 protected:
 	/**

@@ -63,18 +63,13 @@ void DataIOEngine::Release()
 bool DataIOEngine::PrepareQuotation()
 {
 	int			nErrorCode = 0;
-
 	DataNodeService::GetSerivceObj().WriteInfo( "DataIOEngine::PrepareQuotation() : reloading quotation........" );
 
 	m_oDataCollector.HaltDataCollector();												///< 1) 先事先停止数据采集模块
 
 	if( false == m_oDataCollector.IsProxy() )
 	{	///< 对于非传输插件，需要事先加载落盘快照，需要这种插件不需要从落盘文件中恢复历史行情数据表
-		if( 0 != (nErrorCode=m_oDatabaseIO.RecoverDatabase(m_oInitFlag.GetHoliday())) )	///< 2) 从本地文件恢复历史行情数据到内存插件
-		{
-			DataNodeService::GetSerivceObj().WriteWarning( "DataIOEngine::PrepareQuotation() : failed 2 recover quotations data from disk ..., errorcode=%d", nErrorCode );
-		}
-		else
+		if( 0 == (nErrorCode=m_oDatabaseIO.RecoverDatabase(m_oInitFlag.GetHoliday())) )	///< 2) 从本地文件恢复历史行情数据到内存插件
 		{
 			if( 0 >= (nErrorCode=LoadCodesListInDatabase()) )							///< 查内存插件中已存在的商品代码，供是否有过期代码需作删除判断用
 			{
@@ -84,24 +79,19 @@ bool DataIOEngine::PrepareQuotation()
 		}
 	}
 
-	///< 所有类型的数据采集插件都需要调此逻辑
 	if( 0 != (nErrorCode=m_oDataCollector.RecoverDataCollector()) )						///< 3) 重新初始化行情采集模块
 	{
 		DataNodeService::GetSerivceObj().WriteWarning( "DataIOEngine::PrepareQuotation() : failed 2 initialize data collector module, errorcode=%d", nErrorCode );
 		return false;;
 	}
 
-	if( false == m_oDataCollector.IsProxy() )
-	{	///< 对于非传输插件，需要事先加载落盘快照
-		if( (nErrorCode=RemoveCodeExpiredInDatabase()) < 0 )							///< 4) 删除内存中过期的商品
-		{
-			DataNodeService::GetSerivceObj().WriteWarning( "DataIOEngine::PrepareQuotation() : failed 2 remove expired code in database, errorcode=%d", nErrorCode );
-			return false;;
-		}
+	if( (nErrorCode=RemoveCodeExpiredInDatabase()) < 0 )								///< 4) 删除内存中过期的商品
+	{
+		DataNodeService::GetSerivceObj().WriteWarning( "DataIOEngine::PrepareQuotation() : failed 2 remove expired code in database, errorcode=%d", nErrorCode );
+		return false;;
 	}
 
-	m_oLinkSessions.SetMkID();															///< 5) 从数据采集插件更新"市场ID"
-
+	m_oLinkSessions.SyncFromDataCollector();											///< 5) 从数据采集插件更新"市场ID"
 	DataNodeService::GetSerivceObj().WriteInfo( "DataIOEngine::PrepareQuotation() : quotation reloaded ........" );
 
 	return true;
@@ -191,6 +181,11 @@ int DataIOEngine::LoadCodesListInDatabase()
 
 int DataIOEngine::RemoveCodeExpiredInDatabase()
 {
+	if( false == m_oDataCollector.IsProxy() )
+	{
+		return 0;		///< 如果是行情传输代理，则不需要删除无效代码，因为码表都是即时从上级更新的
+	}
+
 	int					nAffectNum = 0;
 	int					nErrorCode = 0;
 	unsigned int		lstTableID[64] = { 0 };
@@ -426,9 +421,10 @@ int DataNodeService::OnIdle()
 		}
 	}
 
-	///< 非交易时段，停止数据采集模块的工作
-	if( nPertiodIndex < 0 )
+	///< 非交易时段，停止源驱动的数据采集模块的工作
+	if( nPertiodIndex < 0 && false == m_oDataCollector.IsProxy() && true == m_oDataCollector.IsAlive() )
 	{
+		DataNodeService::GetSerivceObj().WriteInfo( "DataNodeService::OnIdle() : halting data collector ......" );
 		m_oDataCollector.HaltDataCollector();
 	}
 

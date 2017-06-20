@@ -138,7 +138,7 @@ void SessionCollection::Release()
 	RealTimeQuote4LinksSpi::Release();
 }
 
-void SessionCollection::SetMkID()
+void SessionCollection::SyncFromDataCollector()
 {
 	m_oQuotationBuffer.SetMkID( m_refDataCollector.GetMarketID() );
 }
@@ -193,7 +193,7 @@ int SessionCollection::FlushImageData2NewSessions( unsigned __int64 nSerialNo )
 		{
 			unsigned int		nTableID = lstTableID[n];
 			unsigned int		nTableWidth = lstTableWidth[n];
-			int					nFunctionID = ((n+1)==nTableCount) ? 100 : 0;
+			int					nFunctionID = ((n+1)==nTableCount) ? 100 : 0;	///< 最后一个数据包的标识
 			unsigned __int64	nSerialNoOfAnchor = nSerialNo;
 			int					nDataLen = m_pDatabase->FetchRecordsByID( nTableID, m_pSendBuffer, MAX_IMAGE_BUFFER_SIZE, nSerialNoOfAnchor );
 
@@ -284,18 +284,6 @@ void SessionCollection::OnReportStatus( char* szStatusInfo, unsigned int uiSize 
 
 bool SessionCollection::OnNewLink( unsigned int uiLinkNo, unsigned int uiIpAddr, unsigned int uiPort )
 {
-	CriticalLock		lock( m_oLock );
-
-	if( m_setNewReqLinkID.find( uiLinkNo ) != m_setNewReqLinkID.end() )
-	{
-		DataNodeService::GetSerivceObj().WriteInfo( "SessionCollection::AddNewReqSession() : [WARNING] duplicate link number & new link will be disconnected..." );
-
-		return false;
-	}
-
-	m_setNewReqLinkID.insert( uiLinkNo );
-	m_nReqLinkCount = m_setNewReqLinkID.size();
-
 	return true;
 }
 
@@ -343,6 +331,37 @@ void SessionCollection::OnCloseLink( unsigned int uiLinkNo, int iCloseType )
 
 bool SessionCollection::OnRecvData( unsigned int uiLinkNo, unsigned short usMessageNo, unsigned short usFunctionID, bool bErrorFlag, const char* lpData, unsigned int uiSize, unsigned int& uiAddtionData )
 {
+	if( usMessageNo == MESSAGENO )
+	{
+		CriticalLock				lock( m_oLock );
+		tagBlockHead*				pMsgHead = (tagBlockHead*)( lpData + sizeof(tagPackageHead) );
+		tagCommonLoginData_LF299*	pMsgBody = (tagCommonLoginData_LF299*)( lpData + sizeof(tagPackageHead) + sizeof(tagBlockHead) );
+
+		if( 299 == pMsgHead->nDataType )
+		{
+			::strcpy( pMsgBody->pszActionKey, "success" );
+
+			int	nErrCode = DataNodeService::GetSerivceObj().SendData( uiLinkNo, usMessageNo, usFunctionID, lpData, uiSize );
+			if( nErrCode < 0 )
+			{
+				DataNodeService::GetSerivceObj().WriteWarning( "SessionCollection::OnRecvData() : failed 2 reply login request, errorcode=%d", nErrCode );
+				return false;
+			}
+
+			///< ------------ 将校验通过的请求，加入待初始化列表 ------------------
+			if( m_setNewReqLinkID.find( uiLinkNo ) != m_setNewReqLinkID.end() )
+			{
+				DataNodeService::GetSerivceObj().WriteInfo( "SessionCollection::OnRecvData() : [WARNING] duplicate link number & new link will be disconnected..." );
+				return false;
+			}
+
+			m_setNewReqLinkID.insert( uiLinkNo );
+			m_nReqLinkCount = m_setNewReqLinkID.size();
+			DataNodeService::GetSerivceObj().WriteInfo( "SessionCollection::OnRecvData() : [NOTICE] link[%u] logged 2 server successfully." );
+
+			return true;
+		}
+	}
 
 	return false;
 }
