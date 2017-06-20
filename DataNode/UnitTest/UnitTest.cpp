@@ -54,11 +54,11 @@ TEST_F( TestLogic, CheckConfiguration )
 	const T_VECTOR_PERIODS&	vctPeriods = refCnf.GetTradingPeriods();
 
 	::printf( "\n------------ 配置信息列表 ---------------\n" );
-	::printf( "[版本]:V%.2f B%03d    [测试模式]:%s\n行情存盘目录:%s\n假日文件:%s; 节点名:%s\n内存插件路径:%s\n数据采集插件路径:%s\n压缩插件路径:%s\n初始化间隔:%u(s)\n落盘间隔:%u(s)\n"
+	::printf( "[版本]:V%.2f B%03d    [测试模式]:%s\n行情存盘目录:%s\n假日文件:%s; 节点名:%s\n内存插件路径:%s\n数据采集插件路径:%s\n压缩插件路径:%s\n初始化间隔:%u(s)\n落盘间隔:%u(s)\n登录名:%s\t登录密码:%s\n"
 		, (float)(nModuleVersion>>16)/100.f, nModuleVersion&0xFF, refCnf.GetTestFlag()==true?"是":"否"
 		, refCnf.GetRecoveryFolderPath().c_str(), refCnf.GetHolidayFilePath().c_str() , refCnf.GetHolidayNodeName().c_str()
 		, refCnf.GetMemPluginPath().c_str(), refCnf.GetDataCollectorPluginPath().c_str(), refCnf.GetCompressPluginPath().c_str()
-		, refCnf.GetInitInterval(), refCnf.GetDumpInterval() );
+		, refCnf.GetInitInterval(), refCnf.GetDumpInterval(), refCnf.GetCheckName().c_str(), refCnf.GetCheckPassword().c_str() );
 
 	::printf( "\n------------ 交易时段列表 ---------------\n" );
 	for( T_VECTOR_PERIODS::const_iterator it = vctPeriods.begin(); it != vctPeriods.end(); it++, n++ )
