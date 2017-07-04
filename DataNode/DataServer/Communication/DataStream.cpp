@@ -4,10 +4,12 @@
 #pragma warning(disable:4244)
 
 
+unsigned int	g_nMarketID = 0;
+
+
 PackagesBuffer::PackagesBuffer()
  : m_pPkgBuffer( NULL ), m_nMaxPkgBufSize( 0 )
  , m_nFirstPosition( 0 ), m_nLastPosition( 0 )
- , m_nMarketID( 0 )
 {
 }
 
@@ -47,11 +49,6 @@ void PackagesBuffer::Release()
 	}
 }
 
-void PackagesBuffer::SetMkID( unsigned int nMkID )
-{
-	m_nMarketID = nMkID;
-}
-
 float PackagesBuffer::GetPercentOfFreeSize()
 {
 	CriticalLock		guard( m_oLock );
@@ -83,7 +80,7 @@ int PackagesBuffer::PushBlock( unsigned int nDataID, const char* pData, unsigned
 	{
 		m_nLastPosition += sizeof(tagPackageHead);
 		((tagPackageHead*)(m_pPkgBuffer+m_nFirstPosition))->nSeqNo = nSeqNo;
-		((tagPackageHead*)(m_pPkgBuffer+m_nFirstPosition))->nMarketID = m_nMarketID;
+		((tagPackageHead*)(m_pPkgBuffer+m_nFirstPosition))->nMarketID = g_nMarketID;
 		((tagPackageHead*)(m_pPkgBuffer+m_nFirstPosition))->nBodyLen = nBlockSize;
 		((tagPackageHead*)(m_pPkgBuffer+m_nFirstPosition))->nMsgCount = 1;
 	}
@@ -254,16 +251,11 @@ int QuotationSynchronizer::PutMessage( unsigned short nMsgID, const char *pData,
 	return nErrorCode;
 }
 
-void QuotationSynchronizer::SetMkID( unsigned int nMkID )
-{
-	m_oDataBuffer.SetMkID( nMkID );
-}
-
-void QuotationSynchronizer::SetLinkNoList( LinkNoRegister& refLinkNoTable )
+void QuotationSynchronizer::SetLinkNoList()
 {
 	LINKID_VECTOR		vctLinkNo = { 0 };
 	CriticalLock		guard( m_oLock );
-	unsigned int		nLinkNoCount = refLinkNoTable.FetchLinkIDList( vctLinkNo+0, MAX_LINKID_NUM );
+	unsigned int		nLinkNoCount = LinkNoRegister::GetRegister().FetchPushLinkIDList( vctLinkNo+0, MAX_LINKID_NUM );
 
 	if( nLinkNoCount > 0 ) {
 		::memcpy( m_vctLinkNo+0, vctLinkNo, nLinkNoCount );

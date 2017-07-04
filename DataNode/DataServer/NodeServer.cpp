@@ -8,7 +8,7 @@
 
 
 DataIOEngine::DataIOEngine()
- : m_oLinkSessions( m_oDataCollector ), SimpleTask( "DataIOEngine::Thread" )
+ : m_oLinkSessions( m_oDatabaseIO ), SimpleTask( "DataIOEngine::Thread" )
  , m_nPushSerialNo( 0 ), m_nHeartBeatCount( 0 ), m_oInitFlag( m_oDataCollector )
 {
 }
@@ -91,8 +91,8 @@ bool DataIOEngine::PrepareQuotation()
 		return false;;
 	}
 
-	m_oLinkSessions.SyncFromDataCollector();											///< 5) 从数据采集插件更新"市场ID"
-	DataNodeService::GetSerivceObj().WriteInfo( "DataIOEngine::PrepareQuotation() : quotation reloaded ........" );
+	g_nMarketID = m_oDataCollector.GetMarketID();										///< 5) 从数据采集插件更新"市场ID"
+	DataNodeService::GetSerivceObj().WriteInfo( "DataIOEngine::PrepareQuotation() : quotation reloaded, MarketID=%u ........", g_nMarketID );
 
 	return true;
 }
@@ -165,7 +165,7 @@ int DataIOEngine::LoadCodesListInDatabase()
 		unsigned int				nDataID = lstTableID[n];
 		unsigned int				nRecordLen = lstRecordWidth[n];
 
-		if( (nErrorCode=m_oLinkSessions.QueryCodeListInDatabase( nDataID, nRecordLen, setCode )) < 0 )
+		if( (nErrorCode=ImageDataQuery::GetImageQuery().QueryCodeListInDatabase( nDataID, nRecordLen, setCode )) < 0 )
 		{
 			DataNodeService::GetSerivceObj().WriteWarning( "DataIOEngine::LoadCodesListInDatabase() : failed fetch code list in table [%d] ", nDataID );
 			return -100 - n;
@@ -329,7 +329,7 @@ int DataNodeService::Activate()
 			return nErrorCode;
 		}
 
-		if( 0 != (nErrorCode=m_oLinkSessions.Instance( m_oDatabaseIO )) )	{					///< 初始化会话链路管理
+		if( 0 != (nErrorCode=m_oLinkSessions.Instance()) )	{									///< 初始化会话链路管理
 			::printf( "DataNodeService::Activate() : failed 2 initialize link session set, errorcode=%d", nErrorCode );
 			return -2;
 		}
@@ -405,7 +405,7 @@ int DataNodeService::OnIdle()
 	int					nPertiodIndex = m_oInitFlag.InTradingPeriod( bInitPoint );
 
 	///< 检查是否有新的链接到来请求初始化行情数据推送的
-	m_oLinkSessions.FlushImageData2NewSessions( 0 );///< 对新到达的链接，推送"全量"初始化快照行情
+	ImageDataQuery::GetImageQuery().FlushImageData2NewSessions( 0 );///< 对新到达的链接，推送"全量"初始化快照行情
 	///< 链路维持：心跳包发送
 	OnHeartBeat();
 

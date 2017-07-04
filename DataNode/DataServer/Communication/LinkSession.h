@@ -19,22 +19,25 @@
  */
 class LinkNoRegister
 {
-public:
+private:
 	LinkNoRegister();
 
 public:
+	static LinkNoRegister&		GetRegister();
+
+public:///< 推送链路号
 	/**
 	 * @brief					添加一个新到的链路ID
 	 * @detail					只需要添加新ID，不需要关心是否有重复，内部有作防预性判断
 	 * @param[in]				nNewLinkID			新链路ID
 	 */
-	int							NewLinkID( unsigned int nNewLinkID );
+	int							NewPushLinkID( unsigned int nNewLinkID );
 
 	/**
 	 * @brief					移除一个失效的链路ID
 	 * @param[in]				nRemoveLinkID		失效的ID
 	 */
-	void						RemoveLinkID( unsigned int nRemoveLinkID );
+	void						RemovePushLinkID( unsigned int nRemoveLinkID );
 
 	/**
 	 * @brief					获取当前有效的链路号列表
@@ -42,17 +45,39 @@ public:
 	 * @param[in]				uiArraySize			列表长度
 	 * @return					返回链路号数量
 	 */
-	unsigned int				FetchLinkIDList( unsigned int* lpLinkNoArray, unsigned int uiArraySize );
+	unsigned int				FetchPushLinkIDList( unsigned int* lpLinkNoArray, unsigned int uiArraySize );
 
 	/**
-	 * @brief					获取链路数量
+	 * @brief					获取推送链路数量
 	 */
-	int							GetLinkCount();
+	int							GetPushLinkCount();
+
+public:///< 请求链路号
+	/**
+	 * @brief					增加一个请求链路号
+	 */
+	int							NewReqLinkID( unsigned int nReqLinkID );
+
+	/**
+	 * @brief					获取请求链路数量
+	 */
+	int							GetReqLinkCount();
+
+	/**
+	 * @brief					弹出一个请求链路号
+	 */
+	int							PopReqLinkID();
+
+	/**
+	 * @brief					是否在请求链路集合中
+	 */
+	bool						InReqLinkIDSet( unsigned int nLinkID );
 
 private:
 	CriticalObject				m_oLock;				///< 锁
-	std::set<unsigned int>		m_setLinkID;			///< 链路号集合,用于方便处理重复ID,和判断ID是否已经存在
+	std::set<unsigned int>		m_setPushLinkID;		///< 实时推送链路号集合,用于方便处理重复ID,和判断ID是否已经存在
 	int							nLinkIDCount;			///< 链路数量
+	std::set<unsigned int>		m_setNewReqLinkID;		///< 待初始化链路ID集合
 };
 
 
@@ -60,55 +85,24 @@ private:
 
 
 /**
- * @class						RealTimeQuote4LinksSpi
- * @brief						下级链路数据回调事件 + 实时行情推送类
+ * @class						ImageDataQuery
+ * @brief						行情快照数据查询推送
  * @author						barry
  */
-class RealTimeQuote4LinksSpi : public MServicePlug_Spi
+class ImageDataQuery
 {
-public:///< 构造和初始化
-	RealTimeQuote4LinksSpi();
-	~RealTimeQuote4LinksSpi();
-
-	/**
-	 * @brief					初始化
-	 * @return					!= 0				失败
-	 */
-	int							Instance();
-
-	/**
-	 * @brief					释放资源
-	 */
-	void						Release();
-
-public:///< 行情推送接口
-	/**
-	 * @brief					将实时推送的数据放进缓存
-	 */
-	void						PushQuotation( unsigned short usMessageNo, unsigned short usFunctionID, const char* lpInBuf, unsigned int uiInSize, bool bPushFlag, unsigned __int64 nSerialNo );
-
-protected:///< 功能成员对象相关
-	LinkNoRegister				m_oLinkNoTable;			///< 链路号集合
-	QuotationSynchronizer		m_oQuotationBuffer;		///< 实时行情推送缓存（带推送线程)
-};
-
-
-/**
- * @class						SessionCollection
- * @brief						下级链路数据回调事件 + 实时行情推送类 + 并封装了初始化行情推送
- * @author						barry
- */
-class SessionCollection : public RealTimeQuote4LinksSpi
-{
+private:
+	ImageDataQuery();
 public:
-	SessionCollection( DataCollector& oDataCollector );
-	~SessionCollection();
+	~ImageDataQuery();
+
+	static ImageDataQuery&		GetImageQuery();
 
 	/**
 	 * @brief					初始化
 	 * @return					!= 0				失败
 	 */
-	int							Instance( DatabaseIO& refDbIO );
+	int							Instance( DatabaseIO* pDbIO, QuotationSynchronizer* pQuotBuf );
 
 	/**
 	 * @brief					释放资源
@@ -134,17 +128,54 @@ public:///< 初始化行情推送接口
 	 */
 	int							QueryCodeListInDatabase( unsigned int nDataID, unsigned int nRecordLen, std::set<std::string>& setCode );
 
-	/**
-	 * @brief					从行情数据采集模块更新同步市场编号
-	 */
-	void						SyncFromDataCollector();
-
-protected:
+public:
 	/**
 	 * @brief					格式化快照数据缓存
 	 * @return					返回格式化后的数据长度
 	 */
 	unsigned int				FormatImageBuffer( unsigned int nSeqNo, unsigned int nDataID, unsigned int nDataWidth, unsigned int nBuffDataLen );
+
+	/**
+	 * @brief					获取内存数据库指针
+	 */
+	DatabaseIO*					GetMemoDbPtr();
+
+protected:
+	CriticalObject				m_oLock;				///< 初始化数据推送缓存锁
+	char*						m_pSendBuffer;			///< 数据发送缓存
+protected:
+	DatabaseIO*					m_pDatabase;			///< 数据操作对象指针
+	QuotationSynchronizer*		m_pQuotationBuffer;		///< 实时行情推送缓存（带推送线程)
+};
+
+
+/**
+ * @class						SessionCollection
+ * @brief						下级链路数据回调事件 + 实时行情推送类
+ * @author						barry
+ */
+class SessionCollection : public MServicePlug_Spi
+{
+public:
+	SessionCollection( DatabaseIO& refDbIO );
+	~SessionCollection();
+
+	/**
+	 * @brief					初始化
+	 * @return					!= 0				失败
+	 */
+	int							Instance();
+
+	/**
+	 * @brief					释放资源
+	 */
+	void						Release();
+
+public:///< 行情推送接口
+	/**
+	 * @brief					将实时推送的数据放进缓存
+	 */
+	void						PushQuotation( unsigned short usMessageNo, unsigned short usFunctionID, const char* lpInBuf, unsigned int uiInSize, bool bPushFlag, unsigned __int64 nSerialNo );
 
 protected:///< 网络框架事件回调
 	/**
@@ -197,12 +228,8 @@ protected:///< 网络框架事件回调
 	virtual bool				OnRecvData( unsigned int uiLinkNo, unsigned short usMessageNo, unsigned short usFunctionID, bool bErrorFlag, const char* lpData, unsigned int uiSize, unsigned int& uiAddtionData );
 
 protected:///< 新到达的链路初始化逻辑相关
-	DataCollector&				m_refDataCollector;		///< 行情采集模块接口
-	DatabaseIO*					m_pDatabase;			///< 数据操作对象指针
-	CriticalObject				m_oLock;				///< 初始化数据推送缓存锁
-	std::set<unsigned int>		m_setNewReqLinkID;		///< 待初始化链路ID集合
-	unsigned int				m_nReqLinkCount;		///< 请求初始化的链路数量
-	char*						m_pSendBuffer;			///< 数据发送缓存
+	DatabaseIO&					m_refDatabase;			///< 行情内存库
+	QuotationSynchronizer		m_oQuotationBuffer;		///< 实时行情推送缓存（带推送线程)
 };
 
 
