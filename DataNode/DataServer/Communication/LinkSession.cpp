@@ -173,37 +173,23 @@ ImageDataQuery& ImageDataQuery::GetImageQuery()
 
 unsigned int ImageDataQuery::FormatImageBuffer( unsigned int nSeqNo, unsigned int nDataID, unsigned int nDataWidth, unsigned int nBuffDataLen )
 {
-	unsigned int		nMsgCount = 0;
-	unsigned int		nOffset = sizeof(tagPackageHead);
 	tagPackageHead*		pPkgHead = (tagPackageHead*)m_pSendBuffer;
 
-	if( 0 == nBuffDataLen ) {
+	if( 0 == nBuffDataLen )
+	{
 		return 0;
 	}
 
 	///< 构建发送格式数据包
-	::memmove( m_pSendBuffer+nOffset, m_pSendBuffer, nBuffDataLen );
-	while( nBuffDataLen > 0 )
-	{
-		tagBlockHead*	pMsgHead = (tagBlockHead*)(m_pSendBuffer + nOffset);
-
-		::memmove( m_pSendBuffer+nOffset+sizeof(tagBlockHead), m_pSendBuffer+nOffset, nBuffDataLen );
-
-		pMsgHead->nDataType = nDataID;
-		pMsgHead->nDataLen = nDataWidth;
-		nBuffDataLen -= pMsgHead->nDataLen;
-
-		nMsgCount++;
-		nOffset += (pMsgHead->nDataLen + sizeof(tagBlockHead));
-	}
+	::memmove( m_pSendBuffer+sizeof(tagPackageHead), m_pSendBuffer, nBuffDataLen );
 
 	///< 数据包头构建
 	pPkgHead->nSeqNo = nSeqNo;
-	pPkgHead->nMsgCount = nMsgCount;
+	pPkgHead->nMsgCount = nBuffDataLen / nDataWidth;
 	pPkgHead->nMarketID = g_nMarketID;
-	pPkgHead->nBodyLen = ( nOffset - sizeof(tagPackageHead) );
+	pPkgHead->nMsgLength = nDataWidth;
 
-	return nOffset;
+	return nBuffDataLen + sizeof(tagPackageHead);
 }
 
 int ImageDataQuery::FlushImageData2NewSessions( unsigned __int64 nSerialNo )
@@ -237,7 +223,7 @@ int ImageDataQuery::FlushImageData2NewSessions( unsigned __int64 nSerialNo )
 				///< 将查询出的数据重新格式到m_pSendBuffer发送缓存
 				unsigned int	nSendLen = FormatImageBuffer( n, nTableID, nTableWidth, nDataLen );
 
-				int	nErrCode = DataNodeService::GetSerivceObj().SendData( nReqLinkID, MESSAGENO, nFunctionID, m_pSendBuffer, nSendLen/*, nSerialNo*/ );
+				int	nErrCode = DataNodeService::GetSerivceObj().SendData( nReqLinkID, nTableID, nFunctionID, m_pSendBuffer, nSendLen/*, nSerialNo*/ );
 				if( nErrCode < 0 )
 				{
 					DataNodeService::GetSerivceObj().CloseLink( nReqLinkID );
@@ -399,10 +385,9 @@ bool SessionCollection::OnRecvData( unsigned int uiLinkNo, unsigned short usMess
 {
 	if( usMessageNo == MESSAGENO )
 	{
-		tagBlockHead*				pMsgHead = (tagBlockHead*)( lpData + sizeof(tagPackageHead) );
-		tagCommonLoginData_LF299*	pMsgBody = (tagCommonLoginData_LF299*)( lpData + sizeof(tagPackageHead) + sizeof(tagBlockHead) );
+		tagCommonLoginData_LF299*	pMsgBody = (tagCommonLoginData_LF299*)( lpData + sizeof(tagPackageHead) );
 
-		if( 299 == pMsgHead->nDataType )
+		if( 299 == usMessageNo )
 		{
 			::strcpy( pMsgBody->pszActionKey, "success" );
 

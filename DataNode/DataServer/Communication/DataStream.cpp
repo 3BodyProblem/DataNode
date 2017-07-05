@@ -10,6 +10,7 @@ unsigned int	g_nMarketID = 0;
 PackagesBuffer::PackagesBuffer()
  : m_pPkgBuffer( NULL ), m_nMaxPkgBufSize( 0 )
  , m_nFirstPosition( 0 ), m_nLastPosition( 0 )
+ , m_nCurFirstPos( 0 )
 {
 }
 
@@ -46,6 +47,7 @@ void PackagesBuffer::Release()
 		m_nMaxPkgBufSize = 0;
 		m_nFirstPosition = 0;
 		m_nLastPosition = 0;
+		m_nCurFirstPos = 0;
 	}
 }
 
@@ -61,7 +63,6 @@ float PackagesBuffer::GetPercentOfFreeSize()
 int PackagesBuffer::PushBlock( unsigned int nDataID, const char* pData, unsigned int nDataSize, unsigned __int64 nSeqNo )
 {
 	CriticalLock		guard( m_oLock );
-	unsigned int		nBlockSize = nDataSize + sizeof(tagBlockHead);
 
 	if( NULL == m_pPkgBuffer || nDataSize == 0 || NULL == pData || m_nMaxPkgBufSize == 0 )	{
 		assert( 0 );
@@ -70,89 +71,99 @@ int PackagesBuffer::PushBlock( unsigned int nDataID, const char* pData, unsigned
 
 	///< 计算余下的空间
 	int	nFreeSize = (m_nFirstPosition + m_nMaxPkgBufSize - m_nLastPosition - 1) % m_nMaxPkgBufSize;
-	if ( nBlockSize > nFreeSize )
-	{
-		return -2;
-	}
 
-	///< 处理包头的信息
-	if( m_nFirstPosition == m_nLastPosition )
+	if( m_nCurFirstPos == m_nLastPosition )
 	{
-		m_nLastPosition += sizeof(tagPackageHead);
-		((tagPackageHead*)(m_pPkgBuffer+m_nFirstPosition))->nSeqNo = nSeqNo;
-		((tagPackageHead*)(m_pPkgBuffer+m_nFirstPosition))->nMarketID = g_nMarketID;
-		((tagPackageHead*)(m_pPkgBuffer+m_nFirstPosition))->nBodyLen = nBlockSize;
-		((tagPackageHead*)(m_pPkgBuffer+m_nFirstPosition))->nMsgCount = 1;
+		if( (sizeof(tagPackageHead)+sizeof(unsigned int)+nDataSize) > nFreeSize )
+		{
+			return -2;
+		}
 	}
 	else
 	{
-		((tagPackageHead*)(m_pPkgBuffer+m_nFirstPosition))->nMsgCount++;
-		((tagPackageHead*)(m_pPkgBuffer+m_nFirstPosition))->nBodyLen += nBlockSize;
+		if( nDataSize > nFreeSize )
+		{
+			return -3;
+		}
+
+		///< 如果数据包的id不等于前面的数据包id，则新启用一个package段
+		if( nDataID != *((unsigned int*)(m_pPkgBuffer+m_nCurFirstPos)) )
+		{
+			m_nCurFirstPos = m_nLastPosition;
+		}
+	}
+
+	///< 处理包头的信息 m_nCurFirstPos
+	if( m_nCurFirstPos == m_nLastPosition )
+	{
+		*((unsigned int*)(m_pPkgBuffer+m_nCurFirstPos)) = nDataID;
+		((tagPackageHead*)(m_pPkgBuffer+m_nCurFirstPos+sizeof(unsigned int)))->nSeqNo = nSeqNo;
+		((tagPackageHead*)(m_pPkgBuffer+m_nCurFirstPos+sizeof(unsigned int)))->nMarketID = g_nMarketID;
+		((tagPackageHead*)(m_pPkgBuffer+m_nCurFirstPos+sizeof(unsigned int)))->nMsgLength = nDataSize;
+		((tagPackageHead*)(m_pPkgBuffer+m_nCurFirstPos+sizeof(unsigned int)))->nMsgCount = 1;
+		m_nLastPosition += (sizeof(tagPackageHead) + sizeof(unsigned int));
+	}
+	else
+	{
+		((tagPackageHead*)(m_pPkgBuffer+m_nCurFirstPos+sizeof(unsigned int)))->nMsgCount++;
 	}
 
 	int				nConsecutiveFreeSize = m_nMaxPkgBufSize - m_nLastPosition;
-	if( nConsecutiveFreeSize >= nBlockSize )
+	if( nConsecutiveFreeSize >= nDataSize )
 	{
-		tagBlockHead*			pBlockHead = (tagBlockHead*)(m_pPkgBuffer + m_nLastPosition);
-		pBlockHead->nDataType = nDataID;
-		pBlockHead->nDataLen = nDataSize;
-		m_nLastPosition += sizeof(tagBlockHead);
-		::memcpy( &m_pPkgBuffer[m_nLastPosition], (char*)pData, pBlockHead->nDataLen );
+		::memcpy( &m_pPkgBuffer[m_nLastPosition], (char*)pData, nDataSize );
 		m_nLastPosition = (m_nLastPosition + nDataSize) % m_nMaxPkgBufSize;
 	}
 	else
 	{
-		char				pszFullData[1024];
-		tagBlockHead*		pBlockHead = (tagBlockHead*)pszFullData;
-
-		pBlockHead->nDataType = nDataID;
-		pBlockHead->nDataLen = nDataSize;
-		::memcpy( pszFullData+sizeof(tagBlockHead), pData, nDataSize );
-
-		::memcpy( &m_pPkgBuffer[m_nLastPosition], pszFullData, nConsecutiveFreeSize );
-		::memcpy( &m_pPkgBuffer[0], pszFullData + nConsecutiveFreeSize, (nBlockSize - nConsecutiveFreeSize) );
-		m_nLastPosition = (m_nLastPosition + nBlockSize) % m_nMaxPkgBufSize;
+		::memcpy( &m_pPkgBuffer[m_nLastPosition], pData, nConsecutiveFreeSize );
+		::memcpy( &m_pPkgBuffer[0], pData + nConsecutiveFreeSize, (nDataSize - nConsecutiveFreeSize) );
+		m_nLastPosition = (m_nLastPosition + nDataSize) % m_nMaxPkgBufSize;
 	}
 
 	return 0;
 }
 
-int PackagesBuffer::GetOnePkg( char* pBuff, unsigned int nBuffSize )
+int PackagesBuffer::GetOnePkg( char* pBuff, unsigned int nBuffSize, unsigned int& nMsgID )
 {
 	CriticalLock		guard( m_oLock );
 
+	tagPackageHead*		pPkgHead = (tagPackageHead*)(m_pPkgBuffer+m_nFirstPosition+sizeof(unsigned int));
 	if( NULL == pBuff || nBuffSize == 0 || NULL == m_pPkgBuffer || m_nMaxPkgBufSize == 0 )	{
 		assert( 0 );
 		return -1;
 	}
 
-	int	nDataLen = (m_nLastPosition + m_nMaxPkgBufSize - m_nFirstPosition) % m_nMaxPkgBufSize;
+	unsigned int		nTotalPkgSize = (pPkgHead->nMsgLength * pPkgHead->nMsgCount) + sizeof(tagPackageHead) + sizeof(unsigned int);	///< 带msgid的长度值
+	int					nDataLen = (m_nLastPosition + m_nMaxPkgBufSize - m_nFirstPosition) % m_nMaxPkgBufSize;
 	if( nDataLen == 0 )
 	{
 		return -2;
 	}
 
-	tagPackageHead*		pPkgHead = (tagPackageHead*)(m_pPkgBuffer+m_nFirstPosition);
-
-	nBuffSize = pPkgHead->nBodyLen + sizeof(tagPackageHead);
-	if( nBuffSize < nDataLen )
+	nMsgID = *((unsigned int*)(m_pPkgBuffer+m_nFirstPosition));
+	if( nBuffSize < nTotalPkgSize )
 	{
 		return -3;
+	}
+	else
+	{
+		nBuffSize = (nTotalPkgSize - sizeof(unsigned int));
 	}
 
 	int nConsecutiveSize = m_nMaxPkgBufSize - m_nFirstPosition;
 	if( nConsecutiveSize >= nBuffSize )
 	{
-		::memcpy( pBuff, &m_pPkgBuffer[m_nFirstPosition], nBuffSize );
+		::memcpy( pBuff, &m_pPkgBuffer[m_nFirstPosition + sizeof(unsigned int)], nBuffSize );
 	}
 	else
 	{
-		::memcpy( pBuff, &m_pPkgBuffer[m_nFirstPosition], nConsecutiveSize );
-		::memcpy( pBuff + nConsecutiveSize, &m_pPkgBuffer[0], (nBuffSize - nConsecutiveSize) );
+		::memcpy( pBuff, &m_pPkgBuffer[m_nFirstPosition + sizeof(unsigned int)], nConsecutiveSize );
+		::memcpy( pBuff + nConsecutiveSize, m_pPkgBuffer+0, (nBuffSize - nConsecutiveSize) );
 	}
 
-	m_nFirstPosition = (m_nFirstPosition + nBuffSize) % m_nMaxPkgBufSize;
-	
+	m_nFirstPosition = (m_nFirstPosition + nTotalPkgSize) % m_nMaxPkgBufSize;
+
 	return nBuffSize;
 }
 
@@ -267,10 +278,11 @@ void QuotationSynchronizer::FlushQuotation2Client()
 {
 	if( false == m_oDataBuffer.IsEmpty() )
 	{
+		unsigned int	nMsgID = 0;
 		CriticalLock	guard( m_oLock );
-		int				nDataSize = m_oDataBuffer.GetOnePkg( m_pSendBuffer, m_nMaxSendBufSize );
+		int				nDataSize = m_oDataBuffer.GetOnePkg( m_pSendBuffer, m_nMaxSendBufSize, nMsgID );
 
-		DataNodeService::GetSerivceObj().PushData( m_vctLinkNo+0, m_nLinkCount, MESSAGENO, 0, m_pSendBuffer, nDataSize );
+		DataNodeService::GetSerivceObj().PushData( m_vctLinkNo+0, m_nLinkCount, nMsgID, 0, m_pSendBuffer, nDataSize );
 	}
 }
 

@@ -24,22 +24,10 @@ extern unsigned int	g_nMarketID;		///< 市场编号
 typedef struct
 {
 	unsigned __int64				nSeqNo;				///< 自增序号
-	unsigned int					nMarketID;			///< 市场编号
-	unsigned int					nBodyLen;			///< 数据部分长度
-	unsigned int					nMsgCount;			///< 包内的Message数量
+	unsigned char					nMarketID;			///< 市场编号
+	unsigned short					nMsgLength;			///< 数据部分长度
+	unsigned short					nMsgCount;			///< Message数量
 } tagPackageHead;
-
-
-/**
- * @class							tagBlockHead
- * @brief							数据块的头部的定义
- * @author							barry
- */
-typedef struct
-{
-	unsigned int					nDataType;			///< 数据块类型
-	unsigned int					nDataLen;			///< 数据块长度
-} tagBlockHead;
 
 
 /**
@@ -104,11 +92,12 @@ public:
 	 * @brief						获取一个数据包
 	 * @param[out]					pBuff					输出数据缓存地址
 	 * @param[in]					nBuffSize				数据缓存长度
+	 * @param[out]					nMsgID					数据消息ID
 	 * @return						>0						数据长度
 									==0						无数据
 									<0						出错
 	 */
-	int								GetOnePkg( char* pBuff, unsigned int nBuffSize );
+	int								GetOnePkg( char* pBuff, unsigned int nBuffSize, unsigned int& nMsgID );
 
 	/**
 	 * @brief						是否为空
@@ -125,8 +114,9 @@ protected:
 	CriticalObject					m_oLock;				///< 锁
 	char*							m_pPkgBuffer;			///< 数据包缓存地址
 	unsigned int					m_nMaxPkgBufSize;		///< 数据包缓存大小
-	unsigned long					m_nFirstPosition;		///< 起始位置索引
-	unsigned long					m_nLastPosition;		///< 结束位置索引
+	unsigned int					m_nCurFirstPos;			///< 当前起始位置(当前所写入包的包头)
+	unsigned int					m_nFirstPosition;		///< 起始位置索引(在写，或已经写完包的包头，即未发送数据的头部)
+	unsigned int					m_nLastPosition;		///< 结束位置索引(正在写入的位置)
 };
 
 
