@@ -10,11 +10,8 @@
 #include "../../MemoryDB/MemoryDatabase.h"
 
 
-#define				MESSAGENO			100
-extern unsigned int	g_nMarketID;		///< 市场编号
-
-
 #pragma pack(1)
+
 
 /**
  * @class							tagPackageHead
@@ -28,6 +25,9 @@ typedef struct
 	unsigned short					nMsgLength;			///< 数据部分长度
 	unsigned short					nMsgCount;			///< Message数量
 } tagPackageHead;
+
+
+#define			MSG_LOGIN_ID		299					///< 登录消息编号
 
 
 /**
@@ -48,21 +48,20 @@ typedef struct
 #pragma pack()
 
 
-#define						MAX_LINKID_NUM			32
-typedef						unsigned int			LINKID_VECTOR[MAX_LINKID_NUM];
+///< -------------------------------------------------------------------------------------------
 
 
 /**
- * @class							PackagesBuffer
+ * @class							PackagesLoopBuffer
  * @brief							数据包队列缓存
- * @detail							struct PkgHead + data block1 + data block2 + ...
+ * @detail							struct PkgHead + MessageID + data block1 + data block2 + ...
  * @author							barry
  */
-class PackagesBuffer
+class PackagesLoopBuffer
 {
 public:
-	PackagesBuffer();
-	~PackagesBuffer();
+	PackagesLoopBuffer();
+	~PackagesLoopBuffer();
 
 public:
 	/**
@@ -121,6 +120,56 @@ protected:
 
 
 /**
+ * @class							PkgBuffer
+ * @brief							用于保存一个完成的Package的数据
+ * @author							barry
+ */
+class PkgBuffer
+{
+public:
+	PkgBuffer();
+
+	/**
+	 * @brief					初始化缓存
+	 * @param[in]				nBuffSize				要分配的缓存大小
+	 * @return					!= 0					失败
+	 */
+	int							Initialize( unsigned int nBuffSize );
+
+	/**
+	 * @brief					释放资源
+	 */
+	void						Release();
+
+public:
+	/**
+	 * @brief					将缓存地址转换出来
+	 * @return					char*
+	 */
+	operator					char*();
+
+	/**
+	 * @brief					获取数据部分的有效长度
+	 * @return					有效长度
+	 */
+	unsigned int				CalPkgSize() const;
+
+	/**
+	 * @brief					获取缓存的最大长度
+	 * @return					最大长度
+	 */
+	unsigned int				MaxBufSize() const;
+
+protected:
+	char*						m_pPkgBuffer;			///< 数据发送缓存
+	unsigned int				m_nMaxBufSize;			///< 发送缓存最大长度
+};
+
+
+///< -------------------------------------------------------------------------------------------
+
+
+/**
  * @class						QuotationSynchronizer
  * @brief						行情流实时推送缓存
  * @author						barry
@@ -170,28 +219,17 @@ public:
 	 * @param[in]				arrayLinkNo				链路号队列地址，需要被广播的所有链路的ID集合
 	 * @param[in]				nLinkCount				链路号队列长度
 	 */
-	void						FlushQuotation2Client();
+	void						FlushQuotation2AllClient();
 
 	/**
 	 * @brief					获取余下空间的百分比
 	 */
 	float						GetFreePercent();
 
-	/**
-	 * @brief					设置当前链路号到列表
-	 */
-	void						SetLinkNoList();
-
 protected:
 	WaitEvent					m_oWaitEvent;			///< 条件等待
-	PackagesBuffer				m_oDataBuffer;			///< 数据缓存队列
-protected:
-	char*						m_pSendBuffer;			///< 数据发送缓存
-	unsigned int				m_nMaxSendBufSize;		///< 发送缓存最大长度
-protected:
-	CriticalObject				m_oLock;				///< 锁
-	LINKID_VECTOR				m_vctLinkNo;			///< 发送链路表
-	unsigned int				m_nLinkCount;			///< 发送链路表长度
+	PackagesLoopBuffer			m_oDataBuffer;			///< 行情数据缓存队列
+	PkgBuffer					m_oOnePkg;				///< 单个数据包缓存
 };
 
 

@@ -9,6 +9,7 @@
 
 int MkHoliday::Initialize( std::string sHolidayFilePath, bool bTestFlag )
 {
+	std::set<int>::clear();
 	m_bHolidayTestFlag = bTestFlag;
 	m_sHolidayPath = sHolidayFilePath;
 

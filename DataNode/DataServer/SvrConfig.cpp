@@ -183,6 +183,7 @@ int Configuration::Load()
 		return -100;
 	}
 
+	m_vctTradingPeriods.clear();
 	for( int n = 0; n < nTradingPeriodsCount; n++ )
 	{
 		int					nRet1, nRet2, nRet3;

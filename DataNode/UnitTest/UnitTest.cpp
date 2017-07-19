@@ -8,6 +8,7 @@
 #include "../DataServer/SvrConfig.h"
 #include "../InitializeFlag/InitFlag.h"
 #include "../DataCollector/DataCollector.h"
+#include "../DataServer/Communication/LinkSession.h"
 
 
 ///< --------------------- 单元测试类定义 --------------------------------
@@ -86,6 +87,14 @@ TEST_F( TestLogic, CheckConfiguration )
 	::printf( "\n\n" );
 }
 
+
+TEST_F( TestLogic, CheckPackagesLoopBuffer )
+{
+	PackagesLoopBuffer		oLoopBuffer;
+
+	ASSERT_EQ( 0 , oLoopBuffer.Initialize( 1024*1024*10 ) );
+
+}
 
 
 ///< ------------ 单元测试初始化类定义 ------------------------------------

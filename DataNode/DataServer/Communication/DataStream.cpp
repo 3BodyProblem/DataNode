@@ -4,22 +4,19 @@
 #pragma warning(disable:4244)
 
 
-unsigned int	g_nMarketID = 0;
-
-
-PackagesBuffer::PackagesBuffer()
+PackagesLoopBuffer::PackagesLoopBuffer()
  : m_pPkgBuffer( NULL ), m_nMaxPkgBufSize( 0 )
  , m_nFirstPosition( 0 ), m_nLastPosition( 0 )
  , m_nCurFirstPos( 0 )
 {
 }
 
-PackagesBuffer::~PackagesBuffer()
+PackagesLoopBuffer::~PackagesLoopBuffer()
 {
 	Release();
 }
 
-int PackagesBuffer::Initialize( unsigned long nMaxBufSize )
+int PackagesLoopBuffer::Initialize( unsigned long nMaxBufSize )
 {
 	Release();
 
@@ -27,7 +24,7 @@ int PackagesBuffer::Initialize( unsigned long nMaxBufSize )
 
 	if( NULL == (m_pPkgBuffer = new char[nMaxBufSize]) )
 	{
-		DataNodeService::GetSerivceObj().WriteError( "PackagesBuffer::Instance() : failed 2 initialize package buffer, size = %d", nMaxBufSize );
+		DataNodeService::GetSerivceObj().WriteError( "PackagesLoopBuffer::Instance() : failed 2 initialize package buffer, size = %d", nMaxBufSize );
 		return -1;
 	}
 
@@ -36,7 +33,7 @@ int PackagesBuffer::Initialize( unsigned long nMaxBufSize )
 	return 0;
 }
 
-void PackagesBuffer::Release()
+void PackagesLoopBuffer::Release()
 {
 	if( NULL != m_pPkgBuffer )
 	{
@@ -51,7 +48,7 @@ void PackagesBuffer::Release()
 	}
 }
 
-float PackagesBuffer::GetPercentOfFreeSize()
+float PackagesLoopBuffer::GetPercentOfFreeSize()
 {
 	CriticalLock		guard( m_oLock );
 
@@ -60,7 +57,7 @@ float PackagesBuffer::GetPercentOfFreeSize()
 	return nFreeSize / m_nMaxPkgBufSize * 100;
 }
 
-int PackagesBuffer::PushBlock( unsigned int nDataID, const char* pData, unsigned int nDataSize, unsigned __int64 nSeqNo )
+int PackagesLoopBuffer::PushBlock( unsigned int nDataID, const char* pData, unsigned int nDataSize, unsigned __int64 nSeqNo )
 {
 	CriticalLock		guard( m_oLock );
 
@@ -98,7 +95,7 @@ int PackagesBuffer::PushBlock( unsigned int nDataID, const char* pData, unsigned
 	{
 		*((unsigned int*)(m_pPkgBuffer+m_nCurFirstPos)) = nDataID;
 		((tagPackageHead*)(m_pPkgBuffer+m_nCurFirstPos+sizeof(unsigned int)))->nSeqNo = nSeqNo;
-		((tagPackageHead*)(m_pPkgBuffer+m_nCurFirstPos+sizeof(unsigned int)))->nMarketID = g_nMarketID;
+		((tagPackageHead*)(m_pPkgBuffer+m_nCurFirstPos+sizeof(unsigned int)))->nMarketID = DataCollector::GetMarketID();
 		((tagPackageHead*)(m_pPkgBuffer+m_nCurFirstPos+sizeof(unsigned int)))->nMsgLength = nDataSize;
 		((tagPackageHead*)(m_pPkgBuffer+m_nCurFirstPos+sizeof(unsigned int)))->nMsgCount = 1;
 		m_nLastPosition += (sizeof(tagPackageHead) + sizeof(unsigned int));
@@ -124,7 +121,7 @@ int PackagesBuffer::PushBlock( unsigned int nDataID, const char* pData, unsigned
 	return 0;
 }
 
-int PackagesBuffer::GetOnePkg( char* pBuff, unsigned int nBuffSize, unsigned int& nMsgID )
+int PackagesLoopBuffer::GetOnePkg( char* pBuff, unsigned int nBuffSize, unsigned int& nMsgID )
 {
 	CriticalLock		guard( m_oLock );
 
@@ -167,7 +164,7 @@ int PackagesBuffer::GetOnePkg( char* pBuff, unsigned int nBuffSize, unsigned int
 	return nBuffSize;
 }
 
-bool PackagesBuffer::IsEmpty()
+bool PackagesLoopBuffer::IsEmpty()
 {
 	if( m_nFirstPosition == m_nLastPosition )
 	{
@@ -180,8 +177,67 @@ bool PackagesBuffer::IsEmpty()
 }
 
 
+PkgBuffer::PkgBuffer()
+ : m_pPkgBuffer( NULL ), m_nMaxBufSize( 0 )
+{
+}
+
+int PkgBuffer::Initialize( unsigned int nBuffSize )
+{
+	Release();
+
+	if( NULL == (m_pPkgBuffer = new char[nBuffSize]) )
+	{
+		DataNodeService::GetSerivceObj().WriteError( "PkgBuffer::Initialize() : failed 2 initialize pkg data buffer, size = %d", nBuffSize );
+		return -1;
+	}
+
+	m_nMaxBufSize = nBuffSize;
+
+	return 0;
+}
+
+void PkgBuffer::Release()
+{
+	if( NULL != m_pPkgBuffer )
+	{
+		DataNodeService::GetSerivceObj().WriteInfo( "PkgBuffer::Release() : release pkg data buffer, size = %d", m_nMaxBufSize );
+		delete []m_pPkgBuffer;
+		m_pPkgBuffer = NULL;
+	}
+
+	m_nMaxBufSize = 0;
+}
+
+PkgBuffer::operator char*()
+{
+	if( NULL != m_pPkgBuffer )
+	{
+		return m_pPkgBuffer;
+	}
+
+	throw std::runtime_error( "PkgBuffer::operator char*() : invalid cache buffer pointer ( NULL )" );
+}
+
+unsigned int PkgBuffer::CalPkgSize() const
+{
+	if( NULL != m_pPkgBuffer )
+	{
+		tagPackageHead*		pPkgHead = (tagPackageHead*)m_pPkgBuffer;
+
+		return (pPkgHead->nMsgLength * pPkgHead->nMsgCount) + sizeof(tagPackageHead);
+	}
+
+	throw std::runtime_error( "PkgBuffer::GetDataSize() : invalid cache buffer pointer ( NULL )" );
+}
+
+unsigned int PkgBuffer::MaxBufSize() const
+{
+	return m_nMaxBufSize;
+}
+
+
 QuotationSynchronizer::QuotationSynchronizer()
- : m_pSendBuffer( NULL ), m_nMaxSendBufSize( 0 ), m_nLinkCount( 0 )
 {
 }
 
@@ -195,26 +251,18 @@ void QuotationSynchronizer::Release()
 	SimpleTask::StopThread();	///< 停止线程
 	SimpleTask::Join();			///< 退出等待
 	m_oDataBuffer.Release();	///< 释放所有资源
-
-	if( NULL != m_pSendBuffer )
-	{
-		delete []m_pSendBuffer;
-		m_pSendBuffer = NULL;
-	}
-
-	m_nMaxSendBufSize = 0;
+	m_oOnePkg.Release();
 }
 
 int QuotationSynchronizer::Initialize( unsigned int nNewBuffSize )
 {
 	Release();
 
-	if( NULL == (m_pSendBuffer = new char[nNewBuffSize/2]) )
+	if( 0 != m_oOnePkg.Initialize( nNewBuffSize/2 ) )
 	{
-		DataNodeService::GetSerivceObj().WriteError( "QuotationSynchronizer::Instance() : failed 2 initialize send data buffer, size = %d", nNewBuffSize );
+		DataNodeService::GetSerivceObj().WriteError( "QuotationSynchronizer::Instance() : failed 2 initialize send data buffer, size = %d", nNewBuffSize/2 );
 		return -1;
 	}
-	m_nMaxSendBufSize = nNewBuffSize/2;
 
 	if( 0 != m_oDataBuffer.Initialize( nNewBuffSize ) )	///< 从内存池申请一块缓存
 	{
@@ -233,7 +281,7 @@ int QuotationSynchronizer::Execute()
 			m_oWaitEvent.Wait();
 		}
 
-		FlushQuotation2Client();		///< 循环发送缓存中的数据
+		FlushQuotation2AllClient();		///< 循环发送缓存中的数据
 	}
 
 	return 0;
@@ -262,27 +310,16 @@ int QuotationSynchronizer::PutMessage( unsigned short nMsgID, const char *pData,
 	return nErrorCode;
 }
 
-void QuotationSynchronizer::SetLinkNoList()
-{
-	LINKID_VECTOR		vctLinkNo = { 0 };
-	CriticalLock		guard( m_oLock );
-	unsigned int		nLinkNoCount = LinkNoRegister::GetRegister().FetchPushLinkIDList( vctLinkNo+0, MAX_LINKID_NUM );
-
-	if( nLinkNoCount > 0 ) {
-		::memcpy( m_vctLinkNo+0, vctLinkNo, nLinkNoCount );
-		m_nLinkCount = nLinkNoCount;
-	}
-}
-
-void QuotationSynchronizer::FlushQuotation2Client()
+void QuotationSynchronizer::FlushQuotation2AllClient()
 {
 	if( false == m_oDataBuffer.IsEmpty() )
 	{
 		unsigned int	nMsgID = 0;
-		CriticalLock	guard( m_oLock );
-		int				nDataSize = m_oDataBuffer.GetOnePkg( m_pSendBuffer, m_nMaxSendBufSize, nMsgID );
+		LINKID_VECTOR	vctLinkNo = { 0 };			///< 发送链路表
+		int				nDataSize = m_oDataBuffer.GetOnePkg( m_oOnePkg, m_oOnePkg.MaxBufSize(), nMsgID );
+		unsigned int	nLinkNoCount = LinkNoRegister::GetRegister().FetchLinkNoTable( vctLinkNo+0, MAX_LINKID_NUM );
 
-		DataNodeService::GetSerivceObj().PushData( m_vctLinkNo+0, m_nLinkCount, nMsgID, 0, m_pSendBuffer, nDataSize );
+		DataNodeService::GetSerivceObj().PushData( vctLinkNo+0, nLinkNoCount, nMsgID, 0, m_oOnePkg, nDataSize );
 	}
 }
 

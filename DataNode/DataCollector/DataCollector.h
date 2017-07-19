@@ -80,7 +80,7 @@ public:///< 数据采集模块事件定义
 	/**
 	 * @brief				获取市场编号
 	 */
-	unsigned int			GetMarketID();
+	static unsigned int		GetMarketID();
 
 	/**
 	 * @brief				是否为行情传输的采集插件
@@ -93,8 +93,8 @@ public:///< 数据采集模块事件定义
 	bool					IsAlive();
 
 private:
+	static unsigned int		s_nMarketID;					///< 数据采集器对应的市场ID
 	CollectorStatus			m_oCollectorStatus;				///< 数据采集模块的状态
-	unsigned int			m_nMarketID;					///< 数据采集器对应的市场ID
 	bool					m_bActivated;					///< 是否已经激活
 	bool					m_bIsProxyPlugin;				///< 是否为传输代理插件
 private:

@@ -25,16 +25,19 @@ bool CollectorStatus::Set( enum E_SS_Status eNewStatus )
 }
 
 
+unsigned int DataCollector::s_nMarketID = 0;
+
+
 DataCollector::DataCollector()
  : m_pFuncInitialize( NULL ), m_pFuncRelease( NULL ), m_pFuncIsProxy( NULL )
  , m_pFuncRecoverQuotation( NULL ), m_pFuncGetStatus( NULL )
- , m_nMarketID( 0 ), m_bActivated( false ), m_bIsProxyPlugin( false )
+ , m_bActivated( false ), m_bIsProxyPlugin( false )
 {
 }
 
 unsigned int DataCollector::GetMarketID()
 {
-	return m_nMarketID;
+	return s_nMarketID;
 }
 
 bool DataCollector::IsProxy()
@@ -77,7 +80,7 @@ int DataCollector::Initialize( I_DataHandle* pIDataCallBack )
 		return nErrorCode;
 	}
 
-	m_nMarketID = m_pFuncGetMarketID();
+	s_nMarketID = m_pFuncGetMarketID();
 	m_bIsProxyPlugin = m_pFuncIsProxy();
 
 	DataNodeService::GetSerivceObj().WriteInfo( "DataCollector::Initialize() : data collector plugin is initialized ......" );
@@ -141,7 +144,7 @@ int DataCollector::RecoverDataCollector()
 	}
 
 	m_bActivated = true;
-	m_nMarketID = m_pFuncGetMarketID();
+	s_nMarketID = m_pFuncGetMarketID();
 	DataNodeService::GetSerivceObj().WriteInfo( "DataCollector::RecoverDataCollector() : data collector recovered ......" );
 
 	return nErrorCode;

@@ -91,8 +91,7 @@ bool DataIOEngine::PrepareQuotation()
 		return false;;
 	}
 
-	g_nMarketID = m_oDataCollector.GetMarketID();										///< 5) 从数据采集插件更新"市场ID"
-	DataNodeService::GetSerivceObj().WriteInfo( "DataIOEngine::PrepareQuotation() : quotation reloaded, MarketID=%u ........", g_nMarketID );
+	DataNodeService::GetSerivceObj().WriteInfo( "DataIOEngine::PrepareQuotation() : quotation reloaded, MarketID=%u ........", DataCollector::GetMarketID() );
 
 	return true;
 }
@@ -436,7 +435,7 @@ void DataNodeService::OnHeartBeat()
 	static bool					s_bBeginCheck = false;
 	static unsigned __int64		s_nPushSerialNo = 0;
 	static time_t				s_nLastTime = ::time( NULL );
-	unsigned int				nNowT = ::time( NULL );
+	unsigned int				nNowT = (unsigned int)::time( NULL );
 
 	if( s_nPushSerialNo == m_nPushSerialNo )
 	{

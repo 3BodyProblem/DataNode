@@ -11,6 +11,10 @@
 #include "../../DataCollector/DataCollector.h"
 
 
+#define							MAX_LINKID_NUM		32
+typedef							unsigned int		LINKID_VECTOR[MAX_LINKID_NUM];
+
+
 /**
  * @class						LinkNoRegister
  * @brief						管理/维护各链路的ID号
@@ -40,12 +44,9 @@ public:///< 推送链路号
 	void						RemovePushLinkID( unsigned int nRemoveLinkID );
 
 	/**
-	 * @brief					获取当前有效的链路号列表
-	 * @param[in]				lpLinkNoArray		链路号数据列表地址
-	 * @param[in]				uiArraySize			列表长度
-	 * @return					返回链路号数量
+	 * @brief					获取会话id表
 	 */
-	unsigned int				FetchPushLinkIDList( unsigned int* lpLinkNoArray, unsigned int uiArraySize );
+	unsigned int				FetchLinkNoTable( unsigned int* pIDTable, unsigned int nBuffSize );
 
 	/**
 	 * @brief					获取推送链路数量
@@ -75,13 +76,14 @@ public:///< 请求链路号
 
 private:
 	CriticalObject				m_oLock;				///< 锁
+	LINKID_VECTOR				m_vctLinkNo;			///< 发送链路表
 	std::set<unsigned int>		m_setPushLinkID;		///< 实时推送链路号集合,用于方便处理重复ID,和判断ID是否已经存在
-	int							nLinkIDCount;			///< 链路数量
+	int							m_nLinkCount;			///< 链路数量
 	std::set<unsigned int>		m_setNewReqLinkID;		///< 待初始化链路ID集合
 };
 
 
-#define		MAX_IMAGE_BUFFER_SIZE		(1024*1024*8)
+///< -------------------------------------------------------------------------------------------
 
 
 /**
@@ -142,7 +144,7 @@ public:
 
 protected:
 	CriticalObject				m_oLock;				///< 初始化数据推送缓存锁
-	char*						m_pSendBuffer;			///< 数据发送缓存
+	PkgBuffer					m_oOnePkg;				///< 数据发送缓存
 protected:
 	DatabaseIO*					m_pDatabase;			///< 数据操作对象指针
 	QuotationSynchronizer*		m_pQuotationBuffer;		///< 实时行情推送缓存（带推送线程)
