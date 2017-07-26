@@ -132,55 +132,6 @@ void MServicePlug::WriteReport(const char * szType,const char * szSrvUnitName,co
 {
 	try
 	{
-		if ( strcmp(szType,"信息") == 0 )
-		{
-			::SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE),10);
-			if ( strlen(szSrvUnitName) > 0 )
-			{
-				printf("[信息]{%s}%s\n",szSrvUnitName,szContent);
-			}
-			else
-			{
-				printf("[信息]%s\n",szContent);
-			}
-		}
-		else if ( strcmp(szType,"警告") == 0 )
-		{
-			::SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE),14);
-			if ( strlen(szSrvUnitName) > 0 )
-			{
-				printf("[警告]{%s}%s\n",szSrvUnitName,szContent);
-			}
-			else
-			{
-				printf("[警告]%s\n",szContent);
-			}
-		}
-		else if ( strcmp(szType,"错误") == 0 )
-		{
-			::SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE),12);
-			if ( strlen(szSrvUnitName) > 0 )
-			{
-				printf("[错误]{%s}%s\n",szSrvUnitName,szContent);
-			}
-			else
-			{
-				printf("[错误]%s\n",szContent);
-			}
-		}
-		else
-		{
-			::SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE),8);
-			if ( strlen(szSrvUnitName) > 0 )
-			{
-				printf("[详细]{%s}%s\n",szSrvUnitName,szContent);
-			}
-			else
-			{
-				printf("[详细]%s\n",szContent);
-			}
-		}
-
 		if ( m_sOutParam.lpWriteReport != NULL )
 		{
 			m_sOutParam.lpWriteReport(szType,szSrvUnitName,szContent);

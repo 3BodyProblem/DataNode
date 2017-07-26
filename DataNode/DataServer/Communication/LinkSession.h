@@ -104,7 +104,7 @@ public:
 	 * @brief					初始化
 	 * @return					!= 0				失败
 	 */
-	int							Instance( DatabaseIO* pDbIO, QuotationSynchronizer* pQuotBuf );
+	int							Instance( DatabaseIO* pDbIO );
 
 	/**
 	 * @brief					释放资源
@@ -128,26 +128,19 @@ public:///< 初始化行情推送接口
 	 * @return					>=0						集合中的元素数量
 								<0						出错
 	 */
-	int							QueryCodeListInDatabase( unsigned int nDataID, unsigned int nRecordLen, std::set<std::string>& setCode );
+	int							QueryCodeListInImage( unsigned int nDataID, unsigned int nRecordLen, std::set<std::string>& setCode );
 
-public:
+protected:///< 内部功能方法
 	/**
 	 * @brief					格式化快照数据缓存
 	 * @return					返回格式化后的数据长度
 	 */
 	unsigned int				FormatImageBuffer( unsigned int nSeqNo, unsigned int nDataID, unsigned int nDataWidth, unsigned int nBuffDataLen );
 
-	/**
-	 * @brief					获取内存数据库指针
-	 */
-	DatabaseIO*					GetMemoDbPtr();
-
 protected:
 	CriticalObject				m_oLock;				///< 初始化数据推送缓存锁
 	PkgBuffer					m_oOnePkg;				///< 数据发送缓存
-protected:
 	DatabaseIO*					m_pDatabase;			///< 数据操作对象指针
-	QuotationSynchronizer*		m_pQuotationBuffer;		///< 实时行情推送缓存（带推送线程)
 };
 
 

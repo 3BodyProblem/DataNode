@@ -126,7 +126,7 @@ bool LinkNoRegister::InReqLinkIDSet( unsigned int nLinkID )
 
 
 ImageDataQuery::ImageDataQuery()
- : m_pDatabase( NULL ), m_pQuotationBuffer( NULL )
+ : m_pDatabase( NULL )
 {
 }
 
@@ -135,12 +135,11 @@ ImageDataQuery::~ImageDataQuery()
 	Release();
 }
 
-int ImageDataQuery::Instance( DatabaseIO* pDbIO, QuotationSynchronizer* pQuotBuf )
+int ImageDataQuery::Instance( DatabaseIO* pDbIO )
 {
 	m_pDatabase = pDbIO;
-	m_pQuotationBuffer = pQuotBuf;
 
-	if( NULL == m_pDatabase || NULL == m_pQuotationBuffer )
+	if( NULL == m_pDatabase )
 	{
 		DataNodeService::GetSerivceObj().WriteError( "ImageDataQuery::Instance() : invalid object pointer" );
 		return -1;
@@ -158,11 +157,6 @@ int ImageDataQuery::Instance( DatabaseIO* pDbIO, QuotationSynchronizer* pQuotBuf
 void ImageDataQuery::Release()
 {
 	m_oOnePkg.Release();
-}
-
-DatabaseIO* ImageDataQuery::GetMemoDbPtr()
-{
-	return m_pDatabase;
 }
 
 ImageDataQuery& ImageDataQuery::GetImageQuery()
@@ -245,7 +239,7 @@ int ImageDataQuery::FlushImageData2NewSessions( unsigned __int64 nSerialNo )
 	return 0;
 }
 
-int ImageDataQuery::QueryCodeListInDatabase( unsigned int nDataID, unsigned int nRecordLen, std::set<std::string>& setCode )
+int ImageDataQuery::QueryCodeListInImage( unsigned int nDataID, unsigned int nRecordLen, std::set<std::string>& setCode )
 {
 	unsigned __int64	nSerialNoOfAnchor = 0;
 	CriticalLock		lock( m_oLock );
@@ -253,7 +247,7 @@ int ImageDataQuery::QueryCodeListInDatabase( unsigned int nDataID, unsigned int 
 
 	setCode.clear();
 	if( nDataLen < 0 )	{
-		DataNodeService::GetSerivceObj().WriteWarning( "ImageDataQuery::QueryCodeListInDatabase() : failed 2 fetch image of table, errorcode=%d", nDataLen );
+		DataNodeService::GetSerivceObj().WriteWarning( "ImageDataQuery::QueryCodeListInImage() : failed 2 fetch image of table, errorcode=%d", nDataLen );
 		return -1;
 	}
 
@@ -281,7 +275,7 @@ int SessionCollection::Instance()
 
 	Release();
 
-	int		nErrCode = ImageDataQuery::GetImageQuery().Instance( &m_refDatabase, &m_oQuotationBuffer );
+	int		nErrCode = ImageDataQuery::GetImageQuery().Instance( &m_refDatabase );
 	if( 0 != nErrCode )
 	{
 		DataNodeService::GetSerivceObj().WriteError( "SessionCollection::Instance() : failed 2 initialize image query obj ..., errorcode=%d", nErrCode );

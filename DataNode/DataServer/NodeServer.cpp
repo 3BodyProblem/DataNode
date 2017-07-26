@@ -164,7 +164,7 @@ int DataIOEngine::LoadCodesListInDatabase()
 		unsigned int				nDataID = lstTableID[n];
 		unsigned int				nRecordLen = lstRecordWidth[n];
 
-		if( (nErrorCode=ImageDataQuery::GetImageQuery().QueryCodeListInDatabase( nDataID, nRecordLen, setCode )) < 0 )
+		if( (nErrorCode=ImageDataQuery::GetImageQuery().QueryCodeListInImage( nDataID, nRecordLen, setCode )) < 0 )
 		{
 			DataNodeService::GetSerivceObj().WriteWarning( "DataIOEngine::LoadCodesListInDatabase() : failed fetch code list in table [%d] ", nDataID );
 			return -100 - n;

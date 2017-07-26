@@ -1,15 +1,38 @@
 #include "targetver.h"
 #include <stdio.h>
 #include <tchar.h>
+#include <winsock2.h>
 #include "DataNode.h"
 #include "DataServer/SvrConfig.h"
 #include "MemoryDB/MemoryDatabase.h"
+#pragma comment( lib, "ws2_32.lib" )
+
+
+class InitializeEnvironment
+{
+public:
+	InitializeEnvironment()
+	{
+		WSADATA wsd;
+		//初始化WinSock2.2
+		if( WSAStartup( MAKEWORD(2,2),&wsd ) != 0 )
+		{
+			::printf( "[FETAL ERROR] InitializeEnvironment::InitializeEnvironment() : failed 2 initialize socket environment... \n" );
+		}
+	}
+
+	~InitializeEnvironment()
+	{
+		WSACleanup();
+	}
+};
 
 
 ///< 程序入口
 int _tmain( int argc, _TCHAR* argv[] )
 {
-	int		nErrorCode = 0;
+	InitializeEnvironment	objInitEnv;
+	int						nErrorCode = 0;
 
 	///< 单元测试代码 (条件argc 大于 1)
 	if( argc > 1 )
