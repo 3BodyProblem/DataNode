@@ -14,7 +14,6 @@
 ///< --------------------- 单元测试类定义 --------------------------------
 
 
-
 void TestLogic::SetUpTestCase()
 {
 }
@@ -28,6 +27,57 @@ void TestLogic::SetUp()
 }
 
 void TestLogic::TearDown()
+{
+}
+
+
+std::vector<tagTestMessageStruct> TestLoopBuffer::m_vctMsg1;
+std::vector<tagTestMessageStruct> TestLoopBuffer::m_vctMsg2;
+
+void TestLoopBuffer::SetUpTestCase()
+{
+	for( int a = 0; a < 9; a++ )
+	{
+		char					pszKey[64] = { 0 };
+		char					pszName[64] = { 0 };
+		tagTestMessageStruct	data = { 0 };
+
+		::sprintf( pszName, "a_中文名_%d", a );
+		::strcpy( data.CnName, pszName );
+		::sprintf( pszKey, "a_key_%d", a );
+		::strcpy( data.Key, pszKey );
+		data.MarketID  = 1000 + a;
+		data.SeqNo = a;
+
+		m_vctMsg1.push_back( data );
+	}
+
+	for( int b = 0; b < 16; b++ )
+	{
+		char					pszKey[64] = { 0 };
+		char					pszName[64] = { 0 };
+		tagTestMessageStruct	data = { 0 };
+
+		::sprintf( pszName, "b_中文名_%d", b );
+		::strcpy( data.CnName, pszName );
+		::sprintf( pszKey, "b_key_%d", b );
+		::strcpy( data.Key, pszKey );
+		data.MarketID  = 2000 + b;
+		data.SeqNo = b;
+
+		m_vctMsg2.push_back( data );
+	}
+}
+
+void TestLoopBuffer::TearDownTestCase()
+{
+}
+
+void TestLoopBuffer::SetUp()
+{
+}
+
+void TestLoopBuffer::TearDown()
 {
 }
 
@@ -88,12 +138,58 @@ TEST_F( TestLogic, CheckConfiguration )
 }
 
 
-TEST_F( TestLogic, CheckPackagesLoopBuffer )
+TEST_F( TestLoopBuffer, CheckPackagesLoopBuffer )
 {
+	unsigned int			nSeqNo = 0;
+	unsigned int			nMsgID = 0;
+	int						nPkgSize = 0;
+	tagTestMessageStruct*	pMsgInPkg = NULL;
+	PkgBuffer				oOnePkg;
 	PackagesLoopBuffer		oLoopBuffer;
 
+	///< 初始化
+	ASSERT_EQ( 0 , oOnePkg.Initialize( 1024*1024*2 ) );
 	ASSERT_EQ( 0 , oLoopBuffer.Initialize( 1024*1024*10 ) );
 
+	for( std::vector<tagTestMessageStruct>::iterator it = m_vctMsg1.begin(); it != m_vctMsg1.end(); it++ )
+	{
+		ASSERT_EQ( 0, oLoopBuffer.PushBlock( 100, (char*)&(*it), sizeof(tagTestMessageStruct), nSeqNo++ ) );
+	}
+
+	for( std::vector<tagTestMessageStruct>::iterator it = m_vctMsg2.begin(); it != m_vctMsg2.end(); it++ )
+	{
+		ASSERT_EQ( 0, oLoopBuffer.PushBlock( 101, (char*)&(*it), sizeof(tagTestMessageStruct), nSeqNo++ ) );
+	}
+
+	///< -------------------- 校验ID100的数据集合 -----------------------------
+	nPkgSize = oLoopBuffer.GetOnePkg( oOnePkg, oOnePkg.MaxBufSize(), nMsgID );
+	ASSERT_EQ( 100, nMsgID );
+	ASSERT_EQ( nPkgSize, sizeof(tagPackageHead) + sizeof(tagTestMessageStruct) * m_vctMsg1.size() );
+
+	pMsgInPkg = (tagTestMessageStruct*)( (char*)oOnePkg + sizeof(tagPackageHead) );
+	for( std::vector<tagTestMessageStruct>::iterator it = m_vctMsg1.begin(); it != m_vctMsg1.end(); it++ )
+	{
+		ASSERT_EQ( 0 , ::memcmp( pMsgInPkg, &(*it), sizeof(tagTestMessageStruct) ) );
+
+		pMsgInPkg += 1;
+	}
+
+	///< --------------------- 校验ID101的数据集合 -----------------------------
+	nPkgSize = oLoopBuffer.GetOnePkg( oOnePkg, oOnePkg.MaxBufSize(), nMsgID );
+	ASSERT_EQ( 101, nMsgID );
+	ASSERT_EQ( nPkgSize, sizeof(tagPackageHead) + sizeof(tagTestMessageStruct) * m_vctMsg2.size() );
+
+	pMsgInPkg = (tagTestMessageStruct*)( (char*)oOnePkg + sizeof(tagPackageHead) );
+	for( std::vector<tagTestMessageStruct>::iterator it = m_vctMsg2.begin(); it != m_vctMsg2.end(); it++ )
+	{
+		ASSERT_EQ( 0 , ::memcmp( pMsgInPkg, &(*it), sizeof(tagTestMessageStruct) ) );
+
+		pMsgInPkg += 1;
+	}
+
+	///< 释放资源
+	oLoopBuffer.Release();
+	oOnePkg.Release();
 }
 
 

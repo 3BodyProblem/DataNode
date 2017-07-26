@@ -54,7 +54,7 @@ typedef struct
 /**
  * @class							PackagesLoopBuffer
  * @brief							数据包队列缓存
- * @detail							struct PkgHead + MessageID + data block1 + data block2 + ...
+ * @detail							struct PkgHead + MessageID1 + data block1 + data block2 + struct PkgHead + MessageID2 + data block1 + data block2 + ...
  * @author							barry
  */
 class PackagesLoopBuffer
@@ -84,6 +84,7 @@ public:
 	 * @param[in]					nDataSize				数据长度
 	 * @param[in]					nSeqNo					当前数据块的更新序号
 	 * @return						==0						成功
+	 * @note						当nDataID不等于前一个包的nDataID时，将新启用一个Package封装
 	 */
 	int								PushBlock( unsigned int nDataID, const char* pData, unsigned int nDataSize, unsigned __int64 nSeqNo );
 
