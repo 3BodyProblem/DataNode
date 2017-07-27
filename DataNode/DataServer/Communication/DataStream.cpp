@@ -258,7 +258,7 @@ int QuotationSynchronizer::Initialize( unsigned int nNewBuffSize )
 {
 	Release();
 
-	if( 0 != m_oOnePkg.Initialize( nNewBuffSize/2 ) )
+	if( 0 != m_oOnePkg.Initialize( nNewBuffSize ) )
 	{
 		DataNodeService::GetSerivceObj().WriteError( "QuotationSynchronizer::Instance() : failed 2 initialize send data buffer, size = %d", nNewBuffSize/2 );
 		return -1;
@@ -277,7 +277,8 @@ int QuotationSynchronizer::Execute()
 {
 	while( true )
 	{
-		if( true == m_oDataBuffer.IsEmpty() )	{
+		if( true == m_oDataBuffer.IsEmpty() )
+		{
 			m_oWaitEvent.Wait();
 		}
 
@@ -319,7 +320,15 @@ void QuotationSynchronizer::FlushQuotation2AllClient()
 		int				nDataSize = m_oDataBuffer.GetOnePkg( m_oOnePkg, m_oOnePkg.MaxBufSize(), nMsgID );
 		unsigned int	nLinkNoCount = LinkNoRegister::GetRegister().FetchLinkNoTable( vctLinkNo+0, MAX_LINKID_NUM );
 
-		DataNodeService::GetSerivceObj().PushData( vctLinkNo+0, nLinkNoCount, nMsgID, 0, m_oOnePkg, nDataSize );
+		if( nDataSize > 0 && nLinkNoCount > 0 )
+		{
+			DataNodeService::GetSerivceObj().PushData( vctLinkNo+0, nLinkNoCount, nMsgID, 0, m_oOnePkg, nDataSize );
+		}
+
+		if( 0 == nLinkNoCount )
+		{
+			m_oWaitEvent.Wait();
+		}
 	}
 }
 

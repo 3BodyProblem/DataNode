@@ -97,6 +97,13 @@ ModuleControl::ModuleControl()
 {
 }
 
+ModuleControl& ModuleControl::GetSingleton()
+{
+	static	ModuleControl obj;
+
+	return obj;
+}
+
 bool ModuleControl::ExcuteCommand( char** pArgv, unsigned int nArgc, char* szResult, unsigned int uiSize )
 {
 	std::string		sCmd = Str2Lower( std::string( pArgv[0] ) );
@@ -125,6 +132,13 @@ bool ModuleControl::ExcuteCommand( char** pArgv, unsigned int nArgc, char* szRes
 CTP_DL_Echo::CTP_DL_Echo()
  : IDataEcho( "CTP_¥Û¡¨" )
 {
+}
+
+CTP_DL_Echo& CTP_DL_Echo::GetSingleton()
+{
+	static CTP_DL_Echo	obj;
+
+	return obj;
 }
 
 bool CTP_DL_Echo::ExcuteCommand( char** pArgv, unsigned int nArgc, char* szResult, unsigned int uiSize )

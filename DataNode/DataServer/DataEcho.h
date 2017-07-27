@@ -70,8 +70,11 @@ protected:
  */
 class ModuleControl : public IDataEcho
 {
-public:
+private:
 	ModuleControl();
+
+public:
+	static ModuleControl&		GetSingleton();
 
 protected:
 	/**
@@ -94,8 +97,11 @@ protected:
  */
 class CTP_DL_Echo : public IDataEcho
 {
-public:
+private:
 	CTP_DL_Echo();
+
+public:
+	static CTP_DL_Echo&			GetSingleton();
 
 protected:
 	/**

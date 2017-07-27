@@ -358,6 +358,12 @@ int DatabaseIO::Initialize()
 
 	DataNodeService::GetSerivceObj().WriteInfo( "DatabaseIO::Initialize() : memory database plugin is initialized ......" );
 
+	if( m_oQueryBuffer.Initialize( 1024*1024*8 ) != 0 )
+	{
+		DataNodeService::GetSerivceObj().WriteError( "DatabaseIO::Initialize() : failed 2 initialize query buffer, size = %d", m_oQueryBuffer.MaxBufSize() );
+		return -2;
+	}
+
 	return 0;
 }
 
@@ -378,12 +384,106 @@ void DatabaseIO::Release()
 			m_pIDBFactoryPtr = NULL;		///< 重置内存插件的工厂对象指针
 		}
 
+		m_oQueryBuffer.Release();			///< 释放查询内存
 		m_oDllPlugin.CloseDll();			///< 卸载内存库插件的DLL
 
 		DataNodeService::GetSerivceObj().WriteInfo( "DatabaseIO::Release() : memory database plugin is released ......" );
 	}
 }
 
+int DatabaseIO::FlushImageData2NewSessions( unsigned __int64 nSerialNo )
+{
+	int							nReqLinkID = 0;
+	CriticalLock				lock( m_oLock );
+
+	if( LinkNoRegister::GetRegister().GetReqLinkCount() > 0 )
+	{
+		unsigned int			lstTableID[64] = { 0 };
+		unsigned int			lstTableWidth[64] = { 0 };
+		unsigned int			nTableCount = GetTablesID( lstTableID, 64, lstTableWidth, 64 );
+		unsigned int			nReqLinkCount = LinkNoRegister::GetRegister().GetReqLinkCount();
+
+		while( (nReqLinkID = LinkNoRegister::GetRegister().PopReqLinkID()) >= 0 )
+		{
+			for( unsigned int n = 0; n < nTableCount && nReqLinkCount > 0; n++ )
+			{
+				unsigned int		nTableID = lstTableID[n];
+				unsigned int		nTableWidth = lstTableWidth[n];
+				int					nFunctionID = ((n+1)==nTableCount) ? 100 : 0;	///< 最后一个数据包的标识
+				unsigned __int64	nSerialNoOfAnchor = nSerialNo;
+				int					nDataLen = FetchRecordsByID( nTableID, (char*)m_oQueryBuffer, m_oQueryBuffer.MaxBufSize(), nSerialNoOfAnchor );
+
+				if( nDataLen < 0 )
+				{
+					DataNodeService::GetSerivceObj().WriteWarning( "DatabaseIO::FlushImageData2NewSessions() : failed 2 fetch image of table, errorcode=%d", nDataLen );
+					return -1 * (n*100);
+				}
+
+				///< 将查询出的数据重新格式到发送缓存
+				unsigned int	nSendLen = FormatImageBuffer( n, nTableID, nTableWidth, nDataLen );
+
+				int	nErrCode = DataNodeService::GetSerivceObj().SendData( nReqLinkID, nTableID, nFunctionID, (char*)m_oQueryBuffer, nSendLen/*, nSerialNo*/ );
+				if( nErrCode < 0 )
+				{
+					DataNodeService::GetSerivceObj().CloseLink( nReqLinkID );
+					DataNodeService::GetSerivceObj().WriteWarning( "DatabaseIO::FlushImageData2NewSessions() : failed 2 send image data, errorcode=%d", nErrCode );
+					return -2 * (n*10000);
+				}
+
+				if( 100 == nFunctionID )					///< 最后一个数据包的function id是100
+				{
+					LinkNoRegister::GetRegister().NewPushLinkID( nReqLinkID );	///< 将新会话的id加入推送列表
+				}
+			}
+		}
+
+		return nReqLinkCount;
+	}
+
+	return 0;
+}
+
+int DatabaseIO::QueryCodeListInImage( unsigned int nDataID, unsigned int nRecordLen, std::set<std::string>& setCode )
+{
+	unsigned __int64	nSerialNoOfAnchor = 0;
+	CriticalLock		lock( m_oLock );
+	int					nDataLen = FetchRecordsByID( nDataID, (char*)m_oQueryBuffer, m_oQueryBuffer.MaxBufSize(), nSerialNoOfAnchor );
+
+	setCode.clear();
+	if( nDataLen < 0 )	{
+		DataNodeService::GetSerivceObj().WriteWarning( "DatabaseIO::QueryCodeListInImage() : failed 2 fetch image of table, errorcode=%d", nDataLen );
+		return -1;
+	}
+
+	for( int nOffset = 0; nOffset < nDataLen; nOffset+=nRecordLen )
+	{
+		setCode.insert( std::string((char*)m_oQueryBuffer+nOffset) );
+	}
+
+	return setCode.size();
+}
+
+
+unsigned int DatabaseIO::FormatImageBuffer( unsigned int nSeqNo, unsigned int nDataID, unsigned int nDataWidth, unsigned int nBuffDataLen )
+{
+	tagPackageHead*		pPkgHead = (tagPackageHead*)((char*)m_oQueryBuffer);
+
+	if( 0 == nBuffDataLen )
+	{
+		return 0;
+	}
+
+	///< 构建发送格式数据包
+	::memmove( (char*)m_oQueryBuffer+sizeof(tagPackageHead), (char*)m_oQueryBuffer, nBuffDataLen );
+
+	///< 数据包头构建
+	pPkgHead->nSeqNo = nSeqNo;
+	pPkgHead->nMsgCount = nBuffDataLen / nDataWidth;
+	pPkgHead->nMarketID = DataCollector::GetMarketID();
+	pPkgHead->nMsgLength = nDataWidth;
+
+	return nBuffDataLen + sizeof(tagPackageHead);
+}
 
 
 

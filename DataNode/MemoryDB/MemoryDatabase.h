@@ -8,6 +8,7 @@
 #include "../Infrastructure/Dll.h"
 #include "../Infrastructure/Lock.h"
 #include "../InitializeFlag/InitFlag.h"
+#include "../DataServer/Communication/DataStream.h"
 
 
 #define			MAX_CODE_LENGTH							32						///< 最大代码长度
@@ -22,7 +23,7 @@ typedef			std::map<unsigned int,unsigned int>		TMAP_DATAID2WIDTH;		///< map[数据
  */
 class DatabaseIO
 {
-public:
+public:///< 初始化
 	DatabaseIO();
 	~DatabaseIO();
 
@@ -43,7 +44,32 @@ public:
 	 */
 	void							UnitTest();
 
-public:
+private:	
+	/**
+	 * @brief						格式化快照数据缓存
+	 * @return						返回格式化后的数据长度
+	 */
+	unsigned int					FormatImageBuffer( unsigned int nSeqNo, unsigned int nDataID, unsigned int nDataWidth, unsigned int nBuffDataLen );
+
+public:///< 功能函数
+	/**
+	 * @brief						将全幅初始化行情发到新到达的链路
+	 * @param[in]					nSerialNo				推送查询序号(需要>nSerialNo)
+	 * @return						>=0						同步的链路数
+									<0						出错
+	 */
+	int								FlushImageData2NewSessions( unsigned __int64 nSerialNo = 0 );
+
+	/**
+	 * @brief						获取内存数据库某数据表的的所有商品主键
+	 * @param[in]					nDataID					数据表ID
+	 * @param[in]					nRecordLen				数据表对应数据包长度
+	 * @param[out]					setCode					数据表主键集合
+	 * @return						>=0						集合中的元素数量
+									<0						出错
+	 */
+	int								QueryCodeListInImage( unsigned int nDataID, unsigned int nRecordLen, std::set<std::string>& setCode );
+
 	/**
 	 * @brief						取得存在的数据表id列表
 	 * @param[out]					pIDList			数据表id列表指针
@@ -81,7 +107,7 @@ public:
 	 */
 	time_t							GetLastUpdateTime();
 
-public:
+public:///< 记录操作
 	/**
 	 * @brief						查询实时行情数据
 	 * @param[in]					nDataID				消息ID
@@ -129,7 +155,7 @@ public:
 	 */
 	int								DeleteRecord( unsigned int nDataID, char* pData, unsigned int nDataLen );
 
-public:
+public:///< 数据库操作
 	/**
 	 * @brief						从磁盘恢复行情数据到内存插件
 	 * @detail						需要从磁盘文件恢复最近一天的行情数据（检查本地文件日期是否有效）
@@ -155,6 +181,7 @@ protected:
 	Dll								m_oDllPlugin;					///< 插件加载类
 	IDBFactory*						m_pIDBFactoryPtr;				///< 内存数据插件库的工厂类
 	I_Database*						m_pIDatabase;					///< 数据库指针
+	PkgBuffer						m_oQueryBuffer;					///< 数据发送缓存
 };
 
 

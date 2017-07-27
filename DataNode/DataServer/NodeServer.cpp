@@ -164,7 +164,7 @@ int DataIOEngine::LoadCodesListInDatabase()
 		unsigned int				nDataID = lstTableID[n];
 		unsigned int				nRecordLen = lstRecordWidth[n];
 
-		if( (nErrorCode=ImageDataQuery::GetImageQuery().QueryCodeListInImage( nDataID, nRecordLen, setCode )) < 0 )
+		if( (nErrorCode = m_oDatabaseIO.QueryCodeListInImage( nDataID, nRecordLen, setCode )) < 0 )
 		{
 			DataNodeService::GetSerivceObj().WriteWarning( "DataIOEngine::LoadCodesListInDatabase() : failed fetch code list in table [%d] ", nDataID );
 			return -100 - n;
@@ -404,7 +404,7 @@ int DataNodeService::OnIdle()
 	int					nPertiodIndex = m_oInitFlag.InTradingPeriod( bInitPoint );
 
 	///< 检查是否有新的链接到来请求初始化行情数据推送的
-	ImageDataQuery::GetImageQuery().FlushImageData2NewSessions( 0 );///< 对新到达的链接，推送"全量"初始化快照行情
+	m_oDatabaseIO.FlushImageData2NewSessions( 0 );///< 对新到达的链接，推送"全量"初始化快照行情
 	///< 链路维持：心跳包发送
 	OnHeartBeat();
 
@@ -448,11 +448,12 @@ void DataNodeService::OnHeartBeat()
 		{
 			time_t	nTimeDiff = nNowT - s_nLastTime;
 
-			if( nTimeDiff > 15 )
+			if( nTimeDiff >= 16 )
 			{
 				m_nHeartBeatCount++;
 				s_bBeginCheck = false;
-				m_oLinkSessions.PushQuotation( 0, 0, (char*)&nNowT, sizeof(nNowT), true, m_nPushSerialNo );
+				m_oLinkSessions.PushQuotation( MSG_HEARTBEAT_ID, 0, (char*)&nNowT, sizeof(nNowT), true, m_nPushSerialNo );
+				::printf( "------------------- heart beat message --------------------------\n" );
 			}
 		}
 	}

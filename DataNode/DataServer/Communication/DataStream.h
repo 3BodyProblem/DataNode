@@ -7,7 +7,10 @@
 #include <string>
 #include "../../Infrastructure/Lock.h"
 #include "../../Infrastructure/Thread.h"
-#include "../../MemoryDB/MemoryDatabase.h"
+
+
+#define			MSG_HEARTBEAT_ID	0					///< 心跳消息编号
+#define			MSG_LOGIN_ID		299					///< 登录消息编号
 
 
 #pragma pack(1)
@@ -25,9 +28,6 @@ typedef struct
 	unsigned short					nMsgLength;			///< 数据部分长度
 	unsigned short					nMsgCount;			///< Message数量
 } tagPackageHead;
-
-
-#define			MSG_LOGIN_ID		299					///< 登录消息编号
 
 
 /**

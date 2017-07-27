@@ -83,67 +83,6 @@ private:
 };
 
 
-///< -------------------------------------------------------------------------------------------
-
-
-/**
- * @class						ImageDataQuery
- * @brief						行情快照数据查询推送
- * @author						barry
- */
-class ImageDataQuery
-{
-private:
-	ImageDataQuery();
-public:
-	~ImageDataQuery();
-
-	static ImageDataQuery&		GetImageQuery();
-
-	/**
-	 * @brief					初始化
-	 * @return					!= 0				失败
-	 */
-	int							Instance( DatabaseIO* pDbIO );
-
-	/**
-	 * @brief					释放资源
-	 */
-	void						Release();
-
-public:///< 初始化行情推送接口
-	/**
-	 * @brief					将全幅初始化行情发到新到达的链路
-	 * @param[in]				nSerialNo				推送查询序号(需要>nSerialNo)
-	 * @return					>=0						同步的链路数
-								<0						出错
-	 */
-	int							FlushImageData2NewSessions( unsigned __int64 nSerialNo = 0 );
-
-	/**
-	 * @brief					获取内存数据库某数据表的的所有商品主键
-	 * @param[in]				nDataID					数据表ID
-	 * @param[in]				nRecordLen				数据表对应数据包长度
-	 * @param[out]				setCode					数据表主键集合
-	 * @return					>=0						集合中的元素数量
-								<0						出错
-	 */
-	int							QueryCodeListInImage( unsigned int nDataID, unsigned int nRecordLen, std::set<std::string>& setCode );
-
-protected:///< 内部功能方法
-	/**
-	 * @brief					格式化快照数据缓存
-	 * @return					返回格式化后的数据长度
-	 */
-	unsigned int				FormatImageBuffer( unsigned int nSeqNo, unsigned int nDataID, unsigned int nDataWidth, unsigned int nBuffDataLen );
-
-protected:
-	CriticalObject				m_oLock;				///< 初始化数据推送缓存锁
-	PkgBuffer					m_oOnePkg;				///< 数据发送缓存
-	DatabaseIO*					m_pDatabase;			///< 数据操作对象指针
-};
-
-
 /**
  * @class						SessionCollection
  * @brief						下级链路数据回调事件 + 实时行情推送类
