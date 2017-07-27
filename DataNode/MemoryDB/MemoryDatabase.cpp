@@ -419,8 +419,17 @@ int DatabaseIO::FlushImageData2NewSessions( unsigned __int64 nSerialNo )
 					return -1 * (n*100);
 				}
 
-				///< 将查询出的数据重新格式到发送缓存
-				unsigned int	nSendLen = FormatImageBuffer( n, nTableID, nTableWidth, nDataLen );
+				///< ---------------- 将查询出的数据重新格式到发送缓存 -------------------------------
+				tagPackageHead*		pPkgHead = (tagPackageHead*)((char*)m_oQueryBuffer);
+				///< 构建发送格式数据包
+				::memmove( (char*)m_oQueryBuffer+sizeof(tagPackageHead), (char*)m_oQueryBuffer, nDataLen );
+				///< 数据包头构建
+				pPkgHead->nSeqNo = n;
+				pPkgHead->nMsgCount = nDataLen / nTableWidth;
+				pPkgHead->nMarketID = DataCollector::GetMarketID();
+				pPkgHead->nMsgLength = nTableWidth;
+				unsigned int	nSendLen = nDataLen + sizeof(tagPackageHead);
+				///< ---------------------------------------------------------------------------------
 
 				int	nErrCode = DataNodeService::GetSerivceObj().SendData( nReqLinkID, nTableID, nFunctionID, (char*)m_oQueryBuffer, nSendLen/*, nSerialNo*/ );
 				if( nErrCode < 0 )
@@ -463,27 +472,6 @@ int DatabaseIO::QueryCodeListInImage( unsigned int nDataID, unsigned int nRecord
 	return setCode.size();
 }
 
-
-unsigned int DatabaseIO::FormatImageBuffer( unsigned int nSeqNo, unsigned int nDataID, unsigned int nDataWidth, unsigned int nBuffDataLen )
-{
-	tagPackageHead*		pPkgHead = (tagPackageHead*)((char*)m_oQueryBuffer);
-
-	if( 0 == nBuffDataLen )
-	{
-		return 0;
-	}
-
-	///< 构建发送格式数据包
-	::memmove( (char*)m_oQueryBuffer+sizeof(tagPackageHead), (char*)m_oQueryBuffer, nBuffDataLen );
-
-	///< 数据包头构建
-	pPkgHead->nSeqNo = nSeqNo;
-	pPkgHead->nMsgCount = nBuffDataLen / nDataWidth;
-	pPkgHead->nMarketID = DataCollector::GetMarketID();
-	pPkgHead->nMsgLength = nDataWidth;
-
-	return nBuffDataLen + sizeof(tagPackageHead);
-}
 
 
 

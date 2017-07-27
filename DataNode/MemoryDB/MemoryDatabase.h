@@ -44,13 +44,6 @@ public:///< 初始化
 	 */
 	void							UnitTest();
 
-private:	
-	/**
-	 * @brief						格式化快照数据缓存
-	 * @return						返回格式化后的数据长度
-	 */
-	unsigned int					FormatImageBuffer( unsigned int nSeqNo, unsigned int nDataID, unsigned int nDataWidth, unsigned int nBuffDataLen );
-
 public:///< 功能函数
 	/**
 	 * @brief						将全幅初始化行情发到新到达的链路
