@@ -61,6 +61,15 @@ int _tmain( int argc, _TCHAR* argv[] )
 			return nErrorCode;
 		}
 
+		if( 0 == ::strncmp( argv[1], "echocluster", 10 ) )
+		{
+			::printf( "--------------- [UnitTest] ------------------------\n" );
+
+			::printf( "--------------- [DONE!] ---------------------------\n" );
+
+			return nErrorCode;
+		}
+
 		::printf( "单元测试命令:\na) 本程序名.exe testdb\t调用数据库插件的单元测试。\nb) 本程序名.exe testself\t本模块的单元测试。\n" );
 
 		return 0;

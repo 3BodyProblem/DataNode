@@ -221,6 +221,14 @@
 			Name="UnitTest"
 			>
 			<File
+				RelativePath=".\UnitTest\EchoDataCluster.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\UnitTest\EchoDataCluster.h"
+				>
+			</File>
+			<File
 				RelativePath=".\UnitTest\UnitTest.cpp"
 				>
 			</File>
