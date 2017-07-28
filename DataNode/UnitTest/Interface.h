@@ -43,7 +43,7 @@ public:
 };
 
 
-///< -------------------------- 数据采集插件接口 ----------------------------------
+///< -------------------------- 数据访问插件导出接口 ----------------------------------
 
 
 /**
@@ -52,12 +52,12 @@ public:
  * @return					==0							初始化成功
 							!=							出错
  */
-//typedef int					(__stdcall *T_Func_Initialize)( I_DataHandle* pIDataHandle );
+typedef int					(__stdcall *T_Func_Activate)( I_QuotationCallBack* pIDataHandle );
 
 /**
  * @brief					释放数据采集模块
  */
-//typedef void				(__stdcall *T_Func_Release)();
+typedef void				(__stdcall *T_Func_Destroy)();
 
 /**
  * @brief					获取模块的当前状态
@@ -65,7 +65,12 @@ public:
  * @param[in,out]			nStrLen						输入描述串缓存长度，输出描述串有效内容长度
  * @return					返回模块当前状态值
  */
-//typedef int					(__stdcall *T_Func_GetStatus)( char* pszStatusDesc, unsigned int& nStrLen );
+typedef int					(__stdcall *T_Func_Query)( unsigned int nMessageID, char* pDataPtr, unsigned int nDataLen );
+
+/**
+ * @brief					释放数据采集模块
+ */
+typedef void				(__stdcall *T_Func_ExecuteUnitTest)();
 
 
 
