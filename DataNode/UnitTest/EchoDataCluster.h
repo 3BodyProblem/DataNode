@@ -5,8 +5,27 @@
 
 
 #include <vector>
-#include "gtest/gtest.h"
-#include "../Interface.h"
+#include "Interface.h"
+#include "../Infrastructure/Dll.h"
+#include "../Infrastructure/Lock.h"
+
+
+/**
+ * @class				DataClusterPlugin
+ * @brief				数据收集客户端测试封装
+ * @author				barry
+ */
+class DataClusterPlugin
+{
+public:
+	DataClusterPlugin();
+
+public:
+	int					TestQuotationEcho();
+
+protected:
+	Dll					m_oDllPlugin;					///< 插件加载类
+};
 
 
 

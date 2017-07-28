@@ -229,6 +229,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\UnitTest\Interface.h"
+				>
+			</File>
+			<File
 				RelativePath=".\UnitTest\UnitTest.cpp"
 				>
 			</File>
