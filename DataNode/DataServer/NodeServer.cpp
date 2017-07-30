@@ -66,9 +66,9 @@ bool DataIOEngine::PrepareQuotation()
 	DataNodeService::GetSerivceObj().WriteInfo( "DataIOEngine::PrepareQuotation() : reloading quotation........" );
 
 	m_oDataCollector.HaltDataCollector();												///< 1) 先事先停止数据采集模块
-
+	///< 行情采集插件: 需先加载落盘快照行情数据,再将其中非当天的记录删除
 	if( false == m_oDataCollector.IsProxy() )
-	{	///< 对于非传输插件，需要事先加载落盘快照，需要这种插件不需要从落盘文件中恢复历史行情数据表
+	{
 		if( 0 == (nErrorCode=m_oDatabaseIO.RecoverDatabase(m_oInitFlag.GetHoliday())) )	///< 2) 从本地文件恢复历史行情数据到内存插件
 		{
 			if( 0 >= (nErrorCode=LoadCodesListInDatabase()) )							///< 查内存插件中已存在的商品代码，供是否有过期代码需作删除判断用
@@ -85,7 +85,7 @@ bool DataIOEngine::PrepareQuotation()
 		return false;;
 	}
 
-	if( (nErrorCode=RemoveCodeExpiredInDatabase()) < 0 )								///< 4) 删除内存中过期的商品
+	if( (nErrorCode=RemoveCodeExpiredInDatabase()) < 0 )								///< 4) 删除内存中非当天的过期的商品
 	{
 		DataNodeService::GetSerivceObj().WriteWarning( "DataIOEngine::PrepareQuotation() : failed 2 remove expired code in database, errorcode=%d", nErrorCode );
 		return false;;
@@ -108,12 +108,12 @@ int DataIOEngine::Execute()
 		{
 			if( true == m_oInitFlag.GetFlag() )			///< 初始化业务顺序的逻辑
 			{
-				SimpleTask::Sleep( nInitInterval );		///< 重新初始化间隔，默认为3秒
 				DataNodeService::GetSerivceObj().WriteInfo( "DataIOEngine::Execute() : [NOTICE] Enter Service Initializing Time ......" );
 
 				if( false == PrepareQuotation() )		///< 重新加载行情数据
 				{
 					m_oInitFlag.RedoInitialize();		///< 重置为需要初始化标识为
+					SimpleTask::Sleep( nInitInterval );	///< 重新初始化间隔，默认为3秒
 					continue;
 				}
 
@@ -312,7 +312,7 @@ int DataNodeService::Activate()
 	try
 	{
 		m_bActivated = true;
-		DataNodeService::GetSerivceObj().WriteInfo( "DataNodeService::Activate() : activating service.............." );
+		DataNodeService::GetSerivceObj().WriteInfo( "DataNodeService::Activate() : Activating Service" );
 
 		static	char						pszErrorDesc[8192] = { 0 };
 		int									nErrorCode = Configuration::GetConfigObj().Load();	///< 加载配置信息
@@ -322,6 +322,14 @@ int DataNodeService::Activate()
 			DataNodeService::GetSerivceObj().WriteWarning( "DataNodeService::Activate() : invalid configuration file, errorcode=%d", nErrorCode );
 			return nErrorCode;
 		}
+
+		MServicePlug::WriteInfo( "DataNodeService::Activate() : [ServicePlugin] Configuration As Follow:\n\
+								 MaxLinkCount:%d\nListenPort:%d\nListenCount:%d\nSendBufCount:%d\nThreadCount:%d\nSendTryTimes:%d\n\
+								 LinkTimeOut:%d\nCompressFlag:%d\nSSLFlag:%d\nPfxFilePasswrod:%s\nDetailLog:%d\nPageSize:%d\nPageCount:%d"
+								, refStartInParam.uiMaxLinkCount, refStartInParam.uiListenPort, refStartInParam.uiListenCount
+								, refStartInParam.uiSendBufCount, refStartInParam.uiThreadCount, refStartInParam.uiSendTryTimes
+								, refStartInParam.uiLinkTimeOut, refStartInParam.bCompress, refStartInParam.bSSL, refStartInParam.szPfxFilePasswrod
+								, refStartInParam.bDetailLog, refStartInParam.uiPageSize, refStartInParam.uiPageCount );
 
 		if( (nErrorCode=MServicePlug::Instance( &refStartInParam, pszErrorDesc, sizeof(pszErrorDesc) )) < 0 )	{///< 初始化服务框架
 			::printf( "DataNodeService::Activate() : failed 2 initialize serviceIO framework, errorcode=%d", nErrorCode );
@@ -333,15 +341,6 @@ int DataNodeService::Activate()
 			return -2;
 		}
 
-		MServicePlug::WriteInfo( "DataNodeService::Activate() : serviceIO framework initialized!" );
-		MServicePlug::WriteInfo( "DataNodeService::Activate() : Configuration As Follow:\n\
-								 MaxLinkCount:%d\nListenPort:%d\nListenCount:%d\nSendBufCount:%d\nThreadCount:%d\nSendTryTimes:%d\n\
-								 LinkTimeOut:%d\nCompressFlag:%d\nSSLFlag:%d\nPfxFilePasswrod:%s\nDetailLog:%d\nPageSize:%d\nPageCount:%d"
-								, refStartInParam.uiMaxLinkCount, refStartInParam.uiListenPort, refStartInParam.uiListenCount
-								, refStartInParam.uiSendBufCount, refStartInParam.uiThreadCount, refStartInParam.uiSendTryTimes
-								, refStartInParam.uiLinkTimeOut, refStartInParam.bCompress, refStartInParam.bSSL, refStartInParam.szPfxFilePasswrod
-								, refStartInParam.bDetailLog, refStartInParam.uiPageSize, refStartInParam.uiPageCount );
-
 		///< ........................ 开始启动本节点引擎 .............................
 		if( 0 != (nErrorCode = DataIOEngine::Initialize( Configuration::GetConfigObj().GetDataCollectorPluginPath()
 													, Configuration::GetConfigObj().GetMemPluginPath()
@@ -352,7 +351,7 @@ int DataNodeService::Activate()
 		}
 
 		MServicePlug::RegisterSpi( &m_oLinkSessions );											///< 注册服务框架的回调对象
-		DataNodeService::GetSerivceObj().WriteInfo( "DataNodeService::Activate() : service activated.............." );
+		DataNodeService::GetSerivceObj().WriteInfo( "DataNodeService::Activate() : [OK] Service Activated ! " );
 
 		return 0;
 	}

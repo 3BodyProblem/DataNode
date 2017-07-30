@@ -96,7 +96,7 @@ void DataClusterPlugin::OnLog( unsigned char nLogLevel, const char* pszLogBuf )
 {
 	unsigned int	nLevel = nLogLevel;
 
-	::printf( "[DataCluster.dll] : level(%u), %s", nLevel, pszLogBuf );
+	::printf( "[DataCluster.dll] : level(%u), %s \n", nLevel, pszLogBuf );
 }
 
 
