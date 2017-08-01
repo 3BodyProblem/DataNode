@@ -13,15 +13,45 @@ DataIOEngine::DataIOEngine()
 {
 }
 
-int DataIOEngine::Initialize( const std::string& sDataCollectorPluginPath, const std::string& sMemPluginPath, const std::string& sHolidayPath )
+DataIOEngine::~DataIOEngine()
 {
-	int			nErrorCode = 0;
+	Release();
+}
+
+int DataIOEngine::Initialize()
+{
+	static	char						pszErrorDesc[8192] = { 0 };
+	int									nErrorCode = Configuration::GetConfigObj().Load();	///< 加载配置信息
+	const tagServicePlug_StartInParam&	refStartInParam = Configuration::GetConfigObj().GetStartInParam();
 
 	Release();
 	DataNodeService::GetSerivceObj().WriteInfo( "DataIOEngine::Initialize() : DataNode Engine is initializing ......" );
 
+	if( 0 != nErrorCode )	{
+		DataNodeService::GetSerivceObj().WriteWarning( "DataIOEngine::Initialize() : invalid configuration file, errorcode=%d", nErrorCode );
+		return nErrorCode;
+	}
+
+	MServicePlug::WriteInfo( "DataIOEngine::Initialize() : [ServicePlugin] Configuration As Follow:\n\
+							 MaxLinkCount:%d\nListenPort:%d\nListenCount:%d\nSendBufCount:%d\nThreadCount:%d\nSendTryTimes:%d\n\
+							 LinkTimeOut:%d\nCompressFlag:%d\nSSLFlag:%d\nPfxFilePasswrod:%s\nDetailLog:%d\nPageSize:%d\nPageCount:%d"
+							, refStartInParam.uiMaxLinkCount, refStartInParam.uiListenPort, refStartInParam.uiListenCount
+							, refStartInParam.uiSendBufCount, refStartInParam.uiThreadCount, refStartInParam.uiSendTryTimes
+							, refStartInParam.uiLinkTimeOut, refStartInParam.bCompress, refStartInParam.bSSL, refStartInParam.szPfxFilePasswrod
+							, refStartInParam.bDetailLog, refStartInParam.uiPageSize, refStartInParam.uiPageCount );
+
+	if( (nErrorCode=MServicePlug::Instance( &refStartInParam, pszErrorDesc, sizeof(pszErrorDesc) )) < 0 )	{///< 初始化服务框架
+		::printf( "DataIOEngine::Initialize() : failed 2 initialize serviceIO framework, errorcode=%d", nErrorCode );
+		return nErrorCode;
+	}
+
+	if( 0 != (nErrorCode=m_oLinkSessions.Instance()) )	{									///< 初始化会话链路管理
+		::printf( "DataIOEngine::Initialize() : failed 2 initialize link session set, errorcode=%d", nErrorCode );
+		return -2;
+	}
+
 	if( 0 != (nErrorCode = m_oInitFlag.Initialize( Configuration::GetConfigObj().GetTradingPeriods()
-													, sHolidayPath, Configuration::GetConfigObj().GetTestFlag())) )
+													, Configuration::GetConfigObj().GetHolidayFilePath(), Configuration::GetConfigObj().GetTestFlag())) )
 	{
 		DataNodeService::GetSerivceObj().WriteError( "DataIOEngine::Initialize() : failed 2 initialize initialize policy flag, errorcode=%d", nErrorCode );
 		return nErrorCode;
@@ -39,6 +69,8 @@ int DataIOEngine::Initialize( const std::string& sDataCollectorPluginPath, const
 		DataNodeService::GetSerivceObj().WriteError( "DataIOEngine::Initialize() : failed 2 initialize data collector plugin, errorcode=%d", nErrorCode );
 		return nErrorCode;
 	}
+
+	MServicePlug::RegisterSpi( &m_oLinkSessions );											///< 注册服务框架的回调对象
 
 	if( 0 != (nErrorCode = SimpleTask::Activate()) )
 	{
@@ -139,11 +171,6 @@ int DataIOEngine::Execute()
 	return 0;
 }
 
-InitializerFlag& DataIOEngine::GetInitFlag()
-{
-	return m_oInitFlag;
-}
-
 int DataIOEngine::LoadCodesListInDatabase()
 {
 	int					nErrorCode = 0;
@@ -224,7 +251,7 @@ int DataIOEngine::OnQuery( unsigned int nDataID, char* pData, unsigned int nData
 	}
 	else
 	{
-		return m_oDatabaseIO.QueryQuotation( nDataID, pData, nDataLen, nSerialNo );
+		return m_oDatabaseIO.QueryRecord( nDataID, pData, nDataLen, nSerialNo );
 	}
 }
 
@@ -240,12 +267,12 @@ int DataIOEngine::OnImage( unsigned int nDataID, char* pData, unsigned int nData
 		setCode.erase( std::string( pData ) );
 	}
 
-	return m_oDatabaseIO.BuildMessageTable( nDataID, pData, nDataLen, bLastFlag, m_nPushSerialNo );
+	return m_oDatabaseIO.NewRecord( nDataID, pData, nDataLen, bLastFlag, m_nPushSerialNo );
 }
 
 int DataIOEngine::OnData( unsigned int nDataID, char* pData, unsigned int nDataLen, bool bPushFlag )
 {
-	int					nErrorCode = m_oDatabaseIO.UpdateQuotation( nDataID, pData, nDataLen, m_nPushSerialNo );
+	int					nErrorCode = m_oDatabaseIO.UpdateRecord( nDataID, pData, nDataLen, m_nPushSerialNo );
 
 	if( 0 >= nErrorCode )
 	{
@@ -291,13 +318,7 @@ void DataIOEngine::OnLog( unsigned char nLogLevel, const char* pszFormat, ... )
 
 
 DataNodeService::DataNodeService()
- : m_bActivated( false )
 {
-}
-
-DataNodeService::~DataNodeService()
-{
-	Destroy();
 }
 
 DataNodeService& DataNodeService::GetSerivceObj()
@@ -305,94 +326,6 @@ DataNodeService& DataNodeService::GetSerivceObj()
 	static DataNodeService	obj;
 
 	return obj;
-}
-
-int DataNodeService::Activate()
-{
-	try
-	{
-		m_bActivated = true;
-		DataNodeService::GetSerivceObj().WriteInfo( "DataNodeService::Activate() : Activating Service" );
-
-		static	char						pszErrorDesc[8192] = { 0 };
-		int									nErrorCode = Configuration::GetConfigObj().Load();	///< 加载配置信息
-		const tagServicePlug_StartInParam&	refStartInParam = Configuration::GetConfigObj().GetStartInParam();
-
-		if( 0 != nErrorCode )	{
-			DataNodeService::GetSerivceObj().WriteWarning( "DataNodeService::Activate() : invalid configuration file, errorcode=%d", nErrorCode );
-			return nErrorCode;
-		}
-
-		MServicePlug::WriteInfo( "DataNodeService::Activate() : [ServicePlugin] Configuration As Follow:\n\
-								 MaxLinkCount:%d\nListenPort:%d\nListenCount:%d\nSendBufCount:%d\nThreadCount:%d\nSendTryTimes:%d\n\
-								 LinkTimeOut:%d\nCompressFlag:%d\nSSLFlag:%d\nPfxFilePasswrod:%s\nDetailLog:%d\nPageSize:%d\nPageCount:%d"
-								, refStartInParam.uiMaxLinkCount, refStartInParam.uiListenPort, refStartInParam.uiListenCount
-								, refStartInParam.uiSendBufCount, refStartInParam.uiThreadCount, refStartInParam.uiSendTryTimes
-								, refStartInParam.uiLinkTimeOut, refStartInParam.bCompress, refStartInParam.bSSL, refStartInParam.szPfxFilePasswrod
-								, refStartInParam.bDetailLog, refStartInParam.uiPageSize, refStartInParam.uiPageCount );
-
-		if( (nErrorCode=MServicePlug::Instance( &refStartInParam, pszErrorDesc, sizeof(pszErrorDesc) )) < 0 )	{///< 初始化服务框架
-			::printf( "DataNodeService::Activate() : failed 2 initialize serviceIO framework, errorcode=%d", nErrorCode );
-			return nErrorCode;
-		}
-
-		if( 0 != (nErrorCode=m_oLinkSessions.Instance()) )	{									///< 初始化会话链路管理
-			::printf( "DataNodeService::Activate() : failed 2 initialize link session set, errorcode=%d", nErrorCode );
-			return -2;
-		}
-
-		///< ........................ 开始启动本节点引擎 .............................
-		if( 0 != (nErrorCode = DataIOEngine::Initialize( Configuration::GetConfigObj().GetDataCollectorPluginPath()
-													, Configuration::GetConfigObj().GetMemPluginPath()
-													, Configuration::GetConfigObj().GetHolidayFilePath() )) )
-		{
-			DataNodeService::GetSerivceObj().WriteWarning( "DataNodeService::Activate() : failed 2 initialize service engine, errorcode=%d", nErrorCode );
-			return nErrorCode;
-		}
-
-		MServicePlug::RegisterSpi( &m_oLinkSessions );											///< 注册服务框架的回调对象
-		DataNodeService::GetSerivceObj().WriteInfo( "DataNodeService::Activate() : [OK] Service Activated ! " );
-
-		return 0;
-	}
-	catch( std::exception& err )
-	{
-		DataNodeService::GetSerivceObj().WriteWarning( "DataNodeService::Activate() : exception : %s\n", err.what() );
-	}
-	catch( ... )
-	{
-		DataNodeService::GetSerivceObj().WriteWarning( "DataNodeService::Activate() : unknow exception" );
-	}
-
-	return -100;
-}
-
-void DataNodeService::Destroy()
-{
-	try
-	{
-		DataIOEngine::Release();
-	}
-	catch( std::exception& err )
-	{
-		DataNodeService::GetSerivceObj().WriteWarning( "DataNodeService::Destroy() : exception : %s", err.what() );
-	}
-	catch( ... )
-	{
-		DataNodeService::GetSerivceObj().WriteWarning( "DataNodeService::Destroy() : unknow exception" );
-	}
-}
-
-bool DataNodeService::IsServiceAlive()
-{
-	if( true == SimpleThread::IsAlive() && false == MServicePlug::IsStop() )
-	{
-		return true;
-	}
-	else
-	{
-		return false;
-	}
 }
 
 int DataNodeService::OnIdle()
@@ -510,7 +443,7 @@ void DataNodeService::WriteInfo( const char * szFormat,... )
 	vsnprintf(tempbuf,sizeof(tempbuf),szFormat,stmarker);
 	va_end(stmarker);
 
-	if( true == m_bActivated ) {
+	if( false == MServicePlug::IsStop() ) {
 		MServicePlug::WriteInfo( "%s", tempbuf );
 	} else {
 		::printf( "%s\n", tempbuf );
@@ -526,7 +459,7 @@ void DataNodeService::WriteWarning( const char * szFormat,... )
 	vsnprintf(tempbuf,sizeof(tempbuf),szFormat,stmarker);
 	va_end(stmarker);
 
-	if( true == m_bActivated ) {
+	if( false == MServicePlug::IsStop() ) {
 		MServicePlug::WriteWarning( "%s", tempbuf );
 	} else {
 		::printf( "%s\n", tempbuf );
@@ -542,7 +475,7 @@ void DataNodeService::WriteError( const char * szFormat,... )
 	vsnprintf(tempbuf,sizeof(tempbuf),szFormat,stmarker);
 	va_end(stmarker);
 
-	if( true == m_bActivated ) {
+	if( false == MServicePlug::IsStop() ) {
 		MServicePlug::WriteError( "%s", tempbuf );
 	} else {
 		::printf( "%s\n", tempbuf );
@@ -558,7 +491,7 @@ void DataNodeService::WriteDetail( const char * szFormat,... )
 	vsnprintf(tempbuf,sizeof(tempbuf),szFormat,stmarker);
 	va_end(stmarker);
 
-	if( true == m_bActivated ) {
+	if( false == MServicePlug::IsStop() ) {
 		MServicePlug::WriteDetail( "%s", tempbuf );
 	} else {
 		::printf( "%s\n", tempbuf );

@@ -12,7 +12,6 @@ typedef void						(__stdcall *T_Func_DBUnitTest)();
 DatabaseIO::DatabaseIO()
 : m_pIDBFactoryPtr( NULL ), m_pIDatabase( NULL ), m_bBuilded( false )
 {
-	m_nUpdateTimeT = ::time( NULL );
 }
 
 DatabaseIO::~DatabaseIO()
@@ -25,19 +24,118 @@ bool DatabaseIO::IsBuilded()
 	return m_bBuilded;
 }
 
-time_t DatabaseIO::GetLastUpdateTime()
+int DatabaseIO::NewRecord( unsigned int nDataID, char* pData, unsigned int nDataLen, bool bLastFlag, unsigned __int64& nDbSerialNo )
 {
-	return m_nUpdateTimeT;
+	I_Table*				pTable = NULL;
+	int						nAffectNum = 0;
+	CriticalLock			lock( m_oLock );
+
+	nDbSerialNo = 0;
+	m_bBuilded = bLastFlag;
+	if( false == m_pIDatabase->CreateTable( nDataID, nDataLen, MAX_CODE_LENGTH ) )
+	{
+		DataNodeService::GetSerivceObj().WriteError( "DatabaseIO::NewRecord() : failed 2 create data table 4 message, message id=%d", nDataID );
+		return -1;
+	}
+
+	if( NULL == ((pTable = m_pIDatabase->QueryTable( nDataID ))) )
+	{
+		DataNodeService::GetSerivceObj().WriteError( "DatabaseIO::NewRecord() : failed 2 locate data table 4 message, message id=%d", nDataID );
+		return -2;
+	}
+
+	if( 0 > (nAffectNum = pTable->InsertRecord( pData, nDataLen, nDbSerialNo )) )
+	{
+		DataNodeService::GetSerivceObj().WriteError( "DatabaseIO::NewRecord() : failed 2 insert into data table 4 message, message id=%d, affectnum=%d", nDataID, nAffectNum );
+		return -3;
+	}
+
+	m_mapTableID.insert( std::make_pair(nDataID, nDataLen) );		///< 数据表ID集合，添加
+
+	return 0;
 }
 
-unsigned int DatabaseIO::GetTableCount()
+int DatabaseIO::DeleteRecord( unsigned int nDataID, char* pData, unsigned int nDataLen )
 {
-	if( false == IsBuilded() )
+	I_Table*			pTable = NULL;
+	int					nAffectNum = 0;
+	unsigned __int64	nDbSerialNo = 0;
+
+	if( false == m_bBuilded )
+	{
+		DataNodeService::GetSerivceObj().WriteError( "DatabaseIO::DeleteRecord() : failed 2 delete record before initialization, message id=%d" );
+		return -1;
+	}
+
+	if( NULL == ((pTable = m_pIDatabase->QueryTable( nDataID ))) )
+	{
+		DataNodeService::GetSerivceObj().WriteError( "DatabaseIO::DeleteRecord() : failed 2 locate data table 4 message, message id=%d", nDataID );
+		return -2;
+	}
+
+	if( 0 > (nAffectNum = pTable->DeleteRecord( pData, nDataLen, nDbSerialNo )) )
+	{
+		DataNodeService::GetSerivceObj().WriteError( "DatabaseIO::DeleteRecord() : failed 2 delete record from table, message id=%d, affectnum=%d", nDataID, nAffectNum );
+		return -3;
+	}
+
+	return nAffectNum;
+}
+
+int DatabaseIO::UpdateRecord( unsigned int nDataID, char* pData, unsigned int nDataLen, unsigned __int64& nDbSerialNo )
+{
+	I_Table*		pTable = NULL;
+	int				nAffectNum = 0;
+
+	nDbSerialNo = 0;
+	if( false == m_bBuilded )
+	{
+		DataNodeService::GetSerivceObj().WriteError( "DatabaseIO::UpdateRecord() : failed 2 update quotation before initialization, message id=%d" );
+		return -1;
+	}
+
+	if( NULL == ((pTable = m_pIDatabase->QueryTable( nDataID ))) )
+	{
+		DataNodeService::GetSerivceObj().WriteError( "DatabaseIO::UpdateRecord() : failed 2 locate data table 4 message, message id=%d", nDataID );
+		return -2;
+	}
+
+	if( 0 > (nAffectNum = pTable->UpdateRecord( pData, nDataLen, nDbSerialNo )) )
+	{
+		DataNodeService::GetSerivceObj().WriteError( "DatabaseIO::UpdateRecord() : failed 2 insert into data table 4 message, message id=%d, affectnum=%d", nDataID, nAffectNum );
+		return -3;
+	}
+
+	return nAffectNum;
+}
+
+int DatabaseIO::QueryRecord( unsigned int nDataID, char* pData, unsigned int nDataLen, unsigned __int64& nDbSerialNo )
+{
+	I_Table*		pTable = NULL;
+	int				nAffectNum = 0;
+
+	nDbSerialNo = 0;
+	if( false == m_bBuilded )
+	{
+		DataNodeService::GetSerivceObj().WriteError( "DatabaseIO::QueryRecord() : failed 2 update quotation before initialization, message id=%d" );
+		return -1;
+	}
+
+	if( NULL == ((pTable = m_pIDatabase->QueryTable( nDataID ))) )
+	{
+		DataNodeService::GetSerivceObj().WriteError( "DatabaseIO::QueryRecord() : failed 2 locate data table 4 message, message id=%d", nDataID );
+		return -2;
+	}
+
+	RecordBlock	oRecord = pTable->SelectRecord( pData, ::strlen(pData) );
+	if( true == oRecord.IsNone() )
 	{
 		return 0;
 	}
 
-	return m_mapTableID.size();
+	::memcpy( pData, oRecord.GetPtr(), oRecord.Length() );
+
+	return oRecord.Length();
 }
 
 unsigned int DatabaseIO::GetTablesID( unsigned int* pIDList, unsigned int nMaxListSize, unsigned int* pWidthList, unsigned int nMaxWidthlistLen )
@@ -95,120 +193,58 @@ int DatabaseIO::FetchRecordsByID( unsigned int nDataID, char* pBuffer, unsigned 
 	return nAffectNum;
 }
 
-int DatabaseIO::BuildMessageTable( unsigned int nDataID, char* pData, unsigned int nDataLen, bool bLastFlag, unsigned __int64& nDbSerialNo )
+int DatabaseIO::QueryCodeListInImage( unsigned int nDataID, unsigned int nRecordLen, std::set<std::string>& setCode )
 {
-	I_Table*				pTable = NULL;
-	int						nAffectNum = 0;
-	CriticalLock			lock( m_oLock );
+	unsigned __int64	nSerialNoOfAnchor = 0;
+	CriticalLock		lock( m_oLock );
+	int					nDataLen = FetchRecordsByID( nDataID, (char*)m_oQueryBuffer, m_oQueryBuffer.MaxBufSize(), nSerialNoOfAnchor );
 
-	nDbSerialNo = 0;
-	m_bBuilded = bLastFlag;
-	if( false == m_pIDatabase->CreateTable( nDataID, nDataLen, MAX_CODE_LENGTH ) )
-	{
-		DataNodeService::GetSerivceObj().WriteError( "DatabaseIO::BuildMessageTable() : failed 2 create data table 4 message, message id=%d", nDataID );
+	setCode.clear();
+	if( nDataLen < 0 )	{
+		DataNodeService::GetSerivceObj().WriteWarning( "DatabaseIO::QueryCodeListInImage() : failed 2 fetch image of table, errorcode=%d", nDataLen );
 		return -1;
 	}
 
-	if( NULL == ((pTable = m_pIDatabase->QueryTable( nDataID ))) )
+	for( int nOffset = 0; nOffset < nDataLen; nOffset+=nRecordLen )
 	{
-		DataNodeService::GetSerivceObj().WriteError( "DatabaseIO::BuildMessageTable() : failed 2 locate data table 4 message, message id=%d", nDataID );
-		return -2;
+		setCode.insert( std::string((char*)m_oQueryBuffer+nOffset) );
 	}
 
-	if( 0 > (nAffectNum = pTable->InsertRecord( pData, nDataLen, nDbSerialNo )) )
-	{
-		DataNodeService::GetSerivceObj().WriteError( "DatabaseIO::BuildMessageTable() : failed 2 insert into data table 4 message, message id=%d, affectnum=%d", nDataID, nAffectNum );
-		return -3;
-	}
-
-	m_mapTableID.insert( std::make_pair(nDataID, nDataLen) );		///< 数据表ID集合，添加
-
-	return 0;
+	return setCode.size();
 }
 
-int DatabaseIO::DeleteRecord( unsigned int nDataID, char* pData, unsigned int nDataLen )
+int DatabaseIO::LoadCodesListInDatabase()
 {
-	I_Table*			pTable = NULL;
-	int					nAffectNum = 0;
-	unsigned __int64	nDbSerialNo = 0;
+	int					nErrorCode = 0;
+	unsigned int		lstTableID[64] = { 0 };
+	unsigned int		lstRecordWidth[64] = { 0 };
+	unsigned int		nTableCount = GetTablesID( lstTableID, 64, lstRecordWidth, 64 );
+	CriticalLock		lock( m_oLock );
 
-	if( false == m_bBuilded )
-	{
-		DataNodeService::GetSerivceObj().WriteError( "DatabaseIO::DeleteRecord() : failed 2 delete record before initialization, message id=%d" );
+	if( 0 == nTableCount ) {
+		DataNodeService::GetSerivceObj().WriteWarning( "DatabaseIO::LoadCodesListInDatabase() : database is empty " );
 		return -1;
 	}
 
-	if( NULL == ((pTable = m_pIDatabase->QueryTable( nDataID ))) )
+	m_mapID2Codes.clear();
+	for( unsigned int n = 0; n < nTableCount; n++ )
 	{
-		DataNodeService::GetSerivceObj().WriteError( "DatabaseIO::DeleteRecord() : failed 2 locate data table 4 message, message id=%d", nDataID );
-		return -2;
+		std::set<std::string>		setCode;
+		unsigned int				nDataID = lstTableID[n];
+		unsigned int				nRecordLen = lstRecordWidth[n];
+
+		if( (nErrorCode = QueryCodeListInImage( nDataID, nRecordLen, setCode )) < 0 )
+		{
+			DataNodeService::GetSerivceObj().WriteWarning( "DatabaseIO::LoadCodesListInDatabase() : failed fetch code list in table [%d] ", nDataID );
+			return -100 - n;
+		}
+
+		m_mapID2Codes[nDataID] = setCode;
 	}
 
-	if( 0 > (nAffectNum = pTable->DeleteRecord( pData, nDataLen, nDbSerialNo )) )
-	{
-		DataNodeService::GetSerivceObj().WriteError( "DatabaseIO::DeleteRecord() : failed 2 delete record from table, message id=%d, affectnum=%d", nDataID, nAffectNum );
-		return -3;
-	}
+	DataNodeService::GetSerivceObj().WriteInfo( "DatabaseIO::LoadCodesListInDatabase() : fetch codes number=%d", m_mapID2Codes.size() );
 
-	return nAffectNum;
-}
-
-int DatabaseIO::UpdateQuotation( unsigned int nDataID, char* pData, unsigned int nDataLen, unsigned __int64& nDbSerialNo )
-{
-	I_Table*		pTable = NULL;
-	int				nAffectNum = 0;
-
-	nDbSerialNo = 0;
-	if( false == m_bBuilded )
-	{
-		DataNodeService::GetSerivceObj().WriteError( "DatabaseIO::UpdateQuotation() : failed 2 update quotation before initialization, message id=%d" );
-		return -1;
-	}
-
-	if( NULL == ((pTable = m_pIDatabase->QueryTable( nDataID ))) )
-	{
-		DataNodeService::GetSerivceObj().WriteError( "DatabaseIO::UpdateQuotation() : failed 2 locate data table 4 message, message id=%d", nDataID );
-		return -2;
-	}
-
-	if( 0 > (nAffectNum = pTable->UpdateRecord( pData, nDataLen, nDbSerialNo )) )
-	{
-		DataNodeService::GetSerivceObj().WriteError( "DatabaseIO::UpdateQuotation() : failed 2 insert into data table 4 message, message id=%d, affectnum=%d", nDataID, nAffectNum );
-		return -3;
-	}
-
-	m_nUpdateTimeT = ::time( NULL );
-
-	return nAffectNum;
-}
-
-int DatabaseIO::QueryQuotation( unsigned int nDataID, char* pData, unsigned int nDataLen, unsigned __int64& nDbSerialNo )
-{
-	I_Table*		pTable = NULL;
-	int				nAffectNum = 0;
-
-	nDbSerialNo = 0;
-	if( false == m_bBuilded )
-	{
-		DataNodeService::GetSerivceObj().WriteError( "DatabaseIO::QueryQuotation() : failed 2 update quotation before initialization, message id=%d" );
-		return -1;
-	}
-
-	if( NULL == ((pTable = m_pIDatabase->QueryTable( nDataID ))) )
-	{
-		DataNodeService::GetSerivceObj().WriteError( "DatabaseIO::QueryQuotation() : failed 2 locate data table 4 message, message id=%d", nDataID );
-		return -2;
-	}
-
-	RecordBlock	oRecord = pTable->SelectRecord( pData, ::strlen(pData) );
-	if( true == oRecord.IsNone() )
-	{
-		return 0;
-	}
-
-	::memcpy( pData, oRecord.GetPtr(), oRecord.Length() );
-
-	return oRecord.Length();
+	return m_mapID2Codes.size();
 }
 
 int DatabaseIO::RecoverDatabase( MkHoliday& refHoliday )
@@ -221,7 +257,7 @@ int DatabaseIO::RecoverDatabase( MkHoliday& refHoliday )
 
 			DataNodeService::GetSerivceObj().WriteInfo( "DatabaseIO::RecoverDatabase() : recovering ......" );
 			m_mapTableID.clear();
-			m_nUpdateTimeT = ::time( NULL );
+			m_mapID2Codes.clear();
 
 			m_bBuilded = false;
 			if( 0 != m_pIDatabase->DeleteTables() )
@@ -238,7 +274,6 @@ int DatabaseIO::RecoverDatabase( MkHoliday& refHoliday )
 				///< 检查本地落盘数据是否有效
 				if( false == refHoliday.IsValidDatabaseDate( nDBLoadDate ) )
 				{
-					m_mapTableID.clear();
 					DataNodeService::GetSerivceObj().WriteWarning( "DatabaseIO::RecoverDatabase() : invalid dump file, file date = %d", nDBLoadDate );
 					return -2000;
 				}
@@ -247,6 +282,7 @@ int DatabaseIO::RecoverDatabase( MkHoliday& refHoliday )
 				for( unsigned int n = 0; n < nTableCount; n++ )
 				{
 					if( false == m_pIDatabase->GetTableMetaByPos( n, nDataID, nRecordLen, nKeyLen ) )	{
+						m_mapTableID.clear();
 						DataNodeService::GetSerivceObj().WriteWarning( "DatabaseIO::RecoverDatabase() : cannot fetch table with index (%u)", n );
 						return -1000 - n;
 					}
@@ -255,6 +291,7 @@ int DatabaseIO::RecoverDatabase( MkHoliday& refHoliday )
 				}
 
 				m_bBuilded = true;
+				LoadCodesListInDatabase();
 				DataNodeService::GetSerivceObj().WriteInfo( "DatabaseIO::RecoverDatabase() : recovered [FileDate=%d], table count=%d ......", nDBLoadDate, nTableCount );
 				return 0;
 			}
@@ -373,7 +410,8 @@ void DatabaseIO::Release()
 	{
 		DataNodeService::GetSerivceObj().WriteInfo( "DatabaseIO::Release() : releasing memory database plugin ......" );
 
-		m_mapTableID.clear();				///< 清空数据表ID集合
+		m_mapTableID.clear();				///< 清空数据表的数据结构长度集合
+		m_mapID2Codes.clear();				///< 清空数据表的code集合表
 		BackupDatabase();					///< 备份行情数据到磁盘
 		m_pIDatabase->DeleteTables();		///< 清理内存插件中的数据表
 		m_pIDatabase = NULL;				///< 重置内存插件数据库指针
@@ -391,7 +429,21 @@ void DatabaseIO::Release()
 	}
 }
 
-int DatabaseIO::FlushImageData2NewSessions( unsigned __int64 nSerialNo )
+
+///< ----------------------------------------------------------------------------------------------
+
+
+unsigned int PowerfullDatabase::GetTableCount()
+{
+	if( false == IsBuilded() )
+	{
+		return 0;
+	}
+
+	return m_mapTableID.size();
+}
+
+int PowerfullDatabase::FlushImageData2NewSessions( unsigned __int64 nSerialNo )
 {
 	int							nReqLinkID = 0;
 	CriticalLock				lock( m_oLock );
@@ -415,7 +467,7 @@ int DatabaseIO::FlushImageData2NewSessions( unsigned __int64 nSerialNo )
 
 				if( nDataLen < 0 )
 				{
-					DataNodeService::GetSerivceObj().WriteWarning( "DatabaseIO::FlushImageData2NewSessions() : failed 2 fetch image of table, errorcode=%d", nDataLen );
+					DataNodeService::GetSerivceObj().WriteWarning( "PowerfullDatabase::FlushImageData2NewSessions() : failed 2 fetch image of table, errorcode=%d", nDataLen );
 					return -1 * (n*100);
 				}
 
@@ -435,7 +487,7 @@ int DatabaseIO::FlushImageData2NewSessions( unsigned __int64 nSerialNo )
 				if( nErrCode < 0 )
 				{
 					DataNodeService::GetSerivceObj().CloseLink( nReqLinkID );
-					DataNodeService::GetSerivceObj().WriteWarning( "DatabaseIO::FlushImageData2NewSessions() : failed 2 send image data, errorcode=%d", nErrCode );
+					DataNodeService::GetSerivceObj().WriteWarning( "PowerfullDatabase::FlushImageData2NewSessions() : failed 2 send image data, errorcode=%d", nErrCode );
 					return -2 * (n*10000);
 				}
 
@@ -451,35 +503,6 @@ int DatabaseIO::FlushImageData2NewSessions( unsigned __int64 nSerialNo )
 
 	return 0;
 }
-
-int DatabaseIO::QueryCodeListInImage( unsigned int nDataID, unsigned int nRecordLen, std::set<std::string>& setCode )
-{
-	unsigned __int64	nSerialNoOfAnchor = 0;
-	CriticalLock		lock( m_oLock );
-	int					nDataLen = FetchRecordsByID( nDataID, (char*)m_oQueryBuffer, m_oQueryBuffer.MaxBufSize(), nSerialNoOfAnchor );
-
-	setCode.clear();
-	if( nDataLen < 0 )	{
-		DataNodeService::GetSerivceObj().WriteWarning( "DatabaseIO::QueryCodeListInImage() : failed 2 fetch image of table, errorcode=%d", nDataLen );
-		return -1;
-	}
-
-	for( int nOffset = 0; nOffset < nDataLen; nOffset+=nRecordLen )
-	{
-		setCode.insert( std::string((char*)m_oQueryBuffer+nOffset) );
-	}
-
-	return setCode.size();
-}
-
-
-
-
-
-
-
-
-
 
 
 

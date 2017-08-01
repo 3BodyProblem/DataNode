@@ -16,9 +16,6 @@
 #include "../DataCollector/DataCollector.h"
 
 
-typedef std::map<unsigned int,std::set<std::string>>	MAP_TABLEID_CODES;
-
-
 /**
  * @class					DataIOEngine
  * @brief					行情数据更新管理引擎(主要封装数据初始化和更新/推送的业务)
@@ -33,17 +30,15 @@ class DataIOEngine : public I_DataHandle, public SimpleTask, public MServicePlug
 {
 public:///< 引擎构造和初始化相关功能
 	DataIOEngine();
+	~DataIOEngine();
 
 	/**
  	 * @brief				初始化行情各参数，准备工作
 	 * @note				流程中，先从本地文件加载内存插件的行情数据，再初始化行情解析插件
-	 * @param[in]			sDataCollectorPluginPath	行情解析插件路径
-	 * @param[in]			sMemPluginPath				行情数据内存插件路径
-	 * @param[in]			sHolidayPath				节假日文件路径
 	 * @return				==0							成功
 							!=0							失败
 	 */
-	int						Initialize( const std::string& sDataCollectorPluginPath, const std::string& sMemPluginPath, const std::string& sHolidayPath );
+	int						Initialize();
 
 	/**
 	 * @brief				释放行情模块各资源
@@ -108,6 +103,14 @@ protected:///< 线程任务相关函数
 	 */
 	virtual int				OnIdle() = 0;
 
+	/**
+	 * @brief				重新加载/初始化行情(内存插件、数据采集器)
+	 * @detail				初始化部分的所有业务流程都在这个函数里了
+	 * @return				true						初始化成功
+							false						失败
+	 */
+	bool					PrepareQuotation();
+
 protected:///< 私有功能函数
 	/**
 	 * @brief				从内存中加载所有数据表下关联的商品代码
@@ -122,27 +125,16 @@ protected:///< 私有功能函数
 	 */
 	int						RemoveCodeExpiredInDatabase();
 
-	/**
-	 * @brief				重新加载/初始化行情(内存插件、数据采集器)
-	 * @detail				初始化部分的所有业务流程都在这个函数里了
-	 * @return				true						初始化成功
-							false						失败
-	 */
-	bool					PrepareQuotation();
-
-public:
-	InitializerFlag&		GetInitFlag();
-
 protected:///< 统计成员变量
 	unsigned __int64		m_nPushSerialNo;				///< 实时行情更新流水
 	unsigned int			m_nHeartBeatCount;				///< 发送的心跳包数量
-protected:///< 逻辑数据成员
 	CriticalObject			m_oCodeMapLock;					///< CodeMap锁
 	MAP_TABLEID_CODES		m_mapID2Codes;					///< 记录各消息ID下的关联codes
+protected:///< 功能成员对象
 	InitializerFlag			m_oInitFlag;					///< 重新初始化标识
 	SessionCollection		m_oLinkSessions;				///< 下级的链路会话
-protected:///< 挂载的相关功能插件
-	DatabaseIO				m_oDatabaseIO;					///< 内存数据插件管理
+protected:///< 挂载相关插件
+	PowerfullDatabase		m_oDatabaseIO;					///< 内存数据插件管理
 	DataCollector			m_oDataCollector;				///< 行情采集模块接口
 //	XXXCompress				m_oCompressObj;					///< 行情压缩模块
 };
@@ -164,34 +156,12 @@ class DataNodeService : public DataIOEngine
 private:
 	DataNodeService();
 public:
-	~DataNodeService();
-
 	/**
 	 * @brief				取得服务对象的单键引用
 	 */
 	static DataNodeService&	GetSerivceObj();
 
-	/**
-	 * @brief				线程是否工作中
-	 * @return				true					还在工作中
-							false					非工作状态
-	 */
-	bool					IsServiceAlive();
-
-public:
-	/**
-	 * @brief				初始化&启动行情服务
-	 * @return				==0						启动成功
-							!=0						启动出错
-	 */
-	int						Activate();
-
-	/**
-	 * @brief				销毁行情服务
-	 */
-	void					Destroy();
-
-public:
+public:///< Scheduled Task
 	/**
 	 * @brief				空闲状态任务: 内存数据落盘/行情超时等...
 	 * @note				所以，关于内存数据落盘文件的存取，需要内存数据插件的标识接口支持
@@ -208,7 +178,7 @@ public:
 	 */
 	void					OnBackupDatabase();
 
-public:
+public:///< Inquiry Interface
 	/**
 	 * @brief				询问数据采集模块的状态
 	 * @param[out]			pszStatusDesc			返回出状态描述串
@@ -223,14 +193,26 @@ public:
 	 */
 	unsigned int			OnInquireHeartBeatCount();
 
-public:
+public:///< Log Method
+	/**
+	 * @brief				信息
+	 */
 	virtual void			WriteInfo( const char * szFormat,... );
-	virtual void			WriteWarning( const char * szFormat,... );
-	virtual void			WriteError( const char * szFormat,... );
-	virtual void			WriteDetail( const char * szFormat,... );
 
-protected:
-	bool					m_bActivated;					///< 服务激活标识
+	/**
+	 * @brief				警告
+	 */
+	virtual void			WriteWarning( const char * szFormat,... );
+
+	/**
+	 * @brief				错误
+	 */
+	virtual void			WriteError( const char * szFormat,... );
+
+	/**
+	 * @brief				明细
+	 */
+	virtual void			WriteDetail( const char * szFormat,... );
 };
 
 

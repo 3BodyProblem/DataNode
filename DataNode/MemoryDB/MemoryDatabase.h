@@ -11,9 +11,9 @@
 #include "../DataServer/Communication/DataStream.h"
 
 
-#define			MAX_CODE_LENGTH							32						///< 最大代码长度
-typedef			std::map<unsigned int,unsigned int>		TMAP_DATAID2WIDTH;		///< map[数据ID,数据结构长度]
-
+#define			MAX_CODE_LENGTH									32							///< 最大代码长度
+typedef			std::map<unsigned int,unsigned int>				TMAP_DATAID2WIDTH;			///< map[数据ID,数据结构长度]
+typedef			std::map<unsigned int,std::set<std::string>>	MAP_TABLEID_CODES;			///< 各数据表中的商品代码map[数据表ID,code集合]
 
 /**
  * @class							DatabaseIO
@@ -44,25 +44,31 @@ public:///< 初始化
 	 */
 	void							UnitTest();
 
-public:///< 功能函数
+public:///< 数据库操作
 	/**
-	 * @brief						将全幅初始化行情发到新到达的链路
-	 * @param[in]					nSerialNo				推送查询序号(需要>nSerialNo)
-	 * @return						>=0						同步的链路数
-									<0						出错
+	 * @brief						从磁盘恢复行情数据到内存插件
+	 * @detail						需要从磁盘文件恢复最近一天的行情数据（检查本地文件日期是否有效）
+	 * @note						对日盘来说只能加载当天的日盘数据，对日盘来说只能加载前一个行情日期的数据
+	 * @param[in]					refHoliday			节假对集合对象
+	 * @return						==0					成功
+									!=0					失败
 	 */
-	int								FlushImageData2NewSessions( unsigned __int64 nSerialNo = 0 );
+	int								RecoverDatabase( MkHoliday& refHoliday );
 
 	/**
-	 * @brief						获取内存数据库某数据表的的所有商品主键
-	 * @param[in]					nDataID					数据表ID
-	 * @param[in]					nRecordLen				数据表对应数据包长度
-	 * @param[out]					setCode					数据表主键集合
-	 * @return						>=0						集合中的元素数量
-									<0						出错
+	 * @brief						将内存插件中的行情数据进行备份
+	 * @return						==0					成功
+									!=0					失败
 	 */
-	int								QueryCodeListInImage( unsigned int nDataID, unsigned int nRecordLen, std::set<std::string>& setCode );
+	int								BackupDatabase();
 
+	/**
+	 * @brief						判断数据表是否已经建立完成
+	 * @note						包括从本地加载，和从行情中加载的都属于true的情况
+	 */
+	bool							IsBuilded();
+
+public:
 	/**
 	 * @brief						取得存在的数据表id列表
 	 * @param[out]					pIDList			数据表id列表指针
@@ -85,20 +91,21 @@ public:///< 功能函数
 	int								FetchRecordsByID( unsigned int nDataID, char* pBuffer, unsigned int nBufferSize, unsigned __int64& nSerialNo );
 
 	/**
-	 * @brief						判断数据表是否已经建立完成
-	 * @note						包括从本地加载，和从行情中加载的都属于true的情况
+	 * @brief						从内存中加载所有数据表下关联的商品代码
+	 * @return						>=0				成功,返回数据表数量
+									<0				失败
 	 */
-	bool							IsBuilded();
+	int								LoadCodesListInDatabase();
 
 	/**
-	 * @brief						获取数据表的数量
+	 * @brief						获取内存数据库某数据表的的所有商品主键
+	 * @param[in]					nDataID					数据表ID
+	 * @param[in]					nRecordLen				数据表对应数据包长度
+	 * @param[out]					setCode					数据表主键集合
+	 * @return						>=0						集合中的元素数量
+									<0						出错
 	 */
-	unsigned int					GetTableCount();
-
-	/**
-	 * @brief						获取最后一次更新时间
-	 */
-	time_t							GetLastUpdateTime();
+	int								QueryCodeListInImage( unsigned int nDataID, unsigned int nRecordLen, std::set<std::string>& setCode );
 
 public:///< 记录操作
 	/**
@@ -111,7 +118,7 @@ public:///< 记录操作
 									==0					未查到数据
 									!=0					错误
 	 */
-	int								QueryQuotation( unsigned int nDataID, char* pData, unsigned int nDataLen, unsigned __int64& nDbSerialNo );
+	int								QueryRecord( unsigned int nDataID, char* pData, unsigned int nDataLen, unsigned __int64& nDbSerialNo );
 
 	/**
 	 * @brief						更新实时行情数据
@@ -123,7 +130,7 @@ public:///< 记录操作
 									==0					成功,但没有实际更新
 									!=0					错误
 	 */
-	int								UpdateQuotation( unsigned int nDataID, char* pData, unsigned int nDataLen, unsigned __int64& nDbSerialNo );
+	int								UpdateRecord( unsigned int nDataID, char* pData, unsigned int nDataLen, unsigned __int64& nDbSerialNo );
 
 	/**
  	 * @brief						初始化性质的行情数据回调
@@ -136,7 +143,7 @@ public:///< 记录操作
 	 * @return						==0					成功
 									!=0					错误
 	 */
-	int								BuildMessageTable( unsigned int nDataID, char* pData, unsigned int nDataLen, bool bLastFlag, unsigned __int64& nDbSerialNo );
+	int								NewRecord( unsigned int nDataID, char* pData, unsigned int nDataLen, bool bLastFlag, unsigned __int64& nDbSerialNo );
 
 	/**
 	 * @brief						删除记录
@@ -148,33 +155,43 @@ public:///< 记录操作
 	 */
 	int								DeleteRecord( unsigned int nDataID, char* pData, unsigned int nDataLen );
 
-public:///< 数据库操作
-	/**
-	 * @brief						从磁盘恢复行情数据到内存插件
-	 * @detail						需要从磁盘文件恢复最近一天的行情数据（检查本地文件日期是否有效）
-	 * @note						对日盘来说只能加载当天的日盘数据，对日盘来说只能加载前一个行情日期的数据
-	 * @param[in]					refHoliday			节假对集合对象
-	 * @return						==0					成功
-									!=0					失败
-	 */
-	int								RecoverDatabase( MkHoliday& refHoliday );
-
-	/**
-	 * @brief						将内存插件中的行情数据进行备份
-	 * @return						==0					成功
-									!=0					失败
-	 */
-	int								BackupDatabase();
-
 protected:
-	CriticalObject					m_oLock;						///< 锁
-	TMAP_DATAID2WIDTH				m_mapTableID;					///< 数据表ID集合表
-	bool							m_bBuilded;						///< 数据表是否已经初始化完成
-	time_t							m_nUpdateTimeT;					///< 数据库最后一次更新time_t
 	Dll								m_oDllPlugin;					///< 插件加载类
 	IDBFactory*						m_pIDBFactoryPtr;				///< 内存数据插件库的工厂类
 	I_Database*						m_pIDatabase;					///< 数据库指针
+protected:
+	CriticalObject					m_oLock;						///< 锁
+	bool							m_bBuilded;						///< 数据表是否已经初始化完成
 	PkgBuffer						m_oQueryBuffer;					///< 数据发送缓存
+protected:///< 统计信息
+	TMAP_DATAID2WIDTH				m_mapTableID;					///< 数据表的数据结构长度统计
+	MAP_TABLEID_CODES				m_mapID2Codes;					///< 各数据表中的code集合统计
+};
+
+
+/**
+ * @class				PowerfullDatabase
+ * @brief				数据库操作扩展类
+ * @date							2017/8/1
+ * @author				barry
+ */
+class PowerfullDatabase : public DatabaseIO
+{
+public:///< 功能函数
+
+	/**
+	 * @brief						获取数据表的数量
+	 */
+	unsigned int					GetTableCount();
+
+	/**
+	 * @brief						将全幅初始化行情发到新到达的链路
+	 * @param[in]					nSerialNo				推送查询序号(需要>nSerialNo)
+	 * @return						>=0						同步的链路数
+									<0						出错
+	 */
+	int								FlushImageData2NewSessions( unsigned __int64 nSerialNo = 0 );
+
 };
 
 

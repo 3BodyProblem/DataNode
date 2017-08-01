@@ -16,7 +16,7 @@ extern "C"
 
 	int		RunNodeServer()
 	{
-		int	nErrorCode = DataNodeService::GetSerivceObj().Activate();	///< 启动服务器
+		int	nErrorCode = DataNodeService::GetSerivceObj().Initialize();	///< 启动服务器
 
 		if( 0 != nErrorCode )
 		{
@@ -24,14 +24,15 @@ extern "C"
 			return nErrorCode;
 		}
 
-		while( true == DataNodeService::GetSerivceObj().IsServiceAlive() )
+		///< 检查"服务线程"和"监控插件"是否在工作状态
+		while( true == DataNodeService::GetSerivceObj().IsAlive() && false == DataNodeService::GetSerivceObj().IsStop() )
 		{
 			SimpleThread::Sleep( 1000*2 );
 		}
 
 		::printf( "RunNodeServer() : joining thread..... \n" );
 		DataNodeService::GetSerivceObj().Join();						///< 等待退出服务
-		DataNodeService::GetSerivceObj().Destroy();						///< 释放所有资源
+		DataNodeService::GetSerivceObj().Release();						///< 释放所有资源
 		::printf( "RunNodeServer() : thread ended....... \n" );
 
 		return nErrorCode;
