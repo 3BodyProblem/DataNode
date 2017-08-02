@@ -206,6 +206,14 @@ int Configuration::Load()
 		m_vctTradingPeriods.push_back( tagPeriodPair );
 	}
 
+	DataNodeService::GetSerivceObj().WriteInfo( "Configuration::Load() : [ServicePlugin] Configuration As Follow:\n\
+												 MaxLinkCount:%d\nListenPort:%d\nListenCount:%d\nSendBufCount:%d\nThreadCount:%d\nSendTryTimes:%d\n\
+												 LinkTimeOut:%d\nCompressFlag:%d\nSSLFlag:%d\nPfxFilePasswrod:%s\nDetailLog:%d\nPageSize:%d\nPageCount:%d"
+												, m_oStartInParam.uiMaxLinkCount, m_oStartInParam.uiListenPort, m_oStartInParam.uiListenCount
+												, m_oStartInParam.uiSendBufCount, m_oStartInParam.uiThreadCount, m_oStartInParam.uiSendTryTimes
+												, m_oStartInParam.uiLinkTimeOut, m_oStartInParam.bCompress, m_oStartInParam.bSSL, m_oStartInParam.szPfxFilePasswrod
+												, m_oStartInParam.bDetailLog, m_oStartInParam.uiPageSize, m_oStartInParam.uiPageCount );
+
 	return 0;
 }
 

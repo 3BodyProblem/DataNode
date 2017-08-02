@@ -20,60 +20,51 @@ DataIOEngine::~DataIOEngine()
 
 int DataIOEngine::Initialize()
 {
-	static	char						pszErrorDesc[8192] = { 0 };
-	int									nErrorCode = Configuration::GetConfigObj().Load();					///< 加载配置信息
-	const tagServicePlug_StartInParam&	refStartInParam = Configuration::GetConfigObj().GetStartInParam();
-	bool								bNeed2CountCodeSetInDB = (false == m_oDataCollector.IsProxy());		///< 是否需要从数据库中对各表进行代码集合统计
-
-	Release();
+	static	char						pszError[8192] = { 0 };											///< ServicePlug初始化出错时的信息
+	int									nErrorCode = Configuration::GetConfigObj().Load();				///< 加载配置信息
+	const tagServicePlug_StartInParam&	refInParam = Configuration::GetConfigObj().GetStartInParam();	///< ServicePlug初始化参数
+	bool								bLoadFromDisk = (false == m_oDataCollector.IsProxy());			///< 是否需要从数据库中对各表进行代码集合统计
 	DataNodeService::GetSerivceObj().WriteInfo( "DataIOEngine::Initialize() : DataNode Engine is initializing ......" );
 
+	Release();
 	if( 0 != nErrorCode )	{
 		DataNodeService::GetSerivceObj().WriteWarning( "DataIOEngine::Initialize() : invalid configuration file, errorcode=%d", nErrorCode );
 		return nErrorCode;
 	}
 
-	MServicePlug::WriteInfo( "DataIOEngine::Initialize() : [ServicePlugin] Configuration As Follow:\n\
-							 MaxLinkCount:%d\nListenPort:%d\nListenCount:%d\nSendBufCount:%d\nThreadCount:%d\nSendTryTimes:%d\n\
-							 LinkTimeOut:%d\nCompressFlag:%d\nSSLFlag:%d\nPfxFilePasswrod:%s\nDetailLog:%d\nPageSize:%d\nPageCount:%d"
-							, refStartInParam.uiMaxLinkCount, refStartInParam.uiListenPort, refStartInParam.uiListenCount
-							, refStartInParam.uiSendBufCount, refStartInParam.uiThreadCount, refStartInParam.uiSendTryTimes
-							, refStartInParam.uiLinkTimeOut, refStartInParam.bCompress, refStartInParam.bSSL, refStartInParam.szPfxFilePasswrod
-							, refStartInParam.bDetailLog, refStartInParam.uiPageSize, refStartInParam.uiPageCount );
-
-	if( (nErrorCode=MServicePlug::Instance( &refStartInParam, pszErrorDesc, sizeof(pszErrorDesc) )) < 0 )	{///< 初始化服务框架
-		::printf( "DataIOEngine::Initialize() : failed 2 initialize serviceIO framework, errorcode=%d", nErrorCode );
+	if( (nErrorCode=MServicePlug::Instance( &refInParam, pszError, sizeof(pszError) )) < 0 )	{	///< 初始化服务框架
+		DataNodeService::GetSerivceObj().WriteError( "DataIOEngine::Initialize() : failed 2 initialize serviceIO framework, errorcode=%d", nErrorCode );
 		return nErrorCode;
 	}
 
-	if( 0 != (nErrorCode=m_oLinkSessions.Instance()) )	{									///< 初始化会话链路管理
-		::printf( "DataIOEngine::Initialize() : failed 2 initialize link session set, errorcode=%d", nErrorCode );
+	if( 0 != (nErrorCode=m_oLinkSessions.Instance()) )	{											///< 初始化会话链路管理
+		DataNodeService::GetSerivceObj().WriteError( "DataIOEngine::Initialize() : failed 2 initialize link session set, errorcode=%d", nErrorCode );
 		return -2;
 	}
 
-	if( 0 != (nErrorCode = m_oInitFlag.Initialize( Configuration::GetConfigObj().GetTradingPeriods()
+	if( 0 != (nErrorCode=m_oInitFlag.Initialize( Configuration::GetConfigObj().GetTradingPeriods()	///< 初始化，初始化策略标识对象
 													, Configuration::GetConfigObj().GetHolidayFilePath(), Configuration::GetConfigObj().GetTestFlag())) )
 	{
 		DataNodeService::GetSerivceObj().WriteError( "DataIOEngine::Initialize() : failed 2 initialize initialize policy flag, errorcode=%d", nErrorCode );
 		return nErrorCode;
 	}
 
-	if( 0 != (nErrorCode = m_oDatabaseIO.Initialize()) )
+	if( 0 != (nErrorCode = m_oDatabaseIO.Initialize()) )											///< 初始化数据库插件
 	{
 		DataNodeService::GetSerivceObj().WriteError( "DataIOEngine::Initialize() : failed 2 initialize memory database plugin, errorcode=%d", nErrorCode );
 		return nErrorCode;
 	}
 
-	m_oDatabaseIO.RecoverDatabase( m_oInitFlag.GetHoliday(), bNeed2CountCodeSetInDB );
-	if( 0 != (nErrorCode = m_oDataCollector.Initialize( this )) )
+	m_oDatabaseIO.RecoverDatabase( m_oInitFlag.GetHoliday(), bLoadFromDisk );
+	if( 0 != (nErrorCode = m_oDataCollector.Initialize( this )) )									///< 初始化行情插件
 	{
 		DataNodeService::GetSerivceObj().WriteError( "DataIOEngine::Initialize() : failed 2 initialize data collector plugin, errorcode=%d", nErrorCode );
 		return nErrorCode;
 	}
 
-	MServicePlug::RegisterSpi( &m_oLinkSessions );											///< 注册服务框架的回调对象
+	MServicePlug::RegisterSpi( &m_oLinkSessions );													///< 注册服务框架的回调对象
 
-	if( 0 != (nErrorCode = SimpleTask::Activate()) )
+	if( 0 != (nErrorCode = SimpleTask::Activate()) )												///< 启动服务管理线程
 	{
 		DataNodeService::GetSerivceObj().WriteError( "DataIOEngine::Initialize() : failed 2 initialize task thread, errorcode=%d", nErrorCode );
 		return nErrorCode;
@@ -96,32 +87,36 @@ void DataIOEngine::Release()
 bool DataIOEngine::EnterInitializationProcess()
 {
 	int				nErrorCode = 0;														///< 错误码
+	CriticalLock	guard( m_oCodeMapLock );											///< 锁
 	MkHoliday&		refHoliday = m_oInitFlag.GetHoliday();								///< 节假日对象
 	bool			bLoadFromDisk = (false == m_oDataCollector.IsProxy());				///< 是否需要从数据库中对各表进行代码集合统计(只针对数据采集插件这一层)
-	CriticalLock	guard( m_oCodeMapLock );
-	DataNodeService::GetSerivceObj().WriteInfo( "DataIOEngine::PrepareQuotation() : reloading quotation........" );
+	DataNodeService::GetSerivceObj().WriteInfo( "DataIOEngine::EnterInitializationProcess() : Service is Initializing ......" );
 
-	///< ----------------- 清理所有状态 ------------------------------------
-	m_mapID2Codes.clear();																///< 0) 清空当天的代码集合表,等待重新统计
-	m_oDataCollector.HaltDataCollector();												///< 1) 先事先停止数据采集模块
+	///< ----------------- 0) 清理所有状态 ------------------------------------
+	m_mapID2Codes.clear();							///< 清空当天的代码集合表,等待重新统计
+	m_oDataCollector.HaltDataCollector();			///< 先事先停止数据采集模块
 
-	///< ----------------- 从磁盘恢复数据 ----------------------------------
-	if( 0 != (nErrorCode=m_oDatabaseIO.RecoverDatabase(refHoliday, bLoadFromDisk)) )	///< 2) 从本地文件恢复历史行情数据到内存插件
+	///< ----------------- 1) 从磁盘恢复行情数据 -------------------------------
+	if( 0 != (nErrorCode=m_oDatabaseIO.RecoverDatabase(refHoliday, bLoadFromDisk)) )
 	{
-		DataNodeService::GetSerivceObj().WriteInfo( "DataIOEngine::PrepareQuotation() : failed 2 recover database from disk, errorcode=%d", nErrorCode );
+		DataNodeService::GetSerivceObj().WriteWarning( "DataIOEngine::EnterInitializationProcess() : failed 2 recover database from disk, errorcode=%d", nErrorCode );
 	}
 
-	///< ----------------- 从行情收取数据 ----------------------------------
-	if( 0 != (nErrorCode=m_oDataCollector.RecoverDataCollector()) )						///< 3) 重新初始化行情采集模块
+	///< ----------------- 2) 从行情模块初始化 ----------------------------------
+	if( 0 != (nErrorCode=m_oDataCollector.RecoverDataCollector()) )
 	{
-		DataNodeService::GetSerivceObj().WriteWarning( "DataIOEngine::PrepareQuotation() : failed 2 initialize data collector module, errorcode=%d", nErrorCode );
+		DataNodeService::GetSerivceObj().WriteWarning( "DataIOEngine::EnterInitializationProcess() : failed 2 initialize data collector module, errorcode=%d", nErrorCode );
 		return false;;
 	}
 
-	///< ----------------- 比较磁盘和行情端的代码，删除非当天的数据 ---------
-	m_oDatabaseIO.RemoveCodeExpiredFromDisk( m_mapID2Codes, bLoadFromDisk );			///< 4) 删除内存中非当天的过期的商品(只针对数据采集插件这一层)
+	///< ----------------- 3) 比较磁盘和行情端的代码，删除非当天的数据 ---------
+	if( 0 > (nErrorCode=m_oDatabaseIO.RemoveCodeExpiredFromDisk( m_mapID2Codes, bLoadFromDisk )) )
+	{
+		DataNodeService::GetSerivceObj().WriteWarning( "DataIOEngine::EnterInitializationProcess() : failed 2 remove expired code from database, errorcode=%d", nErrorCode );
+		return false;
+	}
 
-	DataNodeService::GetSerivceObj().WriteInfo( "DataIOEngine::PrepareQuotation() : quotation reloaded, MarketID=%u ........", DataCollector::GetMarketID() );
+	DataNodeService::GetSerivceObj().WriteInfo( "DataIOEngine::EnterInitializationProcess() : MarketID(%u), Service is Initialized! ......", DataCollector::GetMarketID() );
 
 	return true;
 }
@@ -129,7 +124,7 @@ bool DataIOEngine::EnterInitializationProcess()
 int DataIOEngine::Execute()
 {
 	bool			bInitPoint = false;
-	unsigned int	nInitInterval = 1000*Configuration::GetConfigObj().GetInitInterval();
+	unsigned int	nInitializationInterval = 1000 * Configuration::GetConfigObj().GetInitInterval();
 	DataNodeService::GetSerivceObj().WriteInfo( "DataIOEngine::Execute() : enter into thread func ..." );
 
 	while( true == IsAlive() )
@@ -144,16 +139,16 @@ int DataIOEngine::Execute()
 				///< 进入初始化流程
 				if( false == EnterInitializationProcess() )
 				{
-					m_oInitFlag.RedoInitialize();			///< 重置为需要初始化标识为
-					SimpleTask::Sleep( nInitInterval );		///< 重新初始化间隔，默认为3秒
+					m_oInitFlag.RedoInitialize();					///< 重置为需要初始化标识为
+					SimpleTask::Sleep( nInitializationInterval );	///< 重新初始化间隔，默认为3秒
 					continue;
 				}
 
 				DataNodeService::GetSerivceObj().WriteInfo( "DataIOEngine::Execute() : ................. [NOTICE] Service is Available ....................." );
 			}
 
-			SimpleTask::Sleep( 1000 );						///< 一秒循环一次
-			OnIdle();										///< 空闲处理函数
+			SimpleTask::Sleep( 1000 );								///< 一秒循环一次
+			OnIdle();												///< 空闲处理函数
 		}
 		catch( std::exception& err )
 		{
@@ -161,7 +156,7 @@ int DataIOEngine::Execute()
 		}
 		catch( ... )
 		{
-			DataNodeService::GetSerivceObj().WriteWarning( "DataIOEngine::Execute() : unknow exception" );
+			DataNodeService::GetSerivceObj().WriteWarning( "DataIOEngine::Execute() : unknow exception ..." );
 		}
 	}
 

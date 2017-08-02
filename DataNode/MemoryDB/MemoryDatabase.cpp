@@ -21,6 +21,8 @@ DatabaseIO::~DatabaseIO()
 
 bool DatabaseIO::IsBuilded()
 {
+	CriticalLock			lock( m_oLock );
+
 	return m_bBuilded;
 }
 
@@ -35,7 +37,7 @@ unsigned int DatabaseIO::GetTableCount()
 	{
 		return 0;
 	}
-//	return m_mapTableID.size();
+
 	return m_pIDatabase->GetTableCount();
 }
 
