@@ -21,8 +21,9 @@ DataIOEngine::~DataIOEngine()
 int DataIOEngine::Initialize()
 {
 	static	char						pszErrorDesc[8192] = { 0 };
-	int									nErrorCode = Configuration::GetConfigObj().Load();	///< 加载配置信息
+	int									nErrorCode = Configuration::GetConfigObj().Load();					///< 加载配置信息
 	const tagServicePlug_StartInParam&	refStartInParam = Configuration::GetConfigObj().GetStartInParam();
+	bool								bNeed2CountCodeSetInDB = (false == m_oDataCollector.IsProxy());		///< 是否需要从数据库中对各表进行代码集合统计
 
 	Release();
 	DataNodeService::GetSerivceObj().WriteInfo( "DataIOEngine::Initialize() : DataNode Engine is initializing ......" );
@@ -63,7 +64,7 @@ int DataIOEngine::Initialize()
 		return nErrorCode;
 	}
 
-	m_oDatabaseIO.RecoverDatabase( m_oInitFlag.GetHoliday() );
+	m_oDatabaseIO.RecoverDatabase( m_oInitFlag.GetHoliday(), bNeed2CountCodeSetInDB );
 	if( 0 != (nErrorCode = m_oDataCollector.Initialize( this )) )
 	{
 		DataNodeService::GetSerivceObj().WriteError( "DataIOEngine::Initialize() : failed 2 initialize data collector plugin, errorcode=%d", nErrorCode );
@@ -92,36 +93,33 @@ void DataIOEngine::Release()
 	SimpleTask::StopThread();
 }
 
-bool DataIOEngine::PrepareQuotation()
+bool DataIOEngine::EnterInitializationProcess()
 {
-	int			nErrorCode = 0;
+	int				nErrorCode = 0;														///< 错误码
+	MkHoliday&		refHoliday = m_oInitFlag.GetHoliday();								///< 节假日对象
+	bool			bLoadFromDisk = (false == m_oDataCollector.IsProxy());				///< 是否需要从数据库中对各表进行代码集合统计(只针对数据采集插件这一层)
+	CriticalLock	guard( m_oCodeMapLock );
 	DataNodeService::GetSerivceObj().WriteInfo( "DataIOEngine::PrepareQuotation() : reloading quotation........" );
 
+	///< ----------------- 清理所有状态 ------------------------------------
+	m_mapID2Codes.clear();																///< 0) 清空当天的代码集合表,等待重新统计
 	m_oDataCollector.HaltDataCollector();												///< 1) 先事先停止数据采集模块
-	///< 行情采集插件: 需先加载落盘快照行情数据,再将其中非当天的记录删除
-	if( false == m_oDataCollector.IsProxy() )
+
+	///< ----------------- 从磁盘恢复数据 ----------------------------------
+	if( 0 != (nErrorCode=m_oDatabaseIO.RecoverDatabase(refHoliday, bLoadFromDisk)) )	///< 2) 从本地文件恢复历史行情数据到内存插件
 	{
-		if( 0 == (nErrorCode=m_oDatabaseIO.RecoverDatabase(m_oInitFlag.GetHoliday())) )	///< 2) 从本地文件恢复历史行情数据到内存插件
-		{
-			if( 0 >= (nErrorCode=LoadCodesListInDatabase()) )							///< 查内存插件中已存在的商品代码，供是否有过期代码需作删除判断用
-			{
-				DataNodeService::GetSerivceObj().WriteWarning( "DataIOEngine::PrepareQuotation() : failed 2 code list from database ..., errorcode=%d", nErrorCode );
-				return false;
-			}
-		}
+		DataNodeService::GetSerivceObj().WriteInfo( "DataIOEngine::PrepareQuotation() : failed 2 recover database from disk, errorcode=%d", nErrorCode );
 	}
 
+	///< ----------------- 从行情收取数据 ----------------------------------
 	if( 0 != (nErrorCode=m_oDataCollector.RecoverDataCollector()) )						///< 3) 重新初始化行情采集模块
 	{
 		DataNodeService::GetSerivceObj().WriteWarning( "DataIOEngine::PrepareQuotation() : failed 2 initialize data collector module, errorcode=%d", nErrorCode );
 		return false;;
 	}
 
-	if( (nErrorCode=RemoveCodeExpiredInDatabase()) < 0 )								///< 4) 删除内存中非当天的过期的商品
-	{
-		DataNodeService::GetSerivceObj().WriteWarning( "DataIOEngine::PrepareQuotation() : failed 2 remove expired code in database, errorcode=%d", nErrorCode );
-		return false;;
-	}
+	///< ----------------- 比较磁盘和行情端的代码，删除非当天的数据 ---------
+	m_oDatabaseIO.RemoveCodeExpiredFromDisk( m_mapID2Codes, bLoadFromDisk );			///< 4) 删除内存中非当天的过期的商品(只针对数据采集插件这一层)
 
 	DataNodeService::GetSerivceObj().WriteInfo( "DataIOEngine::PrepareQuotation() : quotation reloaded, MarketID=%u ........", DataCollector::GetMarketID() );
 
@@ -138,23 +136,24 @@ int DataIOEngine::Execute()
 	{
 		try
 		{
-			if( true == m_oInitFlag.GetFlag() )			///< 初始化业务顺序的逻辑
+			///< 判断初始化条件是否满足
+			if( true == m_oInitFlag.GetFlag() )
 			{
 				DataNodeService::GetSerivceObj().WriteInfo( "DataIOEngine::Execute() : [NOTICE] Enter Service Initializing Time ......" );
 
-				if( false == PrepareQuotation() )		///< 重新加载行情数据
+				///< 进入初始化流程
+				if( false == EnterInitializationProcess() )
 				{
-					m_oInitFlag.RedoInitialize();		///< 重置为需要初始化标识为
-					SimpleTask::Sleep( nInitInterval );	///< 重新初始化间隔，默认为3秒
+					m_oInitFlag.RedoInitialize();			///< 重置为需要初始化标识为
+					SimpleTask::Sleep( nInitInterval );		///< 重新初始化间隔，默认为3秒
 					continue;
 				}
 
 				DataNodeService::GetSerivceObj().WriteInfo( "DataIOEngine::Execute() : ................. [NOTICE] Service is Available ....................." );
-				continue;
 			}
 
-			OnIdle();									///< 空闲处理函数
-			SimpleTask::Sleep( 1000 );					///< 一秒循环一次
+			SimpleTask::Sleep( 1000 );						///< 一秒循环一次
+			OnIdle();										///< 空闲处理函数
 		}
 		catch( std::exception& err )
 		{
@@ -171,75 +170,6 @@ int DataIOEngine::Execute()
 	return 0;
 }
 
-int DataIOEngine::LoadCodesListInDatabase()
-{
-	int					nErrorCode = 0;
-	unsigned int		lstTableID[64] = { 0 };
-	unsigned int		lstRecordWidth[64] = { 0 };
-	unsigned int		nTableCount = m_oDatabaseIO.GetTablesID( lstTableID, 64, lstRecordWidth, 64 );
-	CriticalLock		guard( m_oCodeMapLock );
-
-	if( 0 == nTableCount ) {
-		DataNodeService::GetSerivceObj().WriteWarning( "DataIOEngine::LoadCodesListInDatabase() : database is empty " );
-		return -1;
-	}
-
-	m_mapID2Codes.clear();
-	for( unsigned int n = 0; n < nTableCount; n++ )
-	{
-		std::set<std::string>		setCode;
-		unsigned int				nDataID = lstTableID[n];
-		unsigned int				nRecordLen = lstRecordWidth[n];
-
-		if( (nErrorCode = m_oDatabaseIO.QueryCodeListInImage( nDataID, nRecordLen, setCode )) < 0 )
-		{
-			DataNodeService::GetSerivceObj().WriteWarning( "DataIOEngine::LoadCodesListInDatabase() : failed fetch code list in table [%d] ", nDataID );
-			return -100 - n;
-		}
-
-		m_mapID2Codes[nDataID] = setCode;
-	}
-
-	DataNodeService::GetSerivceObj().WriteInfo( "DataIOEngine::LoadCodesListInDatabase() : fetch codes number=%d", m_mapID2Codes.size() );
-
-	return m_mapID2Codes.size();
-}
-
-int DataIOEngine::RemoveCodeExpiredInDatabase()
-{
-	if( false == m_oDataCollector.IsProxy() )
-	{
-		return 0;		///< 如果是行情传输代理，则不需要删除无效代码，因为码表都是即时从上级更新的
-	}
-
-	int					nAffectNum = 0;
-	int					nErrorCode = 0;
-	unsigned int		lstTableID[64] = { 0 };
-	unsigned int		nTableCount = m_oDatabaseIO.GetTablesID( lstTableID, 64, NULL, 0 );
-	CriticalLock		guard( m_oCodeMapLock );
-
-	for( unsigned int n = 0; n < nTableCount; n++ )
-	{
-		unsigned int				nDataID = lstTableID[n];
-		std::set<std::string>&		setCode = m_mapID2Codes[nDataID];
-
-		for( std::set<std::string>::iterator it = setCode.begin(); it != setCode.end(); it++ )
-		{
-			if( (nErrorCode=m_oDatabaseIO.DeleteRecord( nDataID, (char*)(it->c_str()), 32 )) < 0 )
-			{
-				DataNodeService::GetSerivceObj().WriteWarning( "DataIOEngine::RemoveCodeExpiredInDatabase() : failed delete code[] from table [%s] ", it->c_str(), nDataID );
-				return -1000 - nErrorCode;
-			}
-
-			DataNodeService::GetSerivceObj().WriteInfo( "DataIOEngine::RemoveCodeExpiredInDatabase() : DataType=%d, Code[%s] has erased!", nDataID, it->c_str() );
-
-			nAffectNum++;
-		}
-	}
-
-	return nAffectNum;
-}
-
 int DataIOEngine::OnQuery( unsigned int nDataID, char* pData, unsigned int nDataLen )
 {
 	unsigned __int64		nSerialNo = 0;
@@ -247,7 +177,7 @@ int DataIOEngine::OnQuery( unsigned int nDataID, char* pData, unsigned int nData
 
 	if( 0 == strncmp( pData, s_pszZeroBuff, sizeof(s_pszZeroBuff) ) )
 	{
-		return m_oDatabaseIO.FetchRecordsByID( nDataID, pData, nDataLen, nSerialNo );
+		return m_oDatabaseIO.QueryBatchRecords( nDataID, pData, nDataLen, nSerialNo );
 	}
 	else
 	{
@@ -259,12 +189,12 @@ int DataIOEngine::OnImage( unsigned int nDataID, char* pData, unsigned int nData
 {
 	CriticalLock		guard( m_oCodeMapLock );
 
-	///< 删除所有合法的商品，记录下过期代码列表
+	///< 记录所有当天有效的商品代码	[数据表ID,代码集合]
 	if( m_mapID2Codes.find( nDataID ) != m_mapID2Codes.end() )
 	{
 		std::set<std::string>&		setCode = m_mapID2Codes[nDataID];
 
-		setCode.erase( std::string( pData ) );
+		setCode.insert( std::string( pData ) );
 	}
 
 	return m_oDatabaseIO.NewRecord( nDataID, pData, nDataLen, bLastFlag, m_nPushSerialNo );
@@ -336,7 +266,7 @@ int DataNodeService::OnIdle()
 	int					nPertiodIndex = m_oInitFlag.InTradingPeriod( bInitPoint );
 
 	///< 检查是否有新的链接到来请求初始化行情数据推送的
-	m_oDatabaseIO.FlushImageData2NewSessions( 0 );///< 对新到达的链接，推送"全量"初始化快照行情
+	m_oDatabaseIO.FlushDatabase2RequestSessions( 0 );	///< 对新到达的链接，推送"全量"初始化快照行情
 	///< 链路维持：心跳包发送
 	OnHeartBeat();
 
