@@ -486,23 +486,22 @@ int PowerfullDatabase::BackupDatabase()
 int PowerfullDatabase::FlushDatabase2RequestSessions( unsigned __int64 nSerialNo )
 {
 	int							nReqLinkID = 0;
+	unsigned int				nTableCount = GetTableCount();
 	CriticalLock				lock( m_oLock );
-	unsigned int				nTableCount = m_mapTableID.size();
 	unsigned int				nReqLinkCount = LinkNoRegister::GetRegister().GetReqLinkCount();
 
-	if( LinkNoRegister::GetRegister().GetReqLinkCount() > 0 )
+	if( nReqLinkCount > 0 )
 	{
-		for( int n = 0; (nReqLinkID = LinkNoRegister::GetRegister().PopReqLinkID()) >= 0; n++ )
+		while( (nReqLinkID = LinkNoRegister::GetRegister().PopReqLinkID()) >= 0 )
 		{
-			for( TMAP_DATAID2WIDTH::iterator it = m_mapTableID.begin(); it != m_mapTableID.end(); it++ )
+			int					n = 0;
+			for( TMAP_DATAID2WIDTH::iterator it = m_mapTableID.begin(); it != m_mapTableID.end(); it++, n++ )
 			{
-				unsigned int		nTableID = it->first;
-				unsigned int		nTableWidth = it->second;
 				int					nFunctionID = ((n+1)==nTableCount) ? 100 : 0;	///< 最后一个数据包的标识
 				unsigned __int64	nSerialNoOfAnchor = nSerialNo;
-				int					nDataLen = QueryBatchRecords( nTableID, (char*)m_oQueryBuffer, m_oQueryBuffer.MaxBufSize(), nSerialNoOfAnchor );
+				int					nDataLen = QueryBatchRecords( it->first, (char*)m_oQueryBuffer, m_oQueryBuffer.MaxBufSize(), nSerialNoOfAnchor );
 
-				if( nDataLen < 0 )
+				if( nDataLen <= 0 )
 				{
 					DataNodeService::GetSerivceObj().WriteWarning( "PowerfullDatabase::FlushDatabase2RequestSessions() : failed 2 fetch image of table, errorcode=%d", nDataLen );
 					return -1 * (n*100);
@@ -514,13 +513,13 @@ int PowerfullDatabase::FlushDatabase2RequestSessions( unsigned __int64 nSerialNo
 				::memmove( (char*)m_oQueryBuffer+sizeof(tagPackageHead), (char*)m_oQueryBuffer, nDataLen );
 				///< 数据包头构建
 				pPkgHead->nSeqNo = n;
-				pPkgHead->nMsgCount = nDataLen / nTableWidth;
+				pPkgHead->nMsgLength = it->second;
+				pPkgHead->nMsgCount = nDataLen / it->second;
 				pPkgHead->nMarketID = DataCollector::GetMarketID();
-				pPkgHead->nMsgLength = nTableWidth;
 				unsigned int	nSendLen = nDataLen + sizeof(tagPackageHead);
 				///< ---------------------------------------------------------------------------------
 
-				int	nErrCode = DataNodeService::GetSerivceObj().SendData( nReqLinkID, nTableID, nFunctionID, (char*)m_oQueryBuffer, nSendLen/*, nSerialNo*/ );
+				int	nErrCode = DataNodeService::GetSerivceObj().SendData( nReqLinkID, it->first, nFunctionID, (char*)m_oQueryBuffer, nSendLen/*, nSerialNo*/ );
 				if( nErrCode < 0 )
 				{
 					DataNodeService::GetSerivceObj().CloseLink( nReqLinkID );

@@ -87,7 +87,6 @@ void DataIOEngine::Release()
 bool DataIOEngine::EnterInitializationProcess()
 {
 	int				nErrorCode = 0;														///< 错误码
-	CriticalLock	guard( m_oCodeMapLock );											///< 锁
 	MkHoliday&		refHoliday = m_oInitFlag.GetHoliday();								///< 节假日对象
 	bool			bLoadFromDisk = (false == m_oDataCollector.IsProxy());				///< 是否需要从数据库中对各表进行代码集合统计(只针对数据采集插件这一层)
 	DataNodeService::GetSerivceObj().WriteInfo( "DataIOEngine::EnterInitializationProcess() : Service is Initializing ......" );
@@ -185,12 +184,7 @@ int DataIOEngine::OnImage( unsigned int nDataID, char* pData, unsigned int nData
 	CriticalLock		guard( m_oCodeMapLock );
 
 	///< 记录所有当天有效的商品代码	[数据表ID,代码集合]
-	if( m_mapID2Codes.find( nDataID ) != m_mapID2Codes.end() )
-	{
-		std::set<std::string>&		setCode = m_mapID2Codes[nDataID];
-
-		setCode.insert( std::string( pData ) );
-	}
+	m_mapID2Codes[nDataID].insert( std::string( pData ) );
 
 	return m_oDatabaseIO.NewRecord( nDataID, pData, nDataLen, bLastFlag, m_nPushSerialNo );
 }
