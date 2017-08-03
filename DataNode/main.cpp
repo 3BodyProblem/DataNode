@@ -1,6 +1,8 @@
 #include "targetver.h"
 #include <stdio.h>
 #include <tchar.h>
+#include <string>
+#include <algorithm>
 #include <winsock2.h>
 #include "DataNode.h"
 #include "DataServer/SvrConfig.h"
@@ -35,60 +37,78 @@ public:
 };
 
 
+/**
+ * @brief				运行调试模式函数
+ * @author				barry
+ */
+void RunDebugFunction( int argc, _TCHAR* argv[] )
+{
+	int						nErrorCode = -1;
+	std::string				sCmd = argv[1];
+
+	std::transform( sCmd.begin(), sCmd.end(), sCmd.begin(), ::tolower );				///< 实现大小写不敏感
+
+	if( sCmd == "help" )
+	{
+		::printf( "单元测试命令:\na) 本程序名.exe testdb\t调用数据库插件的单元测试。\nb) 本程序名.exe testself\t本模块的单元测试。\nc) 本程序名.exe echocluster [TableID] [Code]\t调用客户端插件的行情回显\n" );
+	}
+	else if( sCmd == "testdb" )
+	{
+		DatabaseIO	oDBPlugin;
+
+		::printf( "--------------- [TestDbPlugin] --------------------\n" );
+		if( 0 != (nErrorCode=Configuration::GetConfigObj().Load()) )
+		{
+			::printf( "failed 2 load configuration\n" );
+		}
+
+		oDBPlugin.UnitTest();
+		::printf( "--------------- [DONE!] ---------------------------\n" );
+	}
+	else if( sCmd == "testself" )
+	{
+		::printf( "--------------- [UnitTest] ------------------------\n" );
+		ExecuteUnitTest();
+		::printf( "--------------- [DONE!] ---------------------------\n" );
+	}
+	else if( sCmd == "echocluster" )
+	{
+		::printf( "--------------- [Echo Data] ------------------------\n" );
+		int					nTableID = ::atoi( argv[2] );			///< 数据表ID(MessageID),		[-1表示不做过滤]
+		std::string			sRecordKey = argv[3];					///< 记录主键字符串(索引串),	[""表示不做过滤]
+		DataClusterPlugin	objDataCluster;							///< 多路行情接入模块管理对象
+
+		if( argc <=3 )	{
+			::printf( "参数不足: 本程序名.exe echocluster [TableID] [Code] \n" );
+		}	else	{
+			objDataCluster.TestQuotationEcho( nTableID, sRecordKey );
+		}
+
+		::printf( "--------------- [DONE!] ---------------------------\n" );
+	}
+}
+
+
 ///< 程序入口
 int _tmain( int argc, _TCHAR* argv[] )
 {
 	InitializeEnvironment		objInitEnv;					///< 初始化运行环境
-	int							nErrorCode = 0;				///< 错误码
+	int							nErrorCode = 0;				///< 函数的返回码值
 
-	///< --------------------- 单元测试代码 (条件argc 大于 1) --------------------
 	if( argc > 1 )
 	{
-		if( 0 == ::strncmp( argv[1], "testdb", 6 ) )
-		{
-			DatabaseIO	oDBPlugin;
-
-			::printf( "--------------- [TestDbPlugin] --------------------\n" );
-			if( 0 != (nErrorCode=Configuration::GetConfigObj().Load()) )
-			{
-				::printf( "failed 2 load configuration\n" );
-				return nErrorCode;
-			}
-
-			oDBPlugin.UnitTest();
-			::printf( "--------------- [DONE!] ---------------------------\n" );
-
-			return nErrorCode;
-		}
-
-		if( 0 == ::strncmp( argv[1], "testself", 8 ) )
-		{
-			::printf( "--------------- [UnitTest] ------------------------\n" );
-			ExecuteUnitTest();
-			::printf( "--------------- [DONE!] ---------------------------\n" );
-
-			return nErrorCode;
-		}
-
-		if( 0 == ::strncmp( argv[1], "echocluster", 10 ) )
-		{
-			::printf( "--------------- [Echo Data] ------------------------\n" );
-			DataClusterPlugin	objDataCluster;
-			objDataCluster.TestQuotationEcho();
-			::printf( "--------------- [DONE!] ---------------------------\n" );
-
-			return nErrorCode;
-		}
-
-		::printf( "单元测试命令:\na) 本程序名.exe testdb\t调用数据库插件的单元测试。\nb) 本程序名.exe testself\t本模块的单元测试。\nc) 本程序名.exe echocluster\t调用客户端插件的行情回显\n" );
-
-		return 0;
+		///< --------------------- 单元测试代码 (条件argc 大于 1) -------------------
+		::printf( "--------------- [Debug] -------------------------\n" );
+		RunDebugFunction( argc, argv );
+		::printf( "-------------------------------------------------\n" );
 	}
-
-	///< ------------------------ 正常运行服务程序 ------------------------------
-	::printf( "--------------- [Service] -------------------------\n" );
-	nErrorCode = RunNodeServer();
-	::printf( "--------------- [DONE! %d] ------------------------\n", nErrorCode );
+	else
+	{
+		///< ------------------------ 正常运行服务程序 ------------------------------
+		::printf( "--------------- [Service] -------------------------\n" );
+		int		nErrorCode = RunNodeServer();
+		::printf( "--------------- [DONE!] errorcode=%d --------------\n", nErrorCode );
+	}
 
 	return nErrorCode;
 }

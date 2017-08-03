@@ -9,6 +9,7 @@
 
 
 DataClusterPlugin::DataClusterPlugin()
+ : m_nMessageID( -1 )
 {
 	::printf( "loading datacluster.dll from current folder...\n" );
 }
@@ -18,13 +19,16 @@ DataClusterPlugin::~DataClusterPlugin()
 	Release();
 }
 
-int DataClusterPlugin::TestQuotationEcho()
+int DataClusterPlugin::TestQuotationEcho( int nMsgID, std::string sKey )
 {
+	m_nMessageID = nMsgID;
+	m_sMessageKey = sKey;
+
 	if( true == Initialize() )
 	{
 		while( true )
 		{
-			::Sleep( 1000 );
+			::Sleep( 1000*2 );
 		}
 
 		Release();
@@ -84,7 +88,14 @@ void DataClusterPlugin::Release()
 
 void DataClusterPlugin::OnQuotation( unsigned int nMessageID, char* pDataPtr, unsigned int nDataLen )
 {
-	::printf( "DataClusterPlugin::OnQuotation() : MsgID=%u, MsgLen=%u \n", nMessageID, nDataLen );
+	if( m_nMessageID < 0 )							///< 不过滤
+	{
+		::printf( "DataClusterPlugin::OnQuotation() : MsgID=%u, MsgLen=%u \n", nMessageID, nDataLen );
+	}
+	else if( m_nMessageID == (int)nMessageID )		///< 只回显指定消息
+	{
+		::printf( "DataClusterPlugin::OnQuotation() : MsgID=%u, MsgLen=%u \n", nMessageID, nDataLen );
+	}
 }
 
 void DataClusterPlugin::OnStatusChg( unsigned int nMarketID, unsigned int nMessageID, char* pDataPtr, unsigned int nDataLen )

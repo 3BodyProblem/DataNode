@@ -103,6 +103,9 @@ private:
 public:
 	static CTP_DL_Echo&			GetSingleton();
 
+public:///< 格式化方法
+	static unsigned int			FormatMarketInfo( char* pszEchoBuffer, tagDLMarketInfo_LF1000& refMarketInfo );
+	static unsigned int			FormatMarketStatus( char* pszEchoBuffer, tagDLMarketStatus_HF1007& refMarketStatus );
 protected:
 	/**
 	 * @brief					执行解析命令进行回显操作

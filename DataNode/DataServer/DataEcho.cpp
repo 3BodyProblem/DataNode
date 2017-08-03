@@ -135,6 +135,16 @@ CTP_DL_Echo& CTP_DL_Echo::GetSingleton()
 	return obj;
 }
 
+unsigned int CTP_DL_Echo::FormatMarketInfo( char* pszEchoBuffer, tagDLMarketInfo_LF1000& refMarketInfo )
+{
+	return ::sprintf( pszEchoBuffer, "市场ID:%u, 商品总数:%u\n", refMarketInfo.MarketID, refMarketInfo.WareCount );
+}
+
+unsigned int CTP_DL_Echo::FormatMarketStatus( char* pszEchoBuffer, tagDLMarketStatus_HF1007& refMarketStatus )
+{
+	return ::sprintf( pszEchoBuffer, "行情日期:%u, 时间:%u, 行情状态:%s \n", refMarketStatus.MarketID, refMarketStatus.WareCount, (0==refMarketStatus.MarketStatus)?"初始化":"行情中" );
+}
+
 bool CTP_DL_Echo::ExcuteCommand( char** pArgv, unsigned int nArgc, char* szResult, unsigned int uiSize )
 {
 	unsigned int	nWritePos = 0;
@@ -153,9 +163,8 @@ bool CTP_DL_Echo::ExcuteCommand( char** pArgv, unsigned int nArgc, char* szResul
 
 		if( a > 0 && b > 0 )
 		{
-			nWritePos += ::sprintf( szResult+nWritePos, "行情日期:%u, 时间:%u \n", tagMkStatus.MarketDate, tagMkStatus.MarketTime );
-			nWritePos += ::sprintf( szResult+nWritePos, "行情状态:%s \n", (0==tagMkStatus.MarketStatus)?"初始化":"行情中" );
-			nWritePos += ::sprintf( szResult+nWritePos, "市场ID:%u, 商品总数:%u\n", tagMkInfo.MarketID, tagMkInfo.WareCount );
+			nWritePos += CTP_DL_Echo::FormatMarketStatus( szResult+nWritePos, tagMkStatus );
+			nWritePos += CTP_DL_Echo::FormatMarketInfo( szResult+nWritePos, tagMkInfo );
 		}
 	}
 	else if( sCmd == "nametable" )

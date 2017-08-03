@@ -24,10 +24,12 @@ public:
 public:
 	/**
 	 * @brief				数据收集客户端的行情回显测试
+	 * @param[in]			nMsgID				只显示的MessageID, -1表示不过滤
+	 * @param[in]			sKey				只显示的记录主键， ""表示不过滤
 	 * @return				>=0					成功
 							<0					出错
 	 */
-	int						TestQuotationEcho();
+	int						TestQuotationEcho( int nMsgID, std::string sKey );
 
 protected:
 	/**
@@ -45,6 +47,10 @@ protected:
 	virtual void			OnQuotation( unsigned int nMessageID, char* pDataPtr, unsigned int nDataLen );
 	virtual void			OnStatusChg( unsigned int nMarketID, unsigned int nMessageID, char* pDataPtr, unsigned int nDataLen );
 	virtual void			OnLog( unsigned char nLogLevel, const char* pszLogBuf );
+
+protected:
+	int						m_nMessageID;					///< 只显示的消息ID
+	std::string				m_sMessageKey;					///< 只显示的记录Code
 
 protected:
 	Dll						m_oDllPlugin;					///< 插件加载类

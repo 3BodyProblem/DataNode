@@ -503,7 +503,8 @@ int PowerfullDatabase::FlushDatabase2RequestSessions( unsigned __int64 nSerialNo
 
 				if( nDataLen <= 0 )
 				{
-					DataNodeService::GetSerivceObj().WriteWarning( "PowerfullDatabase::FlushDatabase2RequestSessions() : failed 2 fetch image of table, errorcode=%d", nDataLen );
+					DataNodeService::GetSerivceObj().WriteWarning( "PowerfullDatabase::FlushDatabase2RequestSessions() : cannot fetch image from database, TCP connection will be destroyed! errorcode=%d", nDataLen );
+					DataNodeService::GetSerivceObj().CloseLink( nReqLinkID );
 					return -1 * (n*100);
 				}
 
