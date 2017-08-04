@@ -316,17 +316,15 @@ int PowerfullDatabase::RemoveCodeExpiredFromDisk( MAP_TABLEID_CODES& mapCodeWhit
 
 			if( mapCodeWhiteList.find( nDataID ) == mapCodeWhiteList.end() )		///< 数据表ID过期的情况
 			{
-				for( std::set<std::string>::iterator it = setCodeFromDisk.begin(); it != setCodeFromDisk.end(); it++ )
+				m_mapTableID.erase( it++ );
+				m_mapID2Codes.erase( nDataID );
+				if( true == m_pIDatabase->DeleteTable( nDataID ) )
 				{
-					if( (nErrorCode=DeleteRecord( nDataID, (char*)(it->c_str()), 32 )) < 0 )
-					{
-						DataNodeService::GetSerivceObj().WriteWarning( "PowerfullDatabase::RemoveCodeExpiredFromDisk() : failed delete code[%s] from table[%d] ", it->c_str(), nDataID );
-						return -1000 - nErrorCode;
-					}
-
-					DataNodeService::GetSerivceObj().WriteInfo( "PowerfullDatabase::RemoveCodeExpiredFromDisk() : DataType=%d, Code[%s] has erased!", nDataID, it->c_str() );
-
-					nAffectNum++;
+					DataNodeService::GetSerivceObj().WriteInfo( "PowerfullDatabase::RemoveCodeExpiredFromDisk() : DataTable(%d) deleted!", nDataID );
+				}
+				else
+				{
+					DataNodeService::GetSerivceObj().WriteWarning( "PowerfullDatabase::RemoveCodeExpiredFromDisk() : failed 2 delete DataTable(%d)", nDataID );
 				}
 			}
 			else																	///< 数据表ID有效的情况
@@ -335,9 +333,9 @@ int PowerfullDatabase::RemoveCodeExpiredFromDisk( MAP_TABLEID_CODES& mapCodeWhit
 
 				for( std::set<std::string>::iterator it = setCodeFromDisk.begin(); it != setCodeFromDisk.end(); it++ )
 				{
-					std::string			sCode = it->c_str();
+					std::string			sCodeInDisk = it->c_str();
 
-					if( setCodeFromExchange.find( sCode ) == setCodeFromExchange.end() )
+					if( setCodeFromExchange.find( sCodeInDisk ) != setCodeFromExchange.end() )
 					{
 						continue;
 					}

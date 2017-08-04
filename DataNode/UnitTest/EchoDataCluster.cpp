@@ -6,6 +6,7 @@
 #include <time.h>
 #include "../DataNode.h"
 #include "EchoDataCluster.h"
+#include "../DataServer/DataEcho.h"
 
 
 DataClusterPlugin::DataClusterPlugin()
@@ -88,14 +89,43 @@ void DataClusterPlugin::Release()
 
 void DataClusterPlugin::OnQuotation( unsigned int nMessageID, char* pDataPtr, unsigned int nDataLen )
 {
-	if( m_nMessageID < 0 )							///< 不过滤
+	if( m_nMessageID == (int)nMessageID )		///< 只回显指定消息
 	{
-		::printf( "DataClusterPlugin::OnQuotation() : MsgID=%u, MsgLen=%u \n", nMessageID, nDataLen );
+		char	pszOutput[1024] = { 0 };
+
+		switch( nMessageID )
+		{
+		case 1000:
+			CTP_DL_Echo::FormatMarketInfoLF1000( pszOutput, *((tagDLMarketInfo_LF1000*)pDataPtr) );
+			break;
+		case 1007:
+			CTP_DL_Echo::FormatMarketStatusHF1007( pszOutput, *((tagDLMarketStatus_HF1007*)pDataPtr) );
+			break;
+		case 1003:
+			CTP_DL_Echo::FormatReferenceDataLF1003( pszOutput, *((tagDLReferenceData_LF1003*)pDataPtr) );
+			break;
+		case 1004:
+			CTP_DL_Echo::FormatSnapDataLF1004( pszOutput, *((tagDLSnapData_LF1004*)pDataPtr) );
+			break;
+		case 1005:
+			CTP_DL_Echo::FormatSnapDataHF1005( pszOutput, *((tagDLSnapData_HF1005*)pDataPtr) );
+			break;
+		case 1006:
+			CTP_DL_Echo::FormatBuySellDataHF1006( pszOutput, *((tagDLSnapBuySell_HF1006*)pDataPtr) );
+			break;
+		default:
+			::memset( pszOutput, 0, sizeof(pszOutput) );
+			break;
+		}
+
+		if( pszOutput[0] != '\0' || pszOutput[1] != '\0' || pszOutput[2] != '\0' )
+		{
+			::printf( "%s", pszOutput );
+			return;
+		}
 	}
-	else if( m_nMessageID == (int)nMessageID )		///< 只回显指定消息
-	{
-		::printf( "DataClusterPlugin::OnQuotation() : MsgID=%u, MsgLen=%u \n", nMessageID, nDataLen );
-	}
+
+	::printf( "DataClusterPlugin::OnQuotation() : MsgID=%u, MsgLen=%u \n", nMessageID, nDataLen );
 }
 
 void DataClusterPlugin::OnStatusChg( unsigned int nMarketID, unsigned int nMessageID, char* pDataPtr, unsigned int nDataLen )

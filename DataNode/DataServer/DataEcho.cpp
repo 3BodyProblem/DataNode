@@ -135,14 +135,44 @@ CTP_DL_Echo& CTP_DL_Echo::GetSingleton()
 	return obj;
 }
 
-unsigned int CTP_DL_Echo::FormatMarketInfo( char* pszEchoBuffer, tagDLMarketInfo_LF1000& refMarketInfo )
+unsigned int CTP_DL_Echo::FormatMarketInfoLF1000( char* pszEchoBuffer, tagDLMarketInfo_LF1000& refMarketInfo )
 {
 	return ::sprintf( pszEchoBuffer, "市场ID:%u, 商品总数:%u\n", refMarketInfo.MarketID, refMarketInfo.WareCount );
 }
 
-unsigned int CTP_DL_Echo::FormatMarketStatus( char* pszEchoBuffer, tagDLMarketStatus_HF1007& refMarketStatus )
+unsigned int CTP_DL_Echo::FormatMarketStatusHF1007( char* pszEchoBuffer, tagDLMarketStatus_HF1007& refMarketStatus )
 {
-	return ::sprintf( pszEchoBuffer, "行情日期:%u, 时间:%u, 行情状态:%s \n", refMarketStatus.MarketID, refMarketStatus.WareCount, (0==refMarketStatus.MarketStatus)?"初始化":"行情中" );
+	return ::sprintf( pszEchoBuffer, "行情日期:%u, 时间:%u, 行情状态:%s \n", refMarketStatus.MarketDate, refMarketStatus.MarketTime, (0==refMarketStatus.MarketStatus)?"初始化":"行情中" );
+}
+
+unsigned int CTP_DL_Echo::FormatReferenceDataLF1003( char* pszEchoBuffer, tagDLReferenceData_LF1003& refRefData )
+{
+	return ::sprintf( pszEchoBuffer, "代码:%s 名称:%s, 合约乖数:%u, 手比率:%u, 交割日:%u\n", refRefData.Code, refRefData.Name, refRefData.ContractMult, refRefData.LotSize, refRefData.DeliveryDate );
+}
+
+unsigned int CTP_DL_Echo::FormatSnapDataLF1004( char* pszEchoBuffer, tagDLSnapData_LF1004& refSnapDataLF )
+{
+	return ::sprintf( pszEchoBuffer, "代码:%s 昨结:%u, 今结:%u\n", refSnapDataLF.Code, refSnapDataLF.PreSettlePrice, refSnapDataLF.SettlePrice );
+}
+
+unsigned int CTP_DL_Echo::FormatSnapDataHF1005( char* pszEchoBuffer, tagDLSnapData_HF1005& refSnapDataHF )
+{
+	return ::sprintf( pszEchoBuffer, "代码:%s, 最新:%u, 最高:%u, 最低:%u, 金额:%f, 成交量:%I64d\n", refSnapDataHF.Code, refSnapDataHF.Now, refSnapDataHF.High, refSnapDataHF.Low, refSnapDataHF.Amount, refSnapDataHF.Volume );
+}
+
+unsigned int CTP_DL_Echo::FormatBuySellDataHF1006( char* pszEchoBuffer, tagDLSnapBuySell_HF1006& refBuySellDataHF )
+{
+	unsigned int	nWritePos = 0;
+
+	nWritePos += ::sprintf( pszEchoBuffer+nWritePos, "代码:%s, ", refBuySellDataHF.Code );
+
+	for( int i = 0; i < 5; i++ )
+	{
+		nWritePos += ::sprintf( pszEchoBuffer+nWritePos, "买%d价:%u, 买%d量:%I64d\t卖%d价:%d,卖%i量:%I64d\n"
+			, i+1, refBuySellDataHF.Buy[i].Price, i, refBuySellDataHF.Buy[i].Volume, i+1, refBuySellDataHF.Sell[i].Price, i, refBuySellDataHF.Sell[i].Volume );
+	}
+
+	return nWritePos;
 }
 
 bool CTP_DL_Echo::ExcuteCommand( char** pArgv, unsigned int nArgc, char* szResult, unsigned int uiSize )
@@ -158,37 +188,26 @@ bool CTP_DL_Echo::ExcuteCommand( char** pArgv, unsigned int nArgc, char* szResul
 		::strcpy( tagMkInfo.Key, "mkinfo" );
 		::strcpy( tagMkStatus.Key, "mkstatus" );
 
-		int		a = DataNodeService::GetSerivceObj().OnQuery( 1000, (char*)&tagMkInfo, sizeof(tagMkInfo) );
-		int		b = DataNodeService::GetSerivceObj().OnQuery( 1007, (char*)&tagMkStatus, sizeof(tagMkStatus) );
-
-		if( a > 0 && b > 0 )
-		{
-			nWritePos += CTP_DL_Echo::FormatMarketStatus( szResult+nWritePos, tagMkStatus );
-			nWritePos += CTP_DL_Echo::FormatMarketInfo( szResult+nWritePos, tagMkInfo );
-		}
+		if( DataNodeService::GetSerivceObj().OnQuery( 1000, (char*)&tagMkInfo, sizeof(tagMkInfo) ) > 0 )
+			nWritePos += CTP_DL_Echo::FormatMarketInfoLF1000( szResult+nWritePos, tagMkInfo );
+		if( DataNodeService::GetSerivceObj().OnQuery( 1007, (char*)&tagMkStatus, sizeof(tagMkStatus) ) > 0 )
+			nWritePos += CTP_DL_Echo::FormatMarketStatusHF1007( szResult+nWritePos, tagMkStatus );
 	}
 	else if( sCmd == "nametable" )
 	{
+		unsigned int	nIndex = 0;
 		std::string		sParam1 = Str2Lower( std::string( pArgv[1] ) );
 		std::string		sParam2 = Str2Lower( std::string( pArgv[2] ) );
 		unsigned int	nBeginPos = ::atol( sParam1.c_str() );
 		unsigned int	nEndPos = nBeginPos + ::atol( sParam2.c_str() );
-		unsigned int	nIndex = 0;
+		int				nDataLen = DataNodeService::GetSerivceObj().OnQuery( 1003, s_pEchoDataBuf, s_nMaxEchoBufLen );
 
-		int		nDataLen = DataNodeService::GetSerivceObj().OnQuery( 1003, s_pEchoDataBuf, s_nMaxEchoBufLen );
-		for( unsigned int nOffset = 0; nOffset < s_nMaxEchoBufLen && nOffset < nDataLen; nOffset+=sizeof(tagDLReferenceData_LF1003), nIndex++ )
+		for( unsigned int nOffset = 0; nOffset < s_nMaxEchoBufLen && nOffset < nDataLen && nIndex < nEndPos; nOffset+=sizeof(tagDLReferenceData_LF1003), nIndex++ )
 		{
-			tagDLReferenceData_LF1003*	pEchoData = (tagDLReferenceData_LF1003*)(s_pEchoDataBuf+nOffset);
-
-			if( nIndex >= nEndPos )
-			{
-				return true;
-			}
-
 			if( nIndex >= nBeginPos && nIndex < nEndPos )
 			{
-				nWritePos += ::sprintf( szResult+nWritePos, "%d. 代码:%s 名称:%s, 合约乖数:%u", nIndex+1, pEchoData->Code, pEchoData->Name, pEchoData->ContractMult );
-				nWritePos += ::sprintf( szResult+nWritePos, ", 手比率:%u, 交割日:%u\n", pEchoData->LotSize, pEchoData->DeliveryDate );
+				nWritePos += ::sprintf( szResult+nWritePos, "%d. ", nIndex+1 );
+				nWritePos += CTP_DL_Echo::FormatReferenceDataLF1003( szResult+nWritePos, *((tagDLReferenceData_LF1003*)(s_pEchoDataBuf+nOffset)) );
 			}
 		}
 	}
@@ -202,25 +221,12 @@ bool CTP_DL_Echo::ExcuteCommand( char** pArgv, unsigned int nArgc, char* szResul
 		::memcpy( tagSnapLF.Code, sParam1.c_str(), sParam1.length() );
 		::memcpy( tagSnapHF.Code, sParam1.c_str(), sParam1.length() );
 		::memcpy( tagBSHF.Code, sParam1.c_str(), sParam1.length() );
-		int		a = DataNodeService::GetSerivceObj().OnQuery( 1005, (char*)&tagSnapHF, sizeof(tagSnapHF) );
-		int		b = DataNodeService::GetSerivceObj().OnQuery( 1004, (char*)&tagSnapLF, sizeof(tagSnapLF) );
-		int		c = DataNodeService::GetSerivceObj().OnQuery( 1006, (char*)&tagBSHF, sizeof(tagBSHF) );
-
-		if( a > 0 && b > 0 && c > 0 )
-		{
-			nWritePos += ::sprintf( szResult+nWritePos, "代码:%s \n\n", tagSnapHF.Code );
-			nWritePos += ::sprintf( szResult+nWritePos, "最新:%u, 最高:%u, 最低:%u\n", tagSnapHF.Now, tagSnapHF.High, tagSnapHF.Low );
-			nWritePos += ::sprintf( szResult+nWritePos, "昨结:%u, 今结:%u\n", tagSnapLF.PreSettlePrice, tagSnapLF.SettlePrice );
-			nWritePos += ::sprintf( szResult+nWritePos, "金额:%f, 成交量:%I64d\n\n", tagSnapHF.Amount, tagSnapHF.Volume );
-
-			for( int i = 1; i <= 5; i++ )
-			{
-				nWritePos += ::sprintf( szResult+nWritePos, "买%d价:%u, 买%d量:%I64d\t卖%d价:%d,卖%i量:%I64d\n"
-					, i, tagBSHF.Buy[i].Price, i, tagBSHF.Buy[i].Volume, i, tagBSHF.Sell[i].Price, i, tagBSHF.Sell[i].Volume );
-			}
-
-			return true;
-		}
+		if( DataNodeService::GetSerivceObj().OnQuery( 1005, (char*)&tagSnapHF, sizeof(tagSnapHF) ) > 0 )
+			nWritePos += CTP_DL_Echo::FormatSnapDataHF1005( szResult+nWritePos, tagSnapHF );
+		if( DataNodeService::GetSerivceObj().OnQuery( 1004, (char*)&tagSnapLF, sizeof(tagSnapLF) ) > 0 )
+			nWritePos += CTP_DL_Echo::FormatSnapDataLF1004( szResult+nWritePos, tagSnapLF );
+		if( DataNodeService::GetSerivceObj().OnQuery( 1006, (char*)&tagBSHF, sizeof(tagBSHF) ) > 0 )
+			nWritePos += CTP_DL_Echo::FormatBuySellDataHF1006( szResult+nWritePos, tagBSHF );
 	}
 
 	return true;

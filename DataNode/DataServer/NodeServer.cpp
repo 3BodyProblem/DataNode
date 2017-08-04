@@ -256,8 +256,20 @@ int DataNodeService::OnIdle()
 
 	///< 检查是否有新的链接到来请求初始化行情数据推送的
 	m_oDatabaseIO.FlushDatabase2RequestSessions( 0 );	///< 对新到达的链接，推送"全量"初始化快照行情
-	///< 链路维持：心跳包发送
-	OnHeartBeat();
+
+	///< 数据采集模块所在层的业务
+	if( false == m_oDataCollector.IsProxy() )
+	{
+		///< 链路维持：心跳包发送
+		OnHeartBeat();
+
+		///< 非交易时段，停止源驱动的数据采集模块的工作
+		if( nPertiodIndex < 0 && true == m_oDataCollector.IsAlive() )
+		{
+			DataNodeService::GetSerivceObj().WriteInfo( "DataNodeService::OnIdle() : halting data collector ......" );
+			m_oDataCollector.HaltDataCollector();
+		}
+	}
 
 	///< 在交易时段，进行内存插件中的行情数据落盘
 	if( 0 <= nPertiodIndex && true == m_oDatabaseIO.IsBuilded() )
@@ -269,13 +281,6 @@ int DataNodeService::OnIdle()
 			OnBackupDatabase();
 			s_nLastDumpTime = ::time( NULL );
 		}
-	}
-
-	///< 非交易时段，停止源驱动的数据采集模块的工作
-	if( nPertiodIndex < 0 && false == m_oDataCollector.IsProxy() && true == m_oDataCollector.IsAlive() )
-	{
-		DataNodeService::GetSerivceObj().WriteInfo( "DataNodeService::OnIdle() : halting data collector ......" );
-		m_oDataCollector.HaltDataCollector();
 	}
 
 	return 0;
@@ -299,7 +304,7 @@ void DataNodeService::OnHeartBeat()
 		{
 			time_t	nTimeDiff = nNowT - s_nLastTime;
 
-			if( nTimeDiff >= 16 )
+			if( nTimeDiff >= 5 )
 			{
 				m_nHeartBeatCount++;
 				s_bBeginCheck = false;
@@ -311,6 +316,7 @@ void DataNodeService::OnHeartBeat()
 	else
 	{
 		s_bBeginCheck = false;
+		s_nPushSerialNo = m_nPushSerialNo;
 	}
 
 	return;

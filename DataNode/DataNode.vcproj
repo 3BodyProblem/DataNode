@@ -62,7 +62,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="gtestd.lib"
-				OutputFile="D:\ServiceManager\srvunit\DataNode\$(ProjectName).exe"
+				OutputFile="D:\ServiceManager\srvunit\DataCollector\$(ProjectName).exe"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="../libs/gtest/library_vc9/Debug/"
 				GenerateDebugInformation="true"

@@ -72,7 +72,7 @@ public:
 									=0						记录已经存在，不需要增加
 									<0						失败
 	 */
-	virtual int						InsertRecord( char* pRecord, unsigned int nRecordLen, unsigned __int64& nDbSerialNo ) = 0; 
+	virtual int						InsertRecord( char* pRecord, unsigned int nRecordLen, unsigned __int64& nDbSerialNo ) = 0;
 
 	/**
 	 * @brief						更新数据
@@ -136,6 +136,13 @@ public:
 									<0					配置出错
 	 */
 	virtual bool					CreateTable( unsigned int nBindID, unsigned int nRecordWidth, unsigned int nKeyStrLen ) = 0;
+
+	/**
+	 * @brief						删除指定的数据表
+	 * @param[in]					nBindID				数据表ID
+	 * @return						true				删除成功
+	 */
+	virtual bool					DeleteTable( unsigned int nBindID ) = 0;
 
 	/**
 	 * @brief						根据MessageID取得已经存在的或者分配一个新的内存表的引用

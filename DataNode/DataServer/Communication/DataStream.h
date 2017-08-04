@@ -83,10 +83,12 @@ public:
 	 * @param[in]					pData					数据指针
 	 * @param[in]					nDataSize				数据长度
 	 * @param[in]					nSeqNo					当前数据块的更新序号
+	 * @param[out]					nMsgCount				已经压入的消息数量
+	 * @param[out]					nBodySize				已经压入的消息大小累计
 	 * @return						==0						成功
 	 * @note						当nDataID不等于前一个包的nDataID时，将新启用一个Package封装
 	 */
-	int								PushBlock( unsigned int nDataID, const char* pData, unsigned int nDataSize, unsigned __int64 nSeqNo );
+	int								PushBlock( unsigned int nDataID, const char* pData, unsigned int nDataSize, unsigned __int64 nSeqNo, unsigned int& nMsgCount, unsigned int& nBodySize );
 
 	/**
 	 * @brief						获取一个数据包
@@ -114,9 +116,9 @@ protected:
 	CriticalObject					m_oLock;				///< 锁
 	char*							m_pPkgBuffer;			///< 数据包缓存地址
 	unsigned int					m_nMaxPkgBufSize;		///< 数据包缓存大小
-	unsigned int					m_nCurFirstPos;			///< 当前起始位置(当前所写入包的包头)
-	unsigned int					m_nFirstPosition;		///< 起始位置索引(在写，或已经写完包的包头，即未发送数据的头部)
-	unsigned int					m_nLastPosition;		///< 结束位置索引(正在写入的位置)
+	unsigned int					m_nCurrentPkgHeadPos;	///< 当前起始位置(当前所写入包的包头)
+	unsigned int					m_nFirstPkgHeadPos;		///< 起始位置索引(在写，或已经写完包的包头，即未发送数据的头部)
+	unsigned int					m_nCurrentWritePos;		///< 结束位置索引(正在写入的位置)
 };
 
 

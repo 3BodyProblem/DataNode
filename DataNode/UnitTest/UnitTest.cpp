@@ -36,7 +36,7 @@ std::vector<tagTestMessageStruct> TestLoopBuffer::m_vctMsg2;
 
 void TestLoopBuffer::SetUpTestCase()
 {
-	for( int a = 0; a < 9; a++ )
+	for( int a = 0; a < 1024; a++ )
 	{
 		char					pszKey[64] = { 0 };
 		char					pszName[64] = { 0 };
@@ -52,7 +52,7 @@ void TestLoopBuffer::SetUpTestCase()
 		m_vctMsg1.push_back( data );
 	}
 
-	for( int b = 0; b < 16; b++ )
+	for( int b = 0; b < 1024; b++ )
 	{
 		char					pszKey[64] = { 0 };
 		char					pszName[64] = { 0 };
@@ -140,6 +140,8 @@ TEST_F( TestLogic, CheckConfiguration )
 
 TEST_F( TestLoopBuffer, CheckPackagesLoopBuffer )
 {
+	unsigned int			nMsgCount = 0;
+	unsigned int			nBodySize = 0;
 	unsigned int			nSeqNo = 0;
 	unsigned int			nMsgID = 0;
 	int						nPkgSize = 0;
@@ -149,16 +151,24 @@ TEST_F( TestLoopBuffer, CheckPackagesLoopBuffer )
 
 	///< 初始化
 	ASSERT_EQ( 0 , oOnePkg.Initialize( 1024*1024*2 ) );
-	ASSERT_EQ( 0 , oLoopBuffer.Initialize( 1024*1024*10 ) );
+	ASSERT_EQ( 0 , oLoopBuffer.Initialize( 1024*1024*2 ) );
+
+	ASSERT_EQ( 0, oLoopBuffer.PushBlock( 100, (char*)&(m_vctMsg1[0]), sizeof(tagTestMessageStruct), nSeqNo++, nMsgCount, nBodySize ) );
+	nPkgSize = oLoopBuffer.GetOnePkg( oOnePkg, oOnePkg.MaxBufSize(), nMsgID );
+	ASSERT_EQ( 100, nMsgID );
+	ASSERT_EQ( 0, oLoopBuffer.PushBlock( 101, (char*)&(m_vctMsg2[0]), sizeof(tagTestMessageStruct), nSeqNo++, nMsgCount, nBodySize ) );
+	nPkgSize = oLoopBuffer.GetOnePkg( oOnePkg, oOnePkg.MaxBufSize(), nMsgID );
+	ASSERT_EQ( 101, nMsgID );
+	ASSERT_EQ( 0, oLoopBuffer.PushBlock( 100, (char*)&(m_vctMsg1[1]), sizeof(tagTestMessageStruct), nSeqNo++, nMsgCount, nBodySize ) );
 
 	for( std::vector<tagTestMessageStruct>::iterator it = m_vctMsg1.begin(); it != m_vctMsg1.end(); it++ )
 	{
-		ASSERT_EQ( 0, oLoopBuffer.PushBlock( 100, (char*)&(*it), sizeof(tagTestMessageStruct), nSeqNo++ ) );
+		ASSERT_EQ( 0, oLoopBuffer.PushBlock( 100, (char*)&(*it), sizeof(tagTestMessageStruct), nSeqNo++, nMsgCount, nBodySize ) );
 	}
 
 	for( std::vector<tagTestMessageStruct>::iterator it = m_vctMsg2.begin(); it != m_vctMsg2.end(); it++ )
 	{
-		ASSERT_EQ( 0, oLoopBuffer.PushBlock( 101, (char*)&(*it), sizeof(tagTestMessageStruct), nSeqNo++ ) );
+		ASSERT_EQ( 0, oLoopBuffer.PushBlock( 101, (char*)&(*it), sizeof(tagTestMessageStruct), nSeqNo++, nMsgCount, nBodySize ) );
 	}
 
 	///< -------------------- 校验ID100的数据集合 -----------------------------

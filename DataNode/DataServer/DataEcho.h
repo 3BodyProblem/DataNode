@@ -99,14 +99,18 @@ class CTP_DL_Echo : public IDataEcho
 {
 private:
 	CTP_DL_Echo();
-
 public:
 	static CTP_DL_Echo&			GetSingleton();
 
 public:///< 格式化方法
-	static unsigned int			FormatMarketInfo( char* pszEchoBuffer, tagDLMarketInfo_LF1000& refMarketInfo );
-	static unsigned int			FormatMarketStatus( char* pszEchoBuffer, tagDLMarketStatus_HF1007& refMarketStatus );
-protected:
+	static unsigned int			FormatMarketInfoLF1000( char* pszEchoBuffer, tagDLMarketInfo_LF1000& refMarketInfo );
+	static unsigned int			FormatMarketStatusHF1007( char* pszEchoBuffer, tagDLMarketStatus_HF1007& refMarketStatus );
+	static unsigned int			FormatReferenceDataLF1003( char* pszEchoBuffer, tagDLReferenceData_LF1003& refRefData );
+	static unsigned int			FormatSnapDataLF1004( char* pszEchoBuffer, tagDLSnapData_LF1004& refSnapDataLF );
+	static unsigned int			FormatSnapDataHF1005( char* pszEchoBuffer, tagDLSnapData_HF1005& refSnapDataHF );
+	static unsigned int			FormatBuySellDataHF1006( char* pszEchoBuffer, tagDLSnapBuySell_HF1006& refBuySellDataHF );
+
+protected:///< 命令调用接口
 	/**
 	 * @brief					执行解析命令进行回显操作
 	 * @param[in]				pArgv					命令字数组地址

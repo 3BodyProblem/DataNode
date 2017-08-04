@@ -74,16 +74,16 @@ void RunDebugFunction( int argc, _TCHAR* argv[] )
 	else if( sCmd == "echocluster" )
 	{
 		::printf( "--------------- [Echo Data] ------------------------\n" );
-		int					nTableID = ::atoi( argv[2] );			///< 数据表ID(MessageID),		[-1表示不做过滤]
-		std::string			sRecordKey = argv[3];					///< 记录主键字符串(索引串),	[""表示不做过滤]
-		DataClusterPlugin	objDataCluster;							///< 多路行情接入模块管理对象
+		int					nTableID = -1;				///< 数据表ID(MessageID),		[-1表示不做过滤]
+		std::string			sRecordKey;					///< 记录主键字符串(索引串),	[""表示不做过滤]
+		DataClusterPlugin	objDataCluster;				///< 多路行情接入模块管理对象
 
-		if( argc <=3 )	{
-			::printf( "参数不足: 本程序名.exe echocluster [TableID] [Code] \n" );
-		}	else	{
-			objDataCluster.TestQuotationEcho( nTableID, sRecordKey );
-		}
+		if( argc > 2 )
+			nTableID = ::atoi( argv[2] );
+		if( argc > 3 )
+			sRecordKey = argv[3];
 
+		objDataCluster.TestQuotationEcho( nTableID, sRecordKey );
 		::printf( "--------------- [DONE!] ---------------------------\n" );
 	}
 }
