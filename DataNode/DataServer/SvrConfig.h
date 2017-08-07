@@ -95,7 +95,7 @@ public:
 	const tagServicePlug_StartInParam&	GetStartInParam() const;
 
 	/**
-	 * @brief							行情落盘间隔
+	 * @brief							行情落盘间隔(秒s)
 	 */
 	unsigned int						GetDumpInterval() const;
 

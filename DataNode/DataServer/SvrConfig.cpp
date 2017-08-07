@@ -58,7 +58,7 @@ std::string GetModulePath( void* hModule )
 
 
 Configuration::Configuration()
- : m_bTestFlag( false ), m_nInitializeInterval( 3 ), m_nQuotaDumpInterval( 60*5 )
+ : m_bTestFlag( false ), m_nInitializeInterval( 3 ), m_nQuotaDumpInterval( 60*15 )
 {
 	///< ------------- config start arguments -----------------------
 	::memset( &m_oStartInParam, 0, sizeof(m_oStartInParam) );
@@ -122,7 +122,7 @@ int Configuration::Load()
 	}
 	m_nQuotaDumpInterval = oIniFile.getIntValue( std::string("ServerIO"), std::string("dumpinterval"), nErrCode );
 	if( 0 == m_nQuotaDumpInterval )	{
-		m_nQuotaDumpInterval = 60 * 10;
+		m_nQuotaDumpInterval = 60 * 15;
 	}
 	m_oStartInParam.uiMaxLinkCount = oIniFile.getIntValue( std::string("ServerIO"), std::string("maxlinkcount"), nErrCode );
 	if( 0 == m_oStartInParam.uiMaxLinkCount )	{

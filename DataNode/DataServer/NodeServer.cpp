@@ -249,15 +249,13 @@ DataNodeService& DataNodeService::GetSerivceObj()
 
 int DataNodeService::OnIdle()
 {
-	static time_t		s_nLastDumpTime = ::time( NULL );
 	bool				bInitPoint = false;
-	unsigned int		nDumpInterval = Configuration::GetConfigObj().GetDumpInterval();
 	int					nPertiodIndex = m_oInitFlag.InTradingPeriod( bInitPoint );
 
 	///< 检查是否有新的链接到来请求初始化行情数据推送的
 	m_oDatabaseIO.FlushDatabase2RequestSessions( 0 );	///< 对新到达的链接，推送"全量"初始化快照行情
 
-	///< 数据采集模块所在层的业务
+	///< ------------------ 数据采集模块所在层的业务 ------------------------------------------------
 	if( false == m_oDataCollector.IsProxy() )
 	{
 		///< 链路维持：心跳包发送
@@ -269,17 +267,18 @@ int DataNodeService::OnIdle()
 			DataNodeService::GetSerivceObj().WriteInfo( "DataNodeService::OnIdle() : halting data collector ......" );
 			m_oDataCollector.HaltDataCollector();
 		}
-	}
 
-	///< 在交易时段，进行内存插件中的行情数据落盘
-	if( 0 <= nPertiodIndex && true == m_oDatabaseIO.IsBuilded() )
-	{
-		int		nNowTime = (int)::time( NULL );
-
-		if( (nNowTime-=(int)s_nLastDumpTime) >= nDumpInterval )
+		///< 在交易时段，进行内存插件中的行情数据落盘
+		if( 0 <= nPertiodIndex && true == m_oDatabaseIO.IsBuilded() )
 		{
-			OnBackupDatabase();
-			s_nLastDumpTime = ::time( NULL );
+			static time_t		s_nLastDumpTime = ::time( NULL );
+			int					nNowTime = (int)::time( NULL );
+
+			if( (nNowTime-=(int)s_nLastDumpTime) >= Configuration::GetConfigObj().GetDumpInterval() )
+			{
+				OnBackupDatabase();
+				s_nLastDumpTime = ::time( NULL );
+			}
 		}
 	}
 
