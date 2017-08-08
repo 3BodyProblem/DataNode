@@ -108,23 +108,23 @@ void DataClusterPlugin::OnQuotation( unsigned int nMessageID, char* pDataPtr, un
 
 		switch( nMessageID )
 		{
-		case 1000:
-			CTP_DL_Echo::FormatMarketInfoLF1000( pszOutput, *((tagDLMarketInfo_LF1000*)pDataPtr) );
+		case 100:
+			CTP_DL_Echo::FormatMarketInfoLF100( pszOutput, *((tagDLFutureMarketInfo_LF100*)pDataPtr) );
 			break;
-		case 1007:
-			CTP_DL_Echo::FormatMarketStatusHF1007( pszOutput, *((tagDLMarketStatus_HF1007*)pDataPtr) );
+		case 102:
+			CTP_DL_Echo::FormatMarketStatusHF102( pszOutput, *((tagDLFutureMarketStatus_HF102*)pDataPtr) );
 			break;
-		case 1003:
-			CTP_DL_Echo::FormatReferenceDataLF1003( pszOutput, *((tagDLReferenceData_LF1003*)pDataPtr) );
+		case 103:
+			CTP_DL_Echo::FormatReferenceDataLF103( pszOutput, *((tagDLFutureReferenceData_LF103*)pDataPtr) );
 			break;
-		case 1004:
-			CTP_DL_Echo::FormatSnapDataLF1004( pszOutput, *((tagDLSnapData_LF1004*)pDataPtr) );
+		case 104:
+			CTP_DL_Echo::FormatSnapDataLF104( pszOutput, *((tagDLFutureSnapData_LF104*)pDataPtr) );
 			break;
-		case 1005:
-			CTP_DL_Echo::FormatSnapDataHF1005( pszOutput, *((tagDLSnapData_HF1005*)pDataPtr) );
+		case 105:
+			CTP_DL_Echo::FormatSnapDataHF105( pszOutput, *((tagDLFutureSnapData_HF105*)pDataPtr) );
 			break;
-		case 1006:
-			CTP_DL_Echo::FormatBuySellDataHF1006( pszOutput, *((tagDLSnapBuySell_HF1006*)pDataPtr) );
+		case 106:
+			CTP_DL_Echo::FormatBuySellDataHF106( pszOutput, *((tagDLFutureSnapBuySell_HF106*)pDataPtr) );
 			break;
 		default:
 			return;

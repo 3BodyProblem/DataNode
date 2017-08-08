@@ -6,7 +6,7 @@
 #include <string>
 #include <algorithm>
 #include "../Infrastructure/Lock.h"
-#include "../Protocal/CTP_DL_QuoProtocal.h"
+#include "../../../DataCollector4CTPDL/DataCollector4CTPDL/CTP_DL_QuoProtocal.h"
 
 
 std::string&			Str2Lower( std::string& sStr );
@@ -103,12 +103,12 @@ public:
 	static CTP_DL_Echo&			GetSingleton();
 
 public:///< 格式化方法
-	static unsigned int			FormatMarketInfoLF1000( char* pszEchoBuffer, tagDLMarketInfo_LF1000& refMarketInfo );
-	static unsigned int			FormatMarketStatusHF1007( char* pszEchoBuffer, tagDLMarketStatus_HF1007& refMarketStatus );
-	static unsigned int			FormatReferenceDataLF1003( char* pszEchoBuffer, tagDLReferenceData_LF1003& refRefData );
-	static unsigned int			FormatSnapDataLF1004( char* pszEchoBuffer, tagDLSnapData_LF1004& refSnapDataLF );
-	static unsigned int			FormatSnapDataHF1005( char* pszEchoBuffer, tagDLSnapData_HF1005& refSnapDataHF );
-	static unsigned int			FormatBuySellDataHF1006( char* pszEchoBuffer, tagDLSnapBuySell_HF1006& refBuySellDataHF );
+	static unsigned int			FormatMarketInfoLF100( char* pszEchoBuffer, tagDLFutureMarketInfo_LF100& refMarketInfo );
+	static unsigned int			FormatMarketStatusHF102( char* pszEchoBuffer, tagDLFutureMarketStatus_HF102& refMarketStatus );
+	static unsigned int			FormatReferenceDataLF103( char* pszEchoBuffer, tagDLFutureReferenceData_LF103& refRefData );
+	static unsigned int			FormatSnapDataLF104( char* pszEchoBuffer, tagDLFutureSnapData_LF104& refSnapDataLF );
+	static unsigned int			FormatSnapDataHF105( char* pszEchoBuffer, tagDLFutureSnapData_HF105& refSnapDataHF );
+	static unsigned int			FormatBuySellDataHF106( char* pszEchoBuffer, tagDLFutureSnapBuySell_HF106& refBuySellDataHF );
 
 protected:///< 命令调用接口
 	/**

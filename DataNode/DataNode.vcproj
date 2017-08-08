@@ -353,7 +353,7 @@
 			Name="Protocal"
 			>
 			<File
-				RelativePath=".\Protocal\CTP_DL_QuoProtocal.h"
+				RelativePath="..\..\DataCollector4CTPDL\DataCollector4CTPDL\CTP_DL_QuoProtocal.h"
 				>
 			</File>
 		</Filter>
