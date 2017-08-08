@@ -113,7 +113,7 @@ void DataClusterPlugin::OnQuotation( unsigned int nMessageID, char* pDataPtr, un
 	}
 	else											///< 回显所有消息的元信息
 	{
-		::printf( "ID=%u,Len=%u \n", nMessageID, nDataLen );
+		::printf( "ID=%u,Len=%u\n", nMessageID, nDataLen );
 	}
 }
 
