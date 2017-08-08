@@ -255,12 +255,12 @@ int DataNodeService::OnIdle()
 	///< 检查是否有新的链接到来请求初始化行情数据推送的
 	m_oDatabaseIO.FlushDatabase2RequestSessions( 0 );	///< 对新到达的链接，推送"全量"初始化快照行情
 
+	///< 链路维持：心跳包发送
+	OnHeartBeat();
+
 	///< ------------------ 数据采集模块所在层的业务 ------------------------------------------------
 	if( false == m_oDataCollector.IsProxy() )
 	{
-		///< 链路维持：心跳包发送
-		OnHeartBeat();
-
 		///< 非交易时段，停止源驱动的数据采集模块的工作
 		if( nPertiodIndex < 0 && true == m_oDataCollector.IsAlive() )
 		{
