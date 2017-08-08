@@ -356,6 +356,14 @@
 				RelativePath="..\..\DataCollector4CTPDL\DataCollector4CTPDL\CTP_DL_QuoProtocal.h"
 				>
 			</File>
+			<File
+				RelativePath="..\..\DataCollector4CTPSH\DataCollector4CTPSH\CTP_SH_QuoProtocal.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\DataCollector4CTPZZ\DataCollector4CTPZZ\CTP_ZZ_QuoProtocal.h"
+				>
+			</File>
 		</Filter>
 		<File
 			RelativePath=".\DataNode.cpp"

@@ -103,12 +103,15 @@ public:
 	static CTP_DL_Echo&			GetSingleton();
 
 public:///< 格式化方法
-	static unsigned int			FormatMarketInfoLF100( char* pszEchoBuffer, tagDLFutureMarketInfo_LF100& refMarketInfo );
-	static unsigned int			FormatMarketStatusHF102( char* pszEchoBuffer, tagDLFutureMarketStatus_HF102& refMarketStatus );
-	static unsigned int			FormatReferenceDataLF103( char* pszEchoBuffer, tagDLFutureReferenceData_LF103& refRefData );
-	static unsigned int			FormatSnapDataLF104( char* pszEchoBuffer, tagDLFutureSnapData_LF104& refSnapDataLF );
-	static unsigned int			FormatSnapDataHF105( char* pszEchoBuffer, tagDLFutureSnapData_HF105& refSnapDataHF );
-	static unsigned int			FormatBuySellDataHF106( char* pszEchoBuffer, tagDLFutureSnapBuySell_HF106& refBuySellDataHF );
+	/**
+	 * @brief					根据消息ID将输入结构内容转换成格式化字符串输出
+	 * @param[out]				pszEchoBuffer			输出格式化字符串缓存
+	 * @param[in]				nMsgID					消息ID
+	 * @param[in]				pszInputBuffer			行情结构地址
+	 * @return					>0						转换成功,返回转换后的输出缓存有效数据的长度
+								==0						转换失败
+	 */
+	static int					FormatStruct2OutputBuffer( char* pszEchoBuffer, unsigned int nMsgID, const char* pszInputBuffer );
 
 protected:///< 命令调用接口
 	/**

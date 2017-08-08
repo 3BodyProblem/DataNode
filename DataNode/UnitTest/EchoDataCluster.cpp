@@ -106,35 +106,14 @@ void DataClusterPlugin::OnQuotation( unsigned int nMessageID, char* pDataPtr, un
 
 		char	pszOutput[1024] = { 0 };
 
-		switch( nMessageID )
+		if( CTP_DL_Echo::FormatStruct2OutputBuffer( pszOutput, nMessageID, pDataPtr) > 0 )
 		{
-		case 100:
-			CTP_DL_Echo::FormatMarketInfoLF100( pszOutput, *((tagDLFutureMarketInfo_LF100*)pDataPtr) );
-			break;
-		case 102:
-			CTP_DL_Echo::FormatMarketStatusHF102( pszOutput, *((tagDLFutureMarketStatus_HF102*)pDataPtr) );
-			break;
-		case 103:
-			CTP_DL_Echo::FormatReferenceDataLF103( pszOutput, *((tagDLFutureReferenceData_LF103*)pDataPtr) );
-			break;
-		case 104:
-			CTP_DL_Echo::FormatSnapDataLF104( pszOutput, *((tagDLFutureSnapData_LF104*)pDataPtr) );
-			break;
-		case 105:
-			CTP_DL_Echo::FormatSnapDataHF105( pszOutput, *((tagDLFutureSnapData_HF105*)pDataPtr) );
-			break;
-		case 106:
-			CTP_DL_Echo::FormatBuySellDataHF106( pszOutput, *((tagDLFutureSnapBuySell_HF106*)pDataPtr) );
-			break;
-		default:
-			return;
+			::printf( "%s", pszOutput );
 		}
-
-		::printf( "%s", pszOutput );
 	}
 	else											///< 回显所有消息的元信息
 	{
-		::printf( "DataClusterPlugin::OnQuotation() : MsgID=%u, MsgLen=%u \n", nMessageID, nDataLen );
+		::printf( "ID=%u,Len=%u \n", nMessageID, nDataLen );
 	}
 }
 
