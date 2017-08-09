@@ -285,7 +285,7 @@ int PowerfullDatabase::Initialize()
 
 	if( m_oQueryBuffer.Initialize( 1024*1024*8 ) != 0 )
 	{
-		DataNodeService::GetSerivceObj().WriteError( "DatabaseIO::Initialize() : failed 2 initialize query buffer, size = %d", m_oQueryBuffer.MaxBufSize() );
+		DataNodeService::GetSerivceObj().WriteError( "PowerfullDatabase::Initialize() : failed 2 initialize query buffer, size = %d", m_oQueryBuffer.MaxBufSize() );
 		return -100;
 	}
 
@@ -439,11 +439,11 @@ int PowerfullDatabase::RecoverDatabase( MkHoliday& refHoliday, bool bRecoverFrom
 	}
 	catch( std::exception& err )
 	{
-		DataNodeService::GetSerivceObj().WriteWarning( "PowerfullDatabase::BackupDatabase() : exception : %s", err.what() );
+		DataNodeService::GetSerivceObj().WriteWarning( "PowerfullDatabase::RecoverDatabase() : exception : %s", err.what() );
 	}
 	catch( ... )
 	{
-		DataNodeService::GetSerivceObj().WriteWarning( "PowerfullDatabase::BackupDatabase() : unknow exception" );
+		DataNodeService::GetSerivceObj().WriteWarning( "PowerfullDatabase::RecoverDatabase() : unknow exception" );
 	}
 
 	return -4;
