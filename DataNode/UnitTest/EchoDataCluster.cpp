@@ -7,6 +7,7 @@
 #include "../DataNode.h"
 #include "EchoDataCluster.h"
 #include "../DataServer/DataEcho.h"
+#include "../../../../DataCluster/DataCluster/Protocal/DataCluster_Protocal.h"
 
 
 DataClusterPlugin::DataClusterPlugin()
@@ -91,7 +92,7 @@ void DataClusterPlugin::OnQuotation( unsigned int nMessageID, char* pDataPtr, un
 {
 	if( m_nMessageID >= 0 )							///< 只回显指定消息
 	{
-		if( m_nMessageID != (int)nMessageID )		///< 用MessageID进行过滤的情况
+		if( m_nMessageID != (int)nMessageID )	///< 用MessageID进行过滤的情况
 		{
 			return;
 		}
@@ -104,16 +105,75 @@ void DataClusterPlugin::OnQuotation( unsigned int nMessageID, char* pDataPtr, un
 			}
 		}
 
-		char	pszOutput[1024] = { 0 };
+		static bool		s_bEchoTitle = false;
 
-		if( CTP_DL_Echo::FormatStruct2OutputBuffer( pszOutput, nMessageID, pDataPtr) > 0 )
+		switch( nMessageID%100 )
 		{
-			::printf( "%s", pszOutput );
+		case 1:
+			{
+				tagQuoMarketInfo*		pEcho = (tagQuoMarketInfo*)pDataPtr;
+
+				if( false == s_bEchoTitle ) {
+					s_bEchoTitle = true;
+					::printf( "KEY,MarketID,Date,Time,KindCount,WareCount,PhaseCode\n" );
+				}
+
+				::printf( "%s,%d,%u,%u,%u,%u,%s\n", pEcho->Key, pEcho->MarketID, pEcho->MarketDate, pEcho->MarketTime, pEcho->KindCount, pEcho->WareCount, pEcho->TradingPhaseCode );
+				return;
+			}
+		case 2:
+			{
+				tagQuoCategory*			pEcho = (tagQuoCategory*)pDataPtr;
+
+				if( false == s_bEchoTitle ) {
+					s_bEchoTitle = true;
+					::printf( "KEY,KindName,WareCount\n" );
+				}
+
+				::printf( "%s,%s,%u\n", pEcho->Key, pEcho->KindName, pEcho->WareCount );
+				return;
+			}
+		case 3:
+			{
+				tagQuoReferenceData*	pEcho = (tagQuoReferenceData*)pDataPtr;
+
+				if( false == s_bEchoTitle ) {
+					s_bEchoTitle = true;
+					::printf( "SecurityID,ContractID,SecurityName,MarketID,CategoryID,DerivativeType,LotSize,LotFactor,UnderlyingCode,ContractMult,ContractUnit,XqPrice,StartDate,EndDate,XqDate,DeliveryDate,ExpireDate,PriceTick\n" );
+				}
+
+				::printf( "%s,%s,%s,%d,%u,%d,%u,%u,%s,%u,%u,%f,%u,%u,%u,%u,%u,%d\n"
+				, pEcho->Code, pEcho->ContractID, pEcho->Name, pEcho->MarketID, pEcho->Kind, pEcho->DerivativeType, pEcho->LotSize, pEcho->LotFactor
+				, pEcho->UnderlyingCode, pEcho->ContractMult, pEcho->ContractUnit, pEcho->XqPrice, pEcho->StartDate, pEcho->EndDate, pEcho->XqDate, pEcho->DeliveryDate, pEcho->ExpireDate, pEcho->PriceTick );
+				return;
+			}
+		case 4:
+			{
+				tagQuoSnapData*			pEcho = (tagQuoSnapData*)pDataPtr;
+
+				if( false == s_bEchoTitle ) {
+					s_bEchoTitle = true;
+					::printf( "SecurityID,LastPrice,HighPx,LowPx,Amount,Volume,Position,OpenPx,ClosePx,PreClosePx,PhaseCode\n" );
+				}
+
+				::printf( "%s,%f,%f,%f,%f,%I64d,%I64d,%f,%f,%f,%s\n"
+						, pEcho->Code, pEcho->Now, pEcho->High, pEcho->Low, pEcho->Amount, pEcho->Volume, pEcho->Position
+						, pEcho->Open, pEcho->Close, pEcho->PreClose, pEcho->TradingPhaseCode );
+				return;
+			}
 		}
 	}
 	else											///< 回显所有消息的元信息
 	{
-		::printf( "ID=%u,Len=%u\n", nMessageID, nDataLen );
+		static bool	s_bPrintTitle = false;
+
+		if( false == s_bPrintTitle )
+		{
+			::printf( "[MessageID],[MessageLength]\n" );
+			s_bPrintTitle = true;
+		}
+
+		::printf( "%u,%u\n", nMessageID, nDataLen );
 	}
 }
 

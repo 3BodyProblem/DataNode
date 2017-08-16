@@ -3,6 +3,7 @@
 #include "LinkSession.h"
 #include "../DataEcho.h"
 #include "../NodeServer.h"
+#include "../../../../DataCluster/DataCluster/Protocal/DataCluster_Protocal.h"
 
 
 LinkNoRegister::LinkNoRegister()
@@ -259,8 +260,10 @@ bool SessionCollection::OnCommand( const char* szSrvUnitName, const char* szComm
 	///< 根据挂载的数据采集器对应的市场ID，使用对应的数据监控
 	switch( nMarketID )
 	{
-	case 14:
-		return CTP_DL_Echo::GetSingleton()( pArgv, nArgc, szResult, uiSize );	///< 执行回显命令串
+	case QUO_MARKET_DCE:
+		return DLFuture_Echo::GetSingleton()( pArgv, nArgc, szResult, uiSize );	///< 执行回显命令串
+	case QUO_MARKET_SHFE:
+		return SHFuture_Echo::GetSingleton()( pArgv, nArgc, szResult, uiSize );	///< 执行回显命令串
 	default:
 		::sprintf( szResult, "不能识别命令[%s]或市场ID[%u]", szCommand, nMarketID );
 		break;
