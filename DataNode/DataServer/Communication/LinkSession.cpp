@@ -261,11 +261,17 @@ bool SessionCollection::OnCommand( const char* szSrvUnitName, const char* szComm
 	switch( nMarketID )
 	{
 	case QUO_MARKET_DCE:
-		return DLFuture_Echo::GetSingleton()( pArgv, nArgc, szResult, uiSize );	///< Ö´ÐÐ»ØÏÔÃüÁî´®
+		return DLFuture_Echo::GetSingleton()( pArgv, nArgc, szResult, uiSize );		///< Ö´ÐÐ»ØÏÔÃüÁî´®
+	case QUO_MARKET_DCEOPT:
+		return DLOption_Echo::GetSingleton()( pArgv, nArgc, szResult, uiSize );		///< Ö´ÐÐ»ØÏÔÃüÁî´®
 	case QUO_MARKET_SHFE:
-		return SHFuture_Echo::GetSingleton()( pArgv, nArgc, szResult, uiSize );	///< Ö´ÐÐ»ØÏÔÃüÁî´®
+		return SHFuture_Echo::GetSingleton()( pArgv, nArgc, szResult, uiSize );		///< Ö´ÐÐ»ØÏÔÃüÁî´®
+	case QUO_MARKET_SHFEOPT:
+		return  SHOption_Echo::GetSingleton()( pArgv, nArgc, szResult, uiSize );	///< Ö´ÐÐ»ØÏÔÃüÁî´®
 	case QUO_MARKET_CZCE:
-		return ZZFuture_Echo::GetSingleton()( pArgv, nArgc, szResult, uiSize );	///< Ö´ÐÐ»ØÏÔÃüÁî´®
+		return ZZFuture_Echo::GetSingleton()( pArgv, nArgc, szResult, uiSize );		///< Ö´ÐÐ»ØÏÔÃüÁî´®
+	case QUO_MARKET_CZCEOPT:
+		return ZZOption_Echo::GetSingleton()( pArgv, nArgc, szResult, uiSize );		///< Ö´ÐÐ»ØÏÔÃüÁî´®
 	default:
 		::sprintf( szResult, "²»ÄÜÊ¶±ðÃüÁî[%s]»òÊÐ³¡ID[%u]", szCommand, nMarketID );
 		break;
