@@ -264,6 +264,8 @@ bool SessionCollection::OnCommand( const char* szSrvUnitName, const char* szComm
 		return DLFuture_Echo::GetSingleton()( pArgv, nArgc, szResult, uiSize );	///< 执行回显命令串
 	case QUO_MARKET_SHFE:
 		return SHFuture_Echo::GetSingleton()( pArgv, nArgc, szResult, uiSize );	///< 执行回显命令串
+	case QUO_MARKET_CZCE:
+		return ZZFuture_Echo::GetSingleton()( pArgv, nArgc, szResult, uiSize );	///< 执行回显命令串
 	default:
 		::sprintf( szResult, "不能识别命令[%s]或市场ID[%u]", szCommand, nMarketID );
 		break;

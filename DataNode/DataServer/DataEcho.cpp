@@ -379,7 +379,132 @@ bool SHFuture_Echo::ExcuteCommand( char** pArgv, unsigned int nArgc, char* szRes
 }
 
 
+ZZFuture_Echo::ZZFuture_Echo()
+ : IDataEcho( "郑州商品期货" )
+{
+}
 
+ZZFuture_Echo& ZZFuture_Echo::GetSingleton()
+{
+	static ZZFuture_Echo	obj;
+
+	return obj;
+}
+
+int ZZFuture_Echo::FormatStruct2OutputBuffer( char* pszEchoBuffer, unsigned int nMsgID, const char* pszInputBuffer )
+{
+	if( NULL == pszEchoBuffer || NULL == pszInputBuffer ) {
+		return 0;
+	}
+
+	switch( nMsgID )
+	{
+	case 114:
+		{
+			tagZZFutureMarketInfo_LF114&	refMarketInfo = *((tagZZFutureMarketInfo_LF114*)pszInputBuffer);
+			return ::sprintf( pszEchoBuffer, "市场ID:%u, 商品总数:%u\n", refMarketInfo.MarketID, refMarketInfo.WareCount );
+		}
+	case 115:
+		{
+			tagZZFutureKindDetail_LF115&	refKind = *((tagZZFutureKindDetail_LF115*)pszInputBuffer);
+			return ::sprintf( pszEchoBuffer, "分类名称:%u, 分类商品数:%u\n", refKind.KindName, refKind.WareCount );
+		}
+	case 116:
+		{
+			tagZZFutureMarketStatus_HF116&	refMarketStatus = *((tagZZFutureMarketStatus_HF116*)pszInputBuffer);
+			return ::sprintf( pszEchoBuffer, "时间:%u, 行情状态:%s \n", refMarketStatus.MarketTime, (0==refMarketStatus.MarketStatus)?"初始化":"行情中" );
+		}
+	case 117:
+		{
+			tagZZFutureReferenceData_LF117&	refRefData = *((tagZZFutureReferenceData_LF117*)pszInputBuffer);
+			return ::sprintf( pszEchoBuffer, "代码:%s 名称:%s, 合约乖数:%u, 手比率:%u, 交割日:%u\n", refRefData.Code, refRefData.Name, refRefData.ContractMult, refRefData.LotSize, refRefData.DeliveryDate );
+		}
+	case 118:
+		{
+			tagZZFutureSnapData_LF118&		refSnapDataLF = *((tagZZFutureSnapData_LF118*)pszInputBuffer);
+			return ::sprintf( pszEchoBuffer, "代码:%s 昨结:%u, 今结:%u\n", refSnapDataLF.Code, refSnapDataLF.PreSettlePrice, refSnapDataLF.SettlePrice );
+		}
+	case 119:
+		{
+			tagZZFutureSnapData_HF119&		refSnapDataHF = *((tagZZFutureSnapData_HF119*)pszInputBuffer);
+			return ::sprintf( pszEchoBuffer, "代码:%s, 最新:%u, 最高:%u, 最低:%u, 金额:%f, 成交量:%I64d\n", refSnapDataHF.Code, refSnapDataHF.Now, refSnapDataHF.High, refSnapDataHF.Low, refSnapDataHF.Amount, refSnapDataHF.Volume );
+		}
+	case 120:
+		{
+			unsigned int					nWritePos = 0;
+			tagZZFutureSnapBuySell_HF120&	refBuySellDataHF = *((tagZZFutureSnapBuySell_HF120*)pszInputBuffer);
+
+			nWritePos += ::sprintf( pszEchoBuffer+nWritePos, "代码:%s, ", refBuySellDataHF.Code );
+
+			for( int i = 0; i < 5; i++ )
+			{
+				nWritePos += ::sprintf( pszEchoBuffer+nWritePos, "买%d价:%u, 买%d量:%I64d\t卖%d价:%d,卖%i量:%I64d\n"
+					, i+1, refBuySellDataHF.Buy[i].Price, i, refBuySellDataHF.Buy[i].Volume, i+1, refBuySellDataHF.Sell[i].Price, i, refBuySellDataHF.Sell[i].Volume );
+			}
+
+			return nWritePos;
+		}
+	}
+
+	return 0;
+}
+
+bool ZZFuture_Echo::ExcuteCommand( char** pArgv, unsigned int nArgc, char* szResult, unsigned int uiSize )
+{
+	unsigned int	nWritePos = 0;
+	std::string		sCmd = Str2Lower( std::string( pArgv[0] ) );
+
+	if( sCmd == "marketinfo" )
+	{
+		tagZZFutureMarketInfo_LF114			tagMkInfo = { 0 };
+		tagZZFutureMarketStatus_HF116		tagMkStatus = { 0 };
+
+		::strcpy( tagMkInfo.Key, "mkinfo" );
+		::strcpy( tagMkStatus.Key, "mkstatus" );
+
+		if( DataNodeService::GetSerivceObj().OnQuery( 114, (char*)&tagMkInfo, sizeof(tagMkInfo) ) > 0 )
+			nWritePos += FormatStruct2OutputBuffer( szResult+nWritePos, 107, (char*)&tagMkInfo );
+		if( DataNodeService::GetSerivceObj().OnQuery( 116, (char*)&tagMkStatus, sizeof(tagMkStatus) ) > 0 )
+			nWritePos += FormatStruct2OutputBuffer( szResult+nWritePos, 109, (char*)&tagMkStatus );
+	}
+	else if( sCmd == "nametable" )
+	{
+		unsigned int	nIndex = 0;
+		std::string		sParam1 = Str2Lower( std::string( pArgv[1] ) );
+		std::string		sParam2 = Str2Lower( std::string( pArgv[2] ) );
+		unsigned int	nBeginPos = ::atol( sParam1.c_str() );
+		unsigned int	nEndPos = nBeginPos + ::atol( sParam2.c_str() );
+		int				nDataLen = DataNodeService::GetSerivceObj().OnQuery( 117, s_pEchoDataBuf, s_nMaxEchoBufLen );
+
+		for( unsigned int nOffset = 0; nOffset < s_nMaxEchoBufLen && nOffset < nDataLen && nIndex < nEndPos; nOffset+=sizeof(tagZZFutureReferenceData_LF117), nIndex++ )
+		{
+			if( nIndex >= nBeginPos && nIndex < nEndPos )
+			{
+				nWritePos += ::sprintf( szResult+nWritePos, "%d. ", nIndex+1 );
+				nWritePos += FormatStruct2OutputBuffer( szResult+nWritePos, 117, s_pEchoDataBuf+nOffset );
+			}
+		}
+	}
+	else if( sCmd == "snaptable" )
+	{
+		std::string						sParam1 = pArgv[1];
+		tagZZFutureSnapData_LF118		tagSnapLF = { 0 };
+		tagZZFutureSnapData_HF119		tagSnapHF = { 0 };
+		tagZZFutureSnapBuySell_HF120	tagBSHF = { 0 };
+
+		::memcpy( tagSnapLF.Code, sParam1.c_str(), sParam1.length() );
+		::memcpy( tagSnapHF.Code, sParam1.c_str(), sParam1.length() );
+		::memcpy( tagBSHF.Code, sParam1.c_str(), sParam1.length() );
+		if( DataNodeService::GetSerivceObj().OnQuery( 118, (char*)&tagSnapHF, sizeof(tagSnapHF) ) > 0 )
+			nWritePos += FormatStruct2OutputBuffer( szResult+nWritePos, 118, (char*)&tagSnapHF );
+		if( DataNodeService::GetSerivceObj().OnQuery( 119, (char*)&tagSnapLF, sizeof(tagSnapLF) ) > 0 )
+			nWritePos += FormatStruct2OutputBuffer( szResult+nWritePos, 119, (char*)&tagSnapLF );
+		if( DataNodeService::GetSerivceObj().OnQuery( 120, (char*)&tagBSHF, sizeof(tagBSHF) ) > 0 )
+			nWritePos += FormatStruct2OutputBuffer( szResult+nWritePos, 120, (char*)&tagBSHF );
+	}
+
+	return true;
+}
 
 
 
