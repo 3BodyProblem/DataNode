@@ -272,6 +272,14 @@ bool SessionCollection::OnCommand( const char* szSrvUnitName, const char* szComm
 		return ZZFuture_Echo::GetSingleton()( pArgv, nArgc, szResult, uiSize );		///< Ö´ÐÐ»ØÏÔÃüÁî´®
 	case QUO_MARKET_CZCEOPT:
 		return ZZOption_Echo::GetSingleton()( pArgv, nArgc, szResult, uiSize );		///< Ö´ÐÐ»ØÏÔÃüÁî´®
+	case QUO_MARKET_CFFEX:
+		return CFFFuture_Echo::GetSingleton()( pArgv, nArgc, szResult, uiSize );	///< Ö´ÐÐ»ØÏÔÃüÁî´®
+	case QUO_MARKET_SSE:
+		return SHL1_Echo::GetSingleton()( pArgv, nArgc, szResult, uiSize );			///< Ö´ÐÐ»ØÏÔÃüÁî´®
+	case QUO_MARKET_SSEOPT:
+		return SHL1Option_Echo::GetSingleton()( pArgv, nArgc, szResult, uiSize );	///< Ö´ÐÐ»ØÏÔÃüÁî´®
+	case QUO_MARKET_SZSE:
+		return SZL1_Echo::GetSingleton()( pArgv, nArgc, szResult, uiSize );			///< Ö´ÐÐ»ØÏÔÃüÁî´®
 	default:
 		::sprintf( szResult, "²»ÄÜÊ¶±ðÃüÁî[%s]»òÊÐ³¡ID[%u]", szCommand, nMarketID );
 		break;

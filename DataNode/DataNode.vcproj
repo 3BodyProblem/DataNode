@@ -384,6 +384,22 @@
 				RelativePath="..\..\DataCluster\DataCluster\Protocal\DataCluster_Protocal.h"
 				>
 			</File>
+			<File
+				RelativePath="..\..\DataCollector4Tran2ndCFF\DataCollector4Tran2ndCFF\Tran2nd_CFF_QuoProtocal.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\DataCollector4Tran2ndSHL1\DataCollector4Tran2ndSHL1\Tran2nd_SHL1_QuoProtocal.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\DataCollector4Tran2ndSHOPT\DataCollector4Tran2ndSHOPT\Tran2nd_SHOPT_QuoProtocal.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\DataCollector4Tran2ndSZL1\DataCollector4Tran2ndSZL1\Tran2nd_SZL1_QuoProtocal.h"
+				>
+			</File>
 		</Filter>
 		<File
 			RelativePath=".\DataNode.cpp"

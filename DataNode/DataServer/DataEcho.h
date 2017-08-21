@@ -13,6 +13,10 @@
 #include "../../../DataCollector4CTPDLOPT/DataCollector4CTPDLOPT/CTP_DLOPT_QuoProtocal.h"
 #include "../../../DataCollector4CTPSHOPT/DataCollector4CTPSHOPT/CTP_SHOPT_QuoProtocal.h"
 #include "../../../DataCollector4CTPZZOPT/DataCollector4CTPZZOPT/CTP_ZZOPT_QuoProtocal.h"
+#include "../../../DataCollector4Tran2ndCFF/DataCollector4Tran2ndCFF/Tran2nd_CFF_QuoProtocal.h"
+#include "../../../DataCollector4Tran2ndSHL1/DataCollector4Tran2ndSHL1/Tran2nd_SHL1_QuoProtocal.h"
+#include "../../../DataCollector4Tran2ndSHOPT/DataCollector4Tran2ndSHOPT/Tran2nd_SHOPT_QuoProtocal.h"
+#include "../../../DataCollector4Tran2ndSZL1/DataCollector4Tran2ndSZL1/Tran2nd_SZL1_QuoProtocal.h"
 
 
 std::string&			Str2Lower( std::string& sStr );
@@ -97,7 +101,7 @@ protected:
 
 /**
  * @class						DLFuture_Echo
- * @brief						大连商品期货CTP行情回显命令类
+ * @brief						大连商品期货行情回显命令类
  * @date						2017/5/19
  * @author						barry
  */
@@ -134,7 +138,7 @@ protected:///< 命令调用接口
 
 /**
  * @class						SHFuture_Echo
- * @brief						上海商品期货CTP行情回显命令类
+ * @brief						上海商品期货行情回显命令类
  * @date						2017/5/19
  * @author						barry
  */
@@ -171,7 +175,7 @@ protected:///< 命令调用接口
 
 /**
  * @class						ZZFuture_Echo
- * @brief						郑州商品期货CTP行情回显命令类
+ * @brief						郑州商品期货行情回显命令类
  * @date						2017/5/19
  * @author						barry
  */
@@ -208,7 +212,7 @@ protected:///< 命令调用接口
 
 /**
  * @class						DLOption_Echo
- * @brief						大连商品期权CTP行情回显命令类
+ * @brief						大连商品期权行情回显命令类
  * @date						2017/5/19
  * @author						barry
  */
@@ -245,7 +249,7 @@ protected:///< 命令调用接口
 
 /**
  * @class						SHOption_Echo
- * @brief						上海商品期权CTP行情回显命令类
+ * @brief						上海商品期权行情回显命令类
  * @date						2017/5/19
  * @author						barry
  */
@@ -282,7 +286,7 @@ protected:///< 命令调用接口
 
 /**
  * @class						ZZOption_Echo
- * @brief						郑州商品期权CTP行情回显命令类
+ * @brief						郑州商品期权行情回显命令类
  * @date						2017/5/19
  * @author						barry
  */
@@ -315,6 +319,155 @@ protected:///< 命令调用接口
 	 */
 	virtual bool				ExcuteCommand( char** pArgv, unsigned int nArgc, char* szResult, unsigned int uiSize );
 };
+
+
+/**
+ * @class						CFFFuture_Echo
+ * @brief						中金期货行情回显命令类
+ * @date						2017/5/19
+ * @author						barry
+ */
+class CFFFuture_Echo : public IDataEcho
+{
+private:
+	CFFFuture_Echo();
+public:
+	static CFFFuture_Echo&		GetSingleton();
+
+public:///< 格式化方法
+	/**
+	 * @brief					根据消息ID将输入结构内容转换成格式化字符串输出
+	 * @param[out]				pszEchoBuffer			输出格式化字符串缓存
+	 * @param[in]				nMsgID					消息ID
+	 * @param[in]				pszInputBuffer			行情结构地址
+	 * @return					>0						转换成功,返回转换后的输出缓存有效数据的长度
+								==0						转换失败
+	 */
+	static int					FormatStruct2OutputBuffer( char* pszEchoBuffer, unsigned int nMsgID, const char* pszInputBuffer );
+
+protected:///< 命令调用接口
+	/**
+	 * @brief					执行解析命令进行回显操作
+	 * @param[in]				pArgv					命令字数组地址
+	 * @param[in]				nArgc					命令字数组长度
+	 * @param[out]				szResult				回显缓存地址
+	 * @param[in]				uiSize					回显缓存长度
+	 * @return					true					执行成功
+	 */
+	virtual bool				ExcuteCommand( char** pArgv, unsigned int nArgc, char* szResult, unsigned int uiSize );
+};
+
+
+/**
+ * @class						SHL1_Echo
+ * @brief						上海Level1行情回显命令类
+ * @date						2017/5/19
+ * @author						barry
+ */
+class SHL1_Echo : public IDataEcho
+{
+private:
+	SHL1_Echo();
+public:
+	static SHL1_Echo&		GetSingleton();
+
+public:///< 格式化方法
+	/**
+	 * @brief					根据消息ID将输入结构内容转换成格式化字符串输出
+	 * @param[out]				pszEchoBuffer			输出格式化字符串缓存
+	 * @param[in]				nMsgID					消息ID
+	 * @param[in]				pszInputBuffer			行情结构地址
+	 * @return					>0						转换成功,返回转换后的输出缓存有效数据的长度
+								==0						转换失败
+	 */
+	static int					FormatStruct2OutputBuffer( char* pszEchoBuffer, unsigned int nMsgID, const char* pszInputBuffer );
+
+protected:///< 命令调用接口
+	/**
+	 * @brief					执行解析命令进行回显操作
+	 * @param[in]				pArgv					命令字数组地址
+	 * @param[in]				nArgc					命令字数组长度
+	 * @param[out]				szResult				回显缓存地址
+	 * @param[in]				uiSize					回显缓存长度
+	 * @return					true					执行成功
+	 */
+	virtual bool				ExcuteCommand( char** pArgv, unsigned int nArgc, char* szResult, unsigned int uiSize );
+};
+
+
+/**
+ * @class						SHL1Option_Echo
+ * @brief						上海期权行情回显命令类
+ * @date						2017/5/19
+ * @author						barry
+ */
+class SHL1Option_Echo : public IDataEcho
+{
+private:
+	SHL1Option_Echo();
+public:
+	static SHL1Option_Echo&		GetSingleton();
+
+public:///< 格式化方法
+	/**
+	 * @brief					根据消息ID将输入结构内容转换成格式化字符串输出
+	 * @param[out]				pszEchoBuffer			输出格式化字符串缓存
+	 * @param[in]				nMsgID					消息ID
+	 * @param[in]				pszInputBuffer			行情结构地址
+	 * @return					>0						转换成功,返回转换后的输出缓存有效数据的长度
+								==0						转换失败
+	 */
+	static int					FormatStruct2OutputBuffer( char* pszEchoBuffer, unsigned int nMsgID, const char* pszInputBuffer );
+
+protected:///< 命令调用接口
+	/**
+	 * @brief					执行解析命令进行回显操作
+	 * @param[in]				pArgv					命令字数组地址
+	 * @param[in]				nArgc					命令字数组长度
+	 * @param[out]				szResult				回显缓存地址
+	 * @param[in]				uiSize					回显缓存长度
+	 * @return					true					执行成功
+	 */
+	virtual bool				ExcuteCommand( char** pArgv, unsigned int nArgc, char* szResult, unsigned int uiSize );
+};
+
+
+/**
+ * @class						SZL1_Echo
+ * @brief						上海Level1行情回显命令类
+ * @date						2017/5/19
+ * @author						barry
+ */
+class SZL1_Echo : public IDataEcho
+{
+private:
+	SZL1_Echo();
+public:
+	static SZL1_Echo&		GetSingleton();
+
+public:///< 格式化方法
+	/**
+	 * @brief					根据消息ID将输入结构内容转换成格式化字符串输出
+	 * @param[out]				pszEchoBuffer			输出格式化字符串缓存
+	 * @param[in]				nMsgID					消息ID
+	 * @param[in]				pszInputBuffer			行情结构地址
+	 * @return					>0						转换成功,返回转换后的输出缓存有效数据的长度
+								==0						转换失败
+	 */
+	static int					FormatStruct2OutputBuffer( char* pszEchoBuffer, unsigned int nMsgID, const char* pszInputBuffer );
+
+protected:///< 命令调用接口
+	/**
+	 * @brief					执行解析命令进行回显操作
+	 * @param[in]				pArgv					命令字数组地址
+	 * @param[in]				nArgc					命令字数组长度
+	 * @param[out]				szResult				回显缓存地址
+	 * @param[in]				uiSize					回显缓存长度
+	 * @return					true					执行成功
+	 */
+	virtual bool				ExcuteCommand( char** pArgv, unsigned int nArgc, char* szResult, unsigned int uiSize );
+};
+
 
 
 #endif
