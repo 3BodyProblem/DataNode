@@ -138,7 +138,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="gtest.lib"
-				OutputFile="D:\ServiceManager\srvunit\DataCluster\$(ProjectName).exe"
+				OutputFile="D:\ServiceManager\srvunit\DataCollector4Tran2ndSZL1_Port31270\$(ProjectName).exe"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="../libs/gtest/library_vc9/Release/"
 				GenerateDebugInformation="true"
