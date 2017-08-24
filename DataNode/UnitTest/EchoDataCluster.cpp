@@ -47,7 +47,7 @@ bool DataClusterPlugin::Initialize()
 
 	if( 0 != nErrorCode )
 	{
-		::printf( "DataClusterPlugin::Initialize() : failed 2 load ./DataCluster.Dll module from current working folder, errorcode=%d", nErrorCode );
+		::printf( "DataClusterPlugin::Initialize() : failed 2 load ./DataCluster.Dll module from current working folder, errorcode=%d\n", nErrorCode );
 		return false;
 	}
 
@@ -58,14 +58,14 @@ bool DataClusterPlugin::Initialize()
 
 	if( NULL == m_funcActivate || NULL == m_funcDestroy || NULL == m_funcQuery || NULL == m_funcUnitTest )
 	{
-		::printf( "DataClusterPlugin::Initialize() : invalid export function pointer (NULL)" );
+		::printf( "DataClusterPlugin::Initialize() : invalid export function pointer (NULL)\n" );
 		Release();
 		return false;
 	}
 
 	if( (nErrorCode=m_funcActivate( this )) != 0 )
 	{
-		::printf( "DataClusterPlugin::Initialize() : failed 2 commence the module, errorcode=%d", nErrorCode );
+		::printf( "DataClusterPlugin::Initialize() : failed 2 commence the module, errorcode=%d\n", nErrorCode );
 		Release();
 		return false;
 	}
