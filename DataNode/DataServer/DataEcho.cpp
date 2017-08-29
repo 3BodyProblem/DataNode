@@ -239,10 +239,10 @@ bool DLFuture_Echo::ExcuteCommand( char** pArgv, unsigned int nArgc, char* szRes
 		::memcpy( tagSnapLF.Code, sParam1.c_str(), sParam1.length() );
 		::memcpy( tagSnapHF.Code, sParam1.c_str(), sParam1.length() );
 		::memcpy( tagBSHF.Code, sParam1.c_str(), sParam1.length() );
-		if( DataNodeService::GetSerivceObj().OnQuery( 105, (char*)&tagSnapHF, sizeof(tagSnapHF) ) > 0 )
-			nWritePos += FormatStruct2OutputBuffer( szResult+nWritePos, 105, (char*)&tagSnapHF );
-		if( DataNodeService::GetSerivceObj().OnQuery( 104, (char*)&tagSnapLF, sizeof(tagSnapLF) ) > 0 )
-			nWritePos += FormatStruct2OutputBuffer( szResult+nWritePos, 104, (char*)&tagSnapLF );
+		if( DataNodeService::GetSerivceObj().OnQuery( 105, (char*)&tagSnapLF, sizeof(tagDLFutureSnapData_LF104) ) > 0 )
+			nWritePos += FormatStruct2OutputBuffer( szResult+nWritePos, 105, (char*)&tagSnapLF );
+		if( DataNodeService::GetSerivceObj().OnQuery( 104, (char*)&tagSnapHF, sizeof(tagDLFutureSnapData_HF105) ) > 0 )
+			nWritePos += FormatStruct2OutputBuffer( szResult+nWritePos, 104, (char*)&tagSnapHF );
 		if( DataNodeService::GetSerivceObj().OnQuery( 106, (char*)&tagBSHF, sizeof(tagBSHF) ) > 0 )
 			nWritePos += FormatStruct2OutputBuffer( szResult+nWritePos, 106, (char*)&tagBSHF );
 	}
@@ -495,10 +495,10 @@ bool ZZFuture_Echo::ExcuteCommand( char** pArgv, unsigned int nArgc, char* szRes
 		::memcpy( tagSnapLF.Code, sParam1.c_str(), sParam1.length() );
 		::memcpy( tagSnapHF.Code, sParam1.c_str(), sParam1.length() );
 		::memcpy( tagBSHF.Code, sParam1.c_str(), sParam1.length() );
-		if( DataNodeService::GetSerivceObj().OnQuery( 118, (char*)&tagSnapHF, sizeof(tagSnapHF) ) > 0 )
-			nWritePos += FormatStruct2OutputBuffer( szResult+nWritePos, 118, (char*)&tagSnapHF );
-		if( DataNodeService::GetSerivceObj().OnQuery( 119, (char*)&tagSnapLF, sizeof(tagSnapLF) ) > 0 )
-			nWritePos += FormatStruct2OutputBuffer( szResult+nWritePos, 119, (char*)&tagSnapLF );
+		if( DataNodeService::GetSerivceObj().OnQuery( 118, (char*)&tagSnapLF, sizeof(tagZZFutureSnapData_LF118) ) > 0 )
+			nWritePos += FormatStruct2OutputBuffer( szResult+nWritePos, 118, (char*)&tagSnapLF );
+		if( DataNodeService::GetSerivceObj().OnQuery( 119, (char*)&tagSnapHF, sizeof(tagZZFutureSnapData_HF119) ) > 0 )
+			nWritePos += FormatStruct2OutputBuffer( szResult+nWritePos, 119, (char*)&tagSnapHF );
 		if( DataNodeService::GetSerivceObj().OnQuery( 120, (char*)&tagBSHF, sizeof(tagBSHF) ) > 0 )
 			nWritePos += FormatStruct2OutputBuffer( szResult+nWritePos, 120, (char*)&tagBSHF );
 	}
@@ -623,10 +623,10 @@ bool DLOption_Echo::ExcuteCommand( char** pArgv, unsigned int nArgc, char* szRes
 		::memcpy( tagSnapLF.Code, sParam1.c_str(), sParam1.length() );
 		::memcpy( tagSnapHF.Code, sParam1.c_str(), sParam1.length() );
 		::memcpy( tagBSHF.Code, sParam1.c_str(), sParam1.length() );
-		if( DataNodeService::GetSerivceObj().OnQuery( 132, (char*)&tagSnapHF, sizeof(tagSnapHF) ) > 0 )
-			nWritePos += FormatStruct2OutputBuffer( szResult+nWritePos, 132, (char*)&tagSnapHF );
-		if( DataNodeService::GetSerivceObj().OnQuery( 133, (char*)&tagSnapLF, sizeof(tagSnapLF) ) > 0 )
-			nWritePos += FormatStruct2OutputBuffer( szResult+nWritePos, 133, (char*)&tagSnapLF );
+		if( DataNodeService::GetSerivceObj().OnQuery( 132, (char*)&tagSnapLF, sizeof(tagDLOptionSnapData_LF132) ) > 0 )
+			nWritePos += FormatStruct2OutputBuffer( szResult+nWritePos, 132, (char*)&tagSnapLF );
+		if( DataNodeService::GetSerivceObj().OnQuery( 133, (char*)&tagSnapHF, sizeof(tagDLOptionSnapData_HF133) ) > 0 )
+			nWritePos += FormatStruct2OutputBuffer( szResult+nWritePos, 133, (char*)&tagSnapHF );
 		if( DataNodeService::GetSerivceObj().OnQuery( 134, (char*)&tagBSHF, sizeof(tagBSHF) ) > 0 )
 			nWritePos += FormatStruct2OutputBuffer( szResult+nWritePos, 134, (char*)&tagBSHF );
 	}
@@ -751,11 +751,11 @@ bool SHOption_Echo::ExcuteCommand( char** pArgv, unsigned int nArgc, char* szRes
 		::memcpy( tagSnapLF.Code, sParam1.c_str(), sParam1.length() );
 		::memcpy( tagSnapHF.Code, sParam1.c_str(), sParam1.length() );
 		::memcpy( tagBSHF.Code, sParam1.c_str(), sParam1.length() );
-		if( DataNodeService::GetSerivceObj().OnQuery( 139, (char*)&tagSnapHF, sizeof(tagSnapHF) ) > 0 )
-			nWritePos += FormatStruct2OutputBuffer( szResult+nWritePos, 139, (char*)&tagSnapHF );
-		if( DataNodeService::GetSerivceObj().OnQuery( 140, (char*)&tagSnapLF, sizeof(tagSnapLF) ) > 0 )
-			nWritePos += FormatStruct2OutputBuffer( szResult+nWritePos, 140, (char*)&tagSnapLF );
-		if( DataNodeService::GetSerivceObj().OnQuery( 141, (char*)&tagBSHF, sizeof(tagBSHF) ) > 0 )
+		if( DataNodeService::GetSerivceObj().OnQuery( 139, (char*)&tagSnapLF, sizeof(tagSHOptionSnapData_LF139) ) > 0 )
+			nWritePos += FormatStruct2OutputBuffer( szResult+nWritePos, 139, (char*)&tagSnapLF );
+		if( DataNodeService::GetSerivceObj().OnQuery( 140, (char*)&tagSnapHF, sizeof(tagSHOptionSnapData_HF140) ) > 0 )
+			nWritePos += FormatStruct2OutputBuffer( szResult+nWritePos, 140, (char*)&tagSnapHF );
+		if( DataNodeService::GetSerivceObj().OnQuery( 141, (char*)&tagBSHF, sizeof(tagSHOptionSnapBuySell_HF141) ) > 0 )
 			nWritePos += FormatStruct2OutputBuffer( szResult+nWritePos, 141, (char*)&tagBSHF );
 	}
 
@@ -879,10 +879,10 @@ bool ZZOption_Echo::ExcuteCommand( char** pArgv, unsigned int nArgc, char* szRes
 		::memcpy( tagSnapLF.Code, sParam1.c_str(), sParam1.length() );
 		::memcpy( tagSnapHF.Code, sParam1.c_str(), sParam1.length() );
 		::memcpy( tagBSHF.Code, sParam1.c_str(), sParam1.length() );
-		if( DataNodeService::GetSerivceObj().OnQuery( 146, (char*)&tagSnapHF, sizeof(tagSnapHF) ) > 0 )
-			nWritePos += FormatStruct2OutputBuffer( szResult+nWritePos, 146, (char*)&tagSnapHF );
-		if( DataNodeService::GetSerivceObj().OnQuery( 147, (char*)&tagSnapLF, sizeof(tagSnapLF) ) > 0 )
-			nWritePos += FormatStruct2OutputBuffer( szResult+nWritePos, 147, (char*)&tagSnapLF );
+		if( DataNodeService::GetSerivceObj().OnQuery( 146, (char*)&tagSnapLF, sizeof(tagZZOptionSnapData_LF146) ) > 0 )
+			nWritePos += FormatStruct2OutputBuffer( szResult+nWritePos, 146, (char*)&tagSnapLF );
+		if( DataNodeService::GetSerivceObj().OnQuery( 147, (char*)&tagSnapHF, sizeof(tagZZOptionSnapData_HF147) ) > 0 )
+			nWritePos += FormatStruct2OutputBuffer( szResult+nWritePos, 147, (char*)&tagSnapHF );
 		if( DataNodeService::GetSerivceObj().OnQuery( 148, (char*)&tagBSHF, sizeof(tagBSHF) ) > 0 )
 			nWritePos += FormatStruct2OutputBuffer( szResult+nWritePos, 148, (char*)&tagBSHF );
 	}
@@ -1007,9 +1007,9 @@ bool CFFFuture_Echo::ExcuteCommand( char** pArgv, unsigned int nArgc, char* szRe
 		::memcpy( tagSnapLF.Code, sParam1.c_str(), sParam1.length() );
 		::memcpy( tagSnapHF.Code, sParam1.c_str(), sParam1.length() );
 		::memcpy( tagBSHF.Code, sParam1.c_str(), sParam1.length() );
-		if( DataNodeService::GetSerivceObj().OnQuery( 176, (char*)&tagSnapLF, sizeof(tagSnapLF) ) > 0 )
+		if( DataNodeService::GetSerivceObj().OnQuery( 176, (char*)&tagSnapLF, sizeof(tagCFFFutureSnapData_LF176) ) > 0 )
 			nWritePos += FormatStruct2OutputBuffer( szResult+nWritePos, 176, (char*)&tagSnapLF );
-		if( DataNodeService::GetSerivceObj().OnQuery( 177, (char*)&tagSnapHF, sizeof(tagSnapHF) ) > 0 )
+		if( DataNodeService::GetSerivceObj().OnQuery( 177, (char*)&tagSnapHF, sizeof(tagCFFFutureSnapData_HF177) ) > 0 )
 			nWritePos += FormatStruct2OutputBuffer( szResult+nWritePos, 177, (char*)&tagSnapHF );
 		if( DataNodeService::GetSerivceObj().OnQuery( 178, (char*)&tagBSHF, sizeof(tagBSHF) ) > 0 )
 			nWritePos += FormatStruct2OutputBuffer( szResult+nWritePos, 178, (char*)&tagBSHF );

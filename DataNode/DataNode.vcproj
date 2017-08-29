@@ -62,7 +62,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="gtestd.lib"
-				OutputFile="D:\ServiceManager\srvunit\DataCluster\$(ProjectName).exe"
+				OutputFile="D:\ServiceManager\srvunit\DataCollector4CTPZZOPT_Port31268\$(ProjectName).exe"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="../libs/gtest/library_vc9/Debug/"
 				GenerateDebugInformation="true"
@@ -138,7 +138,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="gtest.lib"
-				OutputFile="D:\ServiceManager\srvunit\DataCluster\$(ProjectName).exe"
+				OutputFile="D:\ServiceManager\srvunit\DataCollector4CTPZZOPT_Port31268\$(ProjectName).exe"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="../libs/gtest/library_vc9/Release/"
 				GenerateDebugInformation="true"
