@@ -121,7 +121,10 @@ typedef int					(__stdcall *T_Func_GetMarketID)();
  */
 typedef bool				(__stdcall *T_Func_IsProxy)();
 
-
+/**
+ * @brief					解析/回显落盘数据的详细内容
+ */
+typedef void				(__stdcall *T_Echo)();
 
 
 #endif

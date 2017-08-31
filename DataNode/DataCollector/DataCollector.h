@@ -92,6 +92,11 @@ public:///< 数据采集模块事件定义
 	 */
 	bool					IsAlive();
 
+	/**
+	 * @brief				解析/回显落盘数据文件的详细内容
+	 */
+	void					EchoDumpFile();
+
 private:
 	static unsigned int		s_nMarketID;					///< 数据采集器对应的市场ID
 	CollectorStatus			m_oCollectorStatus;				///< 数据采集模块的状态
@@ -106,6 +111,7 @@ private:
 	T_Func_GetStatus		m_pFuncGetStatus;				///< 数据采集器状态获取接口
 	T_Func_GetMarketID		m_pFuncGetMarketID;				///< 数据采集器对应的市场ID获取接口
 	T_Func_IsProxy			m_pFuncIsProxy;					///< 数据采集器对应的模块类型获取接口
+	T_Echo					m_pFuncEcho;					///< 数据采集器对落盘数据进行解析/回显的接口
 };
 
 

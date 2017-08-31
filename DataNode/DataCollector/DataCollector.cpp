@@ -30,7 +30,7 @@ unsigned int DataCollector::s_nMarketID = 0;
 
 DataCollector::DataCollector()
  : m_pFuncInitialize( NULL ), m_pFuncRelease( NULL ), m_pFuncIsProxy( NULL )
- , m_pFuncRecoverQuotation( NULL ), m_pFuncGetStatus( NULL )
+ , m_pFuncRecoverQuotation( NULL ), m_pFuncGetStatus( NULL ), m_pFuncEcho( NULL )
  , m_bActivated( false ), m_bIsProxyPlugin( false )
 {
 }
@@ -48,7 +48,6 @@ bool DataCollector::IsProxy()
 int DataCollector::Initialize( I_DataHandle* pIDataCallBack )
 {
 	Release();
-
 	DataNodeService::GetSerivceObj().WriteInfo( "DataCollector::Initialize() : initializing data collector plugin ......" );
 
 	std::string		sModulePath = GetModulePath(NULL) + Configuration::GetConfigObj().GetDataCollectorPluginPath();
@@ -67,11 +66,12 @@ int DataCollector::Initialize( I_DataHandle* pIDataCallBack )
 	m_pFuncGetStatus = (T_Func_GetStatus)m_oDllPlugin.GetDllFunction( "GetStatus" );
 	m_pFuncGetMarketID = (T_Func_GetMarketID)m_oDllPlugin.GetDllFunction( "GetMarketID" );
 	m_pFuncIsProxy = (T_Func_IsProxy)m_oDllPlugin.GetDllFunction( "IsProxy" );
+	m_pFuncEcho = (T_Echo)m_oDllPlugin.GetDllFunction( "Echo" );
 
-	if( NULL == m_pFuncInitialize || NULL == m_pFuncRelease || NULL == m_pFuncRecoverQuotation || NULL == m_pFuncGetStatus || NULL == m_pFuncGetMarketID || NULL == m_pFuncHaltQuotation || NULL == m_pFuncIsProxy )
+	if( NULL == m_pFuncInitialize || NULL == m_pFuncRelease || NULL == m_pFuncRecoverQuotation || NULL == m_pFuncGetStatus || NULL == m_pFuncGetMarketID || NULL == m_pFuncHaltQuotation || NULL == m_pFuncIsProxy || NULL == m_pFuncEcho )
 	{
 		DataNodeService::GetSerivceObj().WriteError( "DataCollector::Initialize() : invalid fuction pointer(NULL)" );
-		return -10;
+		return -100;
 	}
 
 	if( 0 != (nErrorCode = m_pFuncInitialize( pIDataCallBack )) )
@@ -97,6 +97,7 @@ void DataCollector::Release()
 		m_pFuncHaltQuotation = NULL;
 		m_pFuncRelease();
 		m_pFuncRelease = NULL;
+		m_pFuncEcho = NULL;
 		m_bActivated = false;
 		DataNodeService::GetSerivceObj().WriteInfo( "DataCollector::Release() : memory database plugin is released ......" );
 	}
@@ -110,6 +111,16 @@ void DataCollector::Release()
 bool DataCollector::IsAlive()
 {
 	return m_bActivated;
+}
+
+void DataCollector::EchoDumpFile()
+{
+	if( NULL == m_pFuncEcho )
+	{
+		::printf( "invalid DLL::Echo() pointer\n" );
+	}
+
+	m_pFuncEcho();
 }
 
 void DataCollector::HaltDataCollector()
