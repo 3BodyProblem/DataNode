@@ -14,6 +14,7 @@ public:
 	/**
 	 * @brief				实行行情数据回调
 	 * @note				更新行情内存块，并推送
+	 * @param[in]			nMarketID			市场ID
 	 * @param[in]			nDataID				消息ID
 	 * @param[in]			pData				数据内容
 	 * @param[in]			nDataLen			长度
@@ -21,7 +22,7 @@ public:
 	 * @return				==0					成功
 							!=0					错误
 	 */
-	virtual void			OnQuotation( unsigned int nMessageID, char* pDataPtr, unsigned int nDataLen ) = 0;
+	virtual void			OnQuotation( unsigned int nMarketID, unsigned int nMessageID, char* pDataPtr, unsigned int nDataLen ) = 0;
 
 	/**
 	 * @brief				内存数据查询接口

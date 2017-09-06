@@ -88,7 +88,7 @@ void DataClusterPlugin::Release()
 	m_oDllPlugin.CloseDll();
 }
 
-void DataClusterPlugin::OnQuotation( unsigned int nMessageID, char* pDataPtr, unsigned int nDataLen )
+void DataClusterPlugin::OnQuotation( unsigned int nMarketID, unsigned int nMessageID, char* pDataPtr, unsigned int nDataLen )
 {
 	if( m_nMessageID >= 0 )							///< 只回显指定消息
 	{

@@ -44,7 +44,7 @@ protected:
 	void					Release();
 
 protected:
-	virtual void			OnQuotation( unsigned int nMessageID, char* pDataPtr, unsigned int nDataLen );
+	virtual void			OnQuotation( unsigned int nMarketID, unsigned int nMessageID, char* pDataPtr, unsigned int nDataLen );
 	virtual void			OnStatusChg( unsigned int nMarketID, unsigned int nMessageID, char* pDataPtr, unsigned int nDataLen );
 	virtual void			OnLog( unsigned char nLogLevel, const char* pszLogBuf );
 
