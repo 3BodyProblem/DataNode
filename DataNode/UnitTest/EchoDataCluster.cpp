@@ -111,45 +111,33 @@ void DataClusterPlugin::OnQuotation( unsigned int nMarketID, unsigned int nMessa
 		{
 		case 1:
 			{
-				tagQuoMarketInfo*		pEcho = (tagQuoMarketInfo*)pDataPtr;
+				tagQUO_MarketInfo*		pEcho = (tagQUO_MarketInfo*)pDataPtr;
 
 				if( false == s_bEchoTitle ) {
 					s_bEchoTitle = true;
-					::printf( "KEY,MarketID,Date,Time,KindCount,WareCount,PhaseCode\n" );
+					::printf( "MarketID,Date,Time,KindCount,WareCount\n" );
 				}
 
-				::printf( "%s,%d,%u,%u,%u,%u,%s\n", pEcho->Key, pEcho->MarketID, pEcho->MarketDate, pEcho->MarketTime, pEcho->KindCount, pEcho->WareCount, pEcho->TradingPhaseCode );
+				::printf( "%d,%u,%u,%u,%u\n", pEcho->eMarketID, pEcho->uiMarketDate, pEcho->uiMarketTime, pEcho->uiKindCount, pEcho->uiWareCount );
 				return;
 			}
 		case 2:
 			{
-				tagQuoCategory*			pEcho = (tagQuoCategory*)pDataPtr;
+				tagQUO_ReferenceData*	pEcho = (tagQUO_ReferenceData*)pDataPtr;
 
 				if( false == s_bEchoTitle ) {
 					s_bEchoTitle = true;
-					::printf( "KEY,KindName,WareCount\n" );
+					::printf( "SecurityID,MarketID,CategoryID,Name,ContractID,CallOrPut,ExercisePrice,StartDate,EndDate,ExerciseDate,DeliveryDate,ExpireDate\n" );
 				}
 
-				::printf( "%s,%s,%u\n", pEcho->Key, pEcho->KindName, pEcho->WareCount );
+				::printf( "%s,%d,%d,%s,%s,%c,%f,%u,%u,%u,%u,%u"
+						, pEcho->szCode, pEcho->eMarketID, pEcho->uiKindID, pEcho->szName, pEcho->szContractID, pEcho->cCallOrPut, pEcho->dExercisePrice
+						, pEcho->uiStartDate, pEcho->uiEndDate, pEcho->uiExerciseDate, pEcho->uiDeliveryDate, pEcho->uiExpireDate );
 				return;
 			}
 		case 3:
 			{
-				tagQuoReferenceData*	pEcho = (tagQuoReferenceData*)pDataPtr;
-
-				if( false == s_bEchoTitle ) {
-					s_bEchoTitle = true;
-					::printf( "SecurityID,ContractID,SecurityName,MarketID,CategoryID,DerivativeType,LotSize,LotFactor,UnderlyingCode,ContractMult,ContractUnit,XqPrice,StartDate,EndDate,XqDate,DeliveryDate,ExpireDate,PriceTick\n" );
-				}
-
-				::printf( "%s,%s,%s,%d,%u,%d,%u,%u,%s,%u,%u,%f,%u,%u,%u,%u,%u,%d\n"
-				, pEcho->Code, pEcho->ContractID, pEcho->Name, pEcho->MarketID, pEcho->Kind, pEcho->DerivativeType, pEcho->LotSize, pEcho->LotFactor
-				, pEcho->UnderlyingCode, pEcho->ContractMult, pEcho->ContractUnit, pEcho->XqPrice, pEcho->StartDate, pEcho->EndDate, pEcho->XqDate, pEcho->DeliveryDate, pEcho->ExpireDate, pEcho->PriceTick );
-				return;
-			}
-		case 4:
-			{
-				tagQuoSnapData*			pEcho = (tagQuoSnapData*)pDataPtr;
+				tagQUO_SnapData*		pEcho = (tagQUO_SnapData*)pDataPtr;
 
 				if( false == s_bEchoTitle ) {
 					s_bEchoTitle = true;
@@ -157,8 +145,8 @@ void DataClusterPlugin::OnQuotation( unsigned int nMarketID, unsigned int nMessa
 				}
 
 				::printf( "%s,%f,%f,%f,%f,%I64d,%I64d,%f,%f,%f,%s\n"
-						, pEcho->Code, pEcho->Now, pEcho->High, pEcho->Low, pEcho->Amount, pEcho->Volume, pEcho->Position
-						, pEcho->Open, pEcho->Close, pEcho->PreClose, pEcho->TradingPhaseCode );
+						, pEcho->szCode, pEcho->dNowPx, pEcho->dHighPx, pEcho->dLowPx, pEcho->dAmount, pEcho->ui64Volume, pEcho->ui64OpenInterest
+						, pEcho->dOpenPx, pEcho->dClosePx, pEcho->dPreClosePx, pEcho->szTradingPhaseCode );
 				return;
 			}
 		}
