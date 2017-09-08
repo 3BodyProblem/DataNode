@@ -279,7 +279,7 @@ int SHFuture_Echo::FormatStruct2OutputBuffer( char* pszEchoBuffer, unsigned int 
 	case 108:
 		{
 			tagSHFutureKindDetail_LF108&	refKind = *((tagSHFutureKindDetail_LF108*)pszInputBuffer);
-			return ::sprintf( pszEchoBuffer, "分类名称:%u, 分类商品数:%u\n", refKind.KindName, refKind.WareCount );
+			return ::sprintf( pszEchoBuffer, "分类名称:%u\n", refKind.KindName );
 		}
 	case 109:
 		{
@@ -289,7 +289,7 @@ int SHFuture_Echo::FormatStruct2OutputBuffer( char* pszEchoBuffer, unsigned int 
 	case 110:
 		{
 			tagSHFutureReferenceData_LF110&	refRefData = *((tagSHFutureReferenceData_LF110*)pszInputBuffer);
-			return ::sprintf( pszEchoBuffer, "代码:%s 名称:%s, 合约乖数:%u, 手比率:%u, 交割日:%u\n", refRefData.Code, refRefData.Name, refRefData.ContractMult, refRefData.LotSize, refRefData.DeliveryDate );
+			return ::sprintf( pszEchoBuffer, "代码:%s 名称:%s, 交割日:%u\n", refRefData.Code, refRefData.Name, refRefData.DeliveryDate );
 		}
 	case 111:
 		{
@@ -407,7 +407,7 @@ int ZZFuture_Echo::FormatStruct2OutputBuffer( char* pszEchoBuffer, unsigned int 
 	case 115:
 		{
 			tagZZFutureKindDetail_LF115&	refKind = *((tagZZFutureKindDetail_LF115*)pszInputBuffer);
-			return ::sprintf( pszEchoBuffer, "分类名称:%u, 分类商品数:%u\n", refKind.KindName, refKind.WareCount );
+			return ::sprintf( pszEchoBuffer, "分类名称:%u\n", refKind.KindName );
 		}
 	case 116:
 		{
@@ -417,7 +417,7 @@ int ZZFuture_Echo::FormatStruct2OutputBuffer( char* pszEchoBuffer, unsigned int 
 	case 117:
 		{
 			tagZZFutureReferenceData_LF117&	refRefData = *((tagZZFutureReferenceData_LF117*)pszInputBuffer);
-			return ::sprintf( pszEchoBuffer, "代码:%s 名称:%s, 合约乖数:%u, 手比率:%u, 交割日:%u\n", refRefData.Code, refRefData.Name, refRefData.ContractMult, refRefData.LotSize, refRefData.DeliveryDate );
+			return ::sprintf( pszEchoBuffer, "代码:%s 名称:%s, 交割日:%u\n", refRefData.Code, refRefData.Name, refRefData.DeliveryDate );
 		}
 	case 118:
 		{
@@ -535,7 +535,7 @@ int DLOption_Echo::FormatStruct2OutputBuffer( char* pszEchoBuffer, unsigned int 
 	case 129:
 		{
 			tagDLOptionKindDetail_LF129&	refKind = *((tagDLOptionKindDetail_LF129*)pszInputBuffer);
-			return ::sprintf( pszEchoBuffer, "分类名称:%u, 分类商品数:%u\n", refKind.KindName, refKind.WareCount );
+			return ::sprintf( pszEchoBuffer, "分类名称:%u, 分类商品数:%u\n", refKind.KindName );
 		}
 	case 130:
 		{
@@ -545,7 +545,7 @@ int DLOption_Echo::FormatStruct2OutputBuffer( char* pszEchoBuffer, unsigned int 
 	case 131:
 		{
 			tagDLOptionReferenceData_LF131&	refRefData = *((tagDLOptionReferenceData_LF131*)pszInputBuffer);
-			return ::sprintf( pszEchoBuffer, "代码:%s 名称:%s, 合约乖数:%u, 手比率:%u, 交割日:%u\n", refRefData.Code, refRefData.Name, refRefData.ContractMult, refRefData.LotSize, refRefData.DeliveryDate );
+			return ::sprintf( pszEchoBuffer, "代码:%s 名称:%s, 交割日:%u\n", refRefData.Code, refRefData.Name, refRefData.DeliveryDate );
 		}
 	case 132:
 		{
@@ -663,7 +663,7 @@ int SHOption_Echo::FormatStruct2OutputBuffer( char* pszEchoBuffer, unsigned int 
 	case 136:
 		{
 			tagSHOptionKindDetail_LF136&	refKind = *((tagSHOptionKindDetail_LF136*)pszInputBuffer);
-			return ::sprintf( pszEchoBuffer, "分类名称:%u, 分类商品数:%u\n", refKind.KindName, refKind.WareCount );
+			return ::sprintf( pszEchoBuffer, "分类名称:%u\n", refKind.KindName );
 		}
 	case 137:
 		{
@@ -673,7 +673,7 @@ int SHOption_Echo::FormatStruct2OutputBuffer( char* pszEchoBuffer, unsigned int 
 	case 138:
 		{
 			tagSHOptionReferenceData_LF138&	refRefData = *((tagSHOptionReferenceData_LF138*)pszInputBuffer);
-			return ::sprintf( pszEchoBuffer, "代码:%s 名称:%s, 合约乖数:%u, 手比率:%u, 交割日:%u\n", refRefData.Code, refRefData.Name, refRefData.ContractMult, refRefData.LotSize, refRefData.DeliveryDate );
+			return ::sprintf( pszEchoBuffer, "代码:%s 名称:%s, 交割日:%u\n", refRefData.Code, refRefData.Name, refRefData.DeliveryDate );
 		}
 	case 139:
 		{
@@ -791,7 +791,7 @@ int ZZOption_Echo::FormatStruct2OutputBuffer( char* pszEchoBuffer, unsigned int 
 	case 143:
 		{
 			tagZZOptionKindDetail_LF143&	refKind = *((tagZZOptionKindDetail_LF143*)pszInputBuffer);
-			return ::sprintf( pszEchoBuffer, "分类名称:%u, 分类商品数:%u\n", refKind.KindName, refKind.WareCount );
+			return ::sprintf( pszEchoBuffer, "分类名称:%u\n", refKind.KindName );
 		}
 	case 144:
 		{
@@ -801,7 +801,7 @@ int ZZOption_Echo::FormatStruct2OutputBuffer( char* pszEchoBuffer, unsigned int 
 	case 145:
 		{
 			tagZZOptionReferenceData_LF145&	refRefData = *((tagZZOptionReferenceData_LF145*)pszInputBuffer);
-			return ::sprintf( pszEchoBuffer, "代码:%s 名称:%s, 合约乖数:%u, 手比率:%u, 交割日:%u\n", refRefData.Code, refRefData.Name, refRefData.ContractMult, refRefData.LotSize, refRefData.DeliveryDate );
+			return ::sprintf( pszEchoBuffer, "代码:%s 名称:%s, 交割日:%u\n", refRefData.Code, refRefData.Name, refRefData.DeliveryDate );
 		}
 	case 146:
 		{
@@ -919,7 +919,7 @@ int CFFFuture_Echo::FormatStruct2OutputBuffer( char* pszEchoBuffer, unsigned int
 	case 173:
 		{
 			tagCFFFutureKindDetail_LF173&	refKind = *((tagCFFFutureKindDetail_LF173*)pszInputBuffer);
-			return ::sprintf( pszEchoBuffer, "分类名称:%u, 分类商品数:%u\n", refKind.KindName, refKind.WareCount );
+			return ::sprintf( pszEchoBuffer, "分类名称:%u\n", refKind.KindName );
 		}
 	case 174:
 		{
@@ -929,7 +929,7 @@ int CFFFuture_Echo::FormatStruct2OutputBuffer( char* pszEchoBuffer, unsigned int
 	case 175:
 		{
 			tagCFFFutureReferenceData_LF175&	refRefData = *((tagCFFFutureReferenceData_LF175*)pszInputBuffer);
-			return ::sprintf( pszEchoBuffer, "代码:%s 名称:%s, 合约乖数:%u, 手比率:%u, 交割日:%u\n", refRefData.Code, refRefData.Name, refRefData.ContractMult, refRefData.LotSize, refRefData.DeliveryDate );
+			return ::sprintf( pszEchoBuffer, "代码:%s 名称:%s, 交割日:%u\n", refRefData.Code, refRefData.Name, refRefData.DeliveryDate );
 		}
 	case 176:
 		{
@@ -1047,7 +1047,7 @@ int SHL1_Echo::FormatStruct2OutputBuffer( char* pszEchoBuffer, unsigned int nMsg
 	case 150:
 		{
 			tagSHL1KindDetail_LF150&	refKind = *((tagSHL1KindDetail_LF150*)pszInputBuffer);
-			return ::sprintf( pszEchoBuffer, "分类名称:%u, 分类商品数:%u\n", refKind.KindName, refKind.WareCount );
+			return ::sprintf( pszEchoBuffer, "分类名称:%u\n", refKind.KindName );
 		}
 	case 151:
 		{
@@ -1180,7 +1180,7 @@ int SHL1Option_Echo::FormatStruct2OutputBuffer( char* pszEchoBuffer, unsigned in
 	case 158:
 		{
 			tagSHOptKindDetail_LF158&	refKind = *((tagSHOptKindDetail_LF158*)pszInputBuffer);
-			return ::sprintf( pszEchoBuffer, "分类名称:%u, 分类商品数:%u\n", refKind.KindName, refKind.WareCount );
+			return ::sprintf( pszEchoBuffer, "分类名称:%u\n", refKind.KindName );
 		}
 	case 159:
 		{
@@ -1190,7 +1190,7 @@ int SHL1Option_Echo::FormatStruct2OutputBuffer( char* pszEchoBuffer, unsigned in
 	case 160:
 		{
 			tagSHOptReferenceData_LF160&	refRefData = *((tagSHOptReferenceData_LF160*)pszInputBuffer);
-			return ::sprintf( pszEchoBuffer, "代码:%s 名称:%s, 合约单位:%u, 手比率:%u, 交割日:%u\n", refRefData.Code, refRefData.Name, refRefData.ContractUnit, refRefData.LotSize, refRefData.DeliveryDate );
+			return ::sprintf( pszEchoBuffer, "代码:%s, 名称:%s, 交割日:%u\n", refRefData.Code, refRefData.Name, refRefData.DeliveryDate );
 		}
 	case 161:
 		{
@@ -1308,7 +1308,7 @@ int SZL1_Echo::FormatStruct2OutputBuffer( char* pszEchoBuffer, unsigned int nMsg
 	case 165:
 		{
 			tagSZL1KindDetail_LF165&	refKind = *((tagSZL1KindDetail_LF165*)pszInputBuffer);
-			return ::sprintf( pszEchoBuffer, "分类名称:%u, 分类商品数:%u\n", refKind.KindName, refKind.WareCount );
+			return ::sprintf( pszEchoBuffer, "分类名称:%u\n", refKind.KindName );
 		}
 	case 166:
 		{
