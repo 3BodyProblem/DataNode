@@ -62,7 +62,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="gtestd.lib"
-				OutputFile="D:\ServiceManager\srvunit\DataCollector4CTPDL_Port31256\$(ProjectName).exe"
+				OutputFile="D:\ServiceManager\srvunit\DataCluster\$(ProjectName).exe"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="../libs/gtest/library_vc9/Debug/"
 				GenerateDebugInformation="true"
@@ -226,6 +226,10 @@
 			</File>
 			<File
 				RelativePath=".\UnitTest\EchoDataCluster.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\DataCluster\DataCluster\Interface.h"
 				>
 			</File>
 			<File

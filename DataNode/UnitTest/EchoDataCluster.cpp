@@ -51,12 +51,19 @@ bool DataClusterPlugin::Initialize()
 		return false;
 	}
 
-	m_funcActivate = (T_Func_Activate)m_oDllPlugin.GetDllFunction( "Activate" );
-	m_funcDestroy = (T_Func_Destroy)m_oDllPlugin.GetDllFunction( "Destroy" );
-	m_funcQuery = (T_Func_Query)m_oDllPlugin.GetDllFunction( "Query" );
+	m_funcActivate = (tagQUOFun_StartWork)m_oDllPlugin.GetDllFunction( "StartWork" );
+	m_funcDestroy = (tagQUOFun_EndWork)m_oDllPlugin.GetDllFunction( "EndWork" );
+	m_funcGetMarketID = (tagQUOFun_GetMarketID)m_oDllPlugin.GetDllFunction( "GetMarketID" );
+	m_funcGetMarketInfo = (tagQUOFun_GetMarketInfo)m_oDllPlugin.GetDllFunction( "GetMarketInfo" );
+	m_funcGetAllRefData = (tagQUOFun_GetAllReferenceData)m_oDllPlugin.GetDllFunction( "GetAllReferenceData" );
+	m_funcGetRefData = (tagQUOFun_GetReferenceData)m_oDllPlugin.GetDllFunction( "GetReferenceData" );
+	m_funcGetAllSnapData = (tagQUOFun_GetAllSnapData)m_oDllPlugin.GetDllFunction( "GetAllSnapData" );
+	m_funcGetSnapData = (tagQUOFun_GetSnapData)m_oDllPlugin.GetDllFunction( "GetSnapData" );
 	m_funcUnitTest = (T_Func_ExecuteUnitTest)m_oDllPlugin.GetDllFunction( "ExecuteUnitTest" );
 
-	if( NULL == m_funcActivate || NULL == m_funcDestroy || NULL == m_funcQuery || NULL == m_funcUnitTest )
+	if( NULL == m_funcActivate || NULL == m_funcDestroy || NULL == m_funcGetMarketID || NULL == m_funcGetMarketInfo
+		|| NULL == m_funcGetAllRefData || NULL == m_funcGetRefData || NULL == m_funcGetAllSnapData || NULL == m_funcGetSnapData
+		|| NULL == m_funcUnitTest )
 	{
 		::printf( "DataClusterPlugin::Initialize() : invalid export function pointer (NULL)\n" );
 		Release();
@@ -82,13 +89,18 @@ void DataClusterPlugin::Release()
 		m_funcDestroy = NULL;
 		m_funcActivate = NULL;
 		m_funcUnitTest = NULL;
-		m_funcQuery = NULL;
+		m_funcGetMarketID = NULL;
+		m_funcGetMarketInfo = NULL;
+		m_funcGetAllRefData = NULL;
+		m_funcGetRefData = NULL;
+		m_funcGetAllSnapData = NULL;
+		m_funcGetSnapData = NULL;
 	}
 
 	m_oDllPlugin.CloseDll();
 }
 
-void DataClusterPlugin::OnQuotation( unsigned int nMarketID, unsigned int nMessageID, char* pDataPtr, unsigned int nDataLen )
+void DataClusterPlugin::OnQuotation( QUO_MARKET_ID eMarketID, unsigned int nMessageID, char* pDataPtr, unsigned int nDataLen )
 {
 	if( m_nMessageID >= 0 )							///< 只回显指定消息
 	{
@@ -165,9 +177,9 @@ void DataClusterPlugin::OnQuotation( unsigned int nMarketID, unsigned int nMessa
 	}
 }
 
-void DataClusterPlugin::OnStatusChg( unsigned int nMarketID, unsigned int nMessageID, char* pDataPtr, unsigned int nDataLen )
+void DataClusterPlugin::OnStatus( QUO_MARKET_ID eMarketID, QUO_MARKET_STATUS eMarketStatus )
 {
-	::printf( "DataClusterPlugin::OnStatusChg() : MsgID=%u, MsgLen=%u \n", nMessageID, nDataLen );
+	::printf( "DataClusterPlugin::OnStatusChg() : MarketID=%u, Status=%u \n", eMarketID, eMarketStatus );
 }
 
 void DataClusterPlugin::OnLog( unsigned char nLogLevel, const char* pszLogBuf )
