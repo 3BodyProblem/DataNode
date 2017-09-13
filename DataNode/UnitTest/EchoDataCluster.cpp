@@ -180,6 +180,12 @@ void DataClusterPlugin::OnQuotation( QUO_MARKET_ID eMarketID, unsigned int nMess
 void DataClusterPlugin::OnStatus( QUO_MARKET_ID eMarketID, QUO_MARKET_STATUS eMarketStatus )
 {
 	::printf( "DataClusterPlugin::OnStatusChg() : MarketID=%u, Status=%u \n", eMarketID, eMarketStatus );
+/*
+	if( eMarketStatus == 2 )
+	{
+		tagQUO_MarketInfo	tagMk;
+		m_funcGetMarketInfo( eMarketID, &tagMk );
+	}*/
 }
 
 void DataClusterPlugin::OnLog( unsigned char nLogLevel, const char* pszLogBuf )
