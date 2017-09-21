@@ -203,9 +203,6 @@ bool DLFuture_Echo::ExcuteCommand( char** pArgv, unsigned int nArgc, char* szRes
 		tagDLFutureMarketInfo_LF100			tagMkInfo = { 0 };
 		tagDLFutureMarketStatus_HF102		tagMkStatus = { 0 };
 
-		::strcpy( tagMkInfo.Key, "mkinfo" );
-		::strcpy( tagMkStatus.Key, "mkstatus" );
-
 		if( DataNodeService::GetSerivceObj().OnQuery( 100, (char*)&tagMkInfo, sizeof(tagMkInfo) ) > 0 )
 			nWritePos += FormatStruct2OutputBuffer( szResult+nWritePos, 100, (char*)&tagMkInfo );
 		if( DataNodeService::GetSerivceObj().OnQuery( 102, (char*)&tagMkStatus, sizeof(tagMkStatus) ) > 0 )
@@ -330,9 +327,6 @@ bool SHFuture_Echo::ExcuteCommand( char** pArgv, unsigned int nArgc, char* szRes
 	{
 		tagSHFutureMarketInfo_LF107			tagMkInfo = { 0 };
 		tagSHFutureMarketStatus_HF109		tagMkStatus = { 0 };
-
-		::strcpy( tagMkInfo.Key, "mkinfo" );
-		::strcpy( tagMkStatus.Key, "mkstatus" );
 
 		if( DataNodeService::GetSerivceObj().OnQuery( 107, (char*)&tagMkInfo, sizeof(tagMkInfo) ) > 0 )
 			nWritePos += FormatStruct2OutputBuffer( szResult+nWritePos, 107, (char*)&tagMkInfo );
@@ -459,9 +453,6 @@ bool ZZFuture_Echo::ExcuteCommand( char** pArgv, unsigned int nArgc, char* szRes
 		tagZZFutureMarketInfo_LF114			tagMkInfo = { 0 };
 		tagZZFutureMarketStatus_HF116		tagMkStatus = { 0 };
 
-		::strcpy( tagMkInfo.Key, "mkinfo" );
-		::strcpy( tagMkStatus.Key, "mkstatus" );
-
 		if( DataNodeService::GetSerivceObj().OnQuery( 114, (char*)&tagMkInfo, sizeof(tagMkInfo) ) > 0 )
 			nWritePos += FormatStruct2OutputBuffer( szResult+nWritePos, 114, (char*)&tagMkInfo );
 		if( DataNodeService::GetSerivceObj().OnQuery( 116, (char*)&tagMkStatus, sizeof(tagMkStatus) ) > 0 )
@@ -586,9 +577,6 @@ bool DLOption_Echo::ExcuteCommand( char** pArgv, unsigned int nArgc, char* szRes
 	{
 		tagDLOptionMarketInfo_LF128			tagMkInfo = { 0 };
 		tagDLOptionMarketStatus_HF130		tagMkStatus = { 0 };
-
-		::strcpy( tagMkInfo.Key, "mkinfo" );
-		::strcpy( tagMkStatus.Key, "mkstatus" );
 
 		if( DataNodeService::GetSerivceObj().OnQuery( 128, (char*)&tagMkInfo, sizeof(tagMkInfo) ) > 0 )
 			nWritePos += FormatStruct2OutputBuffer( szResult+nWritePos, 128, (char*)&tagMkInfo );
@@ -715,9 +703,6 @@ bool SHOption_Echo::ExcuteCommand( char** pArgv, unsigned int nArgc, char* szRes
 		tagSHOptionMarketInfo_LF135			tagMkInfo = { 0 };
 		tagSHOptionMarketStatus_HF137		tagMkStatus = { 0 };
 
-		::strcpy( tagMkInfo.Key, "mkinfo" );
-		::strcpy( tagMkStatus.Key, "mkstatus" );
-
 		if( DataNodeService::GetSerivceObj().OnQuery( 135, (char*)&tagMkInfo, sizeof(tagMkInfo) ) > 0 )
 			nWritePos += FormatStruct2OutputBuffer( szResult+nWritePos, 135, (char*)&tagMkInfo );
 		if( DataNodeService::GetSerivceObj().OnQuery( 137, (char*)&tagMkStatus, sizeof(tagMkStatus) ) > 0 )
@@ -843,9 +828,6 @@ bool ZZOption_Echo::ExcuteCommand( char** pArgv, unsigned int nArgc, char* szRes
 		tagZZOptionMarketInfo_LF142			tagMkInfo = { 0 };
 		tagZZOptionMarketStatus_HF144		tagMkStatus = { 0 };
 
-		::strcpy( tagMkInfo.Key, "mkinfo" );
-		::strcpy( tagMkStatus.Key, "mkstatus" );
-
 		if( DataNodeService::GetSerivceObj().OnQuery( 142, (char*)&tagMkInfo, sizeof(tagMkInfo) ) > 0 )
 			nWritePos += FormatStruct2OutputBuffer( szResult+nWritePos, 142, (char*)&tagMkInfo );
 		if( DataNodeService::GetSerivceObj().OnQuery( 144, (char*)&tagMkStatus, sizeof(tagMkStatus) ) > 0 )
@@ -970,9 +952,6 @@ bool CFFFuture_Echo::ExcuteCommand( char** pArgv, unsigned int nArgc, char* szRe
 	{
 		tagCFFFutureMarketInfo_LF172		tagMkInfo = { 0 };
 		tagCFFFutureMarketStatus_HF174		tagMkStatus = { 0 };
-
-		::strcpy( tagMkInfo.Key, "mkinfo" );
-		::strcpy( tagMkStatus.Key, "status" );
 
 		if( DataNodeService::GetSerivceObj().OnQuery( 172, (char*)&tagMkInfo, sizeof(tagMkInfo) ) > 0 )
 			nWritePos += FormatStruct2OutputBuffer( szResult+nWritePos, 172, (char*)&tagMkInfo );
@@ -1104,9 +1083,6 @@ bool SHL1_Echo::ExcuteCommand( char** pArgv, unsigned int nArgc, char* szResult,
 		tagSHL1MarketInfo_LF149				tagMkInfo = { 0 };
 		tagSHL1MarketStatus_HF151			tagMkStatus = { 0 };
 
-		::strcpy( tagMkInfo.Key, "mkinfo" );
-		::strcpy( tagMkStatus.Key, "mkstatus" );
-
 		if( DataNodeService::GetSerivceObj().OnQuery( 149, (char*)&tagMkInfo, sizeof(tagMkInfo) ) > 0 )
 			nWritePos += FormatStruct2OutputBuffer( szResult+nWritePos, 149, (char*)&tagMkInfo );
 		if( DataNodeService::GetSerivceObj().OnQuery( 151, (char*)&tagMkStatus, sizeof(tagMkStatus) ) > 0 )
@@ -1231,9 +1207,6 @@ bool SHL1Option_Echo::ExcuteCommand( char** pArgv, unsigned int nArgc, char* szR
 	{
 		tagSHOptMarketInfo_LF157			tagMkInfo = { 0 };
 		tagSHOptMarketStatus_HF159			tagMkStatus = { 0 };
-
-		::strcpy( tagMkInfo.Key, "mkinfo" );
-		::strcpy( tagMkStatus.Key, "status" );
 
 		if( DataNodeService::GetSerivceObj().OnQuery( 157, (char*)&tagMkInfo, sizeof(tagMkInfo) ) > 0 )
 			nWritePos += FormatStruct2OutputBuffer( szResult+nWritePos, 157, (char*)&tagMkInfo );
@@ -1364,9 +1337,6 @@ bool SZL1_Echo::ExcuteCommand( char** pArgv, unsigned int nArgc, char* szResult,
 	{
 		tagSZL1MarketInfo_LF164				tagMkInfo = { 0 };
 		tagSZL1MarketStatus_HF166			tagMkStatus = { 0 };
-
-		::strcpy( tagMkInfo.Key, "mkinfo" );
-		::strcpy( tagMkStatus.Key, "status" );
 
 		if( DataNodeService::GetSerivceObj().OnQuery( 164, (char*)&tagMkInfo, sizeof(tagMkInfo) ) > 0 )
 			nWritePos += FormatStruct2OutputBuffer( szResult+nWritePos, 164, (char*)&tagMkInfo );
