@@ -1,3 +1,4 @@
+#include <time.h>
 #include "targetver.h"
 #include <stdio.h>
 #include <tchar.h>
@@ -32,6 +33,7 @@ public:
 
 	~InitializeEnvironment()
 	{
+		::printf( "InitializeEnvironment::~InitializeEnvironment() : cleanup socket environment...\n" );
 		WSACleanup();
 	}
 };
@@ -128,8 +130,8 @@ void RunDebugFunction( int argc, _TCHAR* argv[] )
 ///< 程序入口
 int _tmain( int argc, _TCHAR* argv[] )
 {
-	InitializeEnvironment		objInitEnv;					///< 初始化运行环境
-	int							nErrorCode = 0;				///< 函数的返回码值
+	static InitializeEnvironment	objInitEnv;					///< 初始化运行环境
+	int								nErrorCode = 0;				///< 函数的返回码值
 
 	if( argc > 1 )
 	{

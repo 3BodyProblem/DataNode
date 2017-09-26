@@ -1,3 +1,4 @@
+#include <time.h>
 #include "targetver.h"
 #include <exception>
 #include <algorithm>
@@ -30,10 +31,11 @@ extern "C"
 			SimpleThread::Sleep( 1000*2 );
 		}
 
+		time_t	nTimeLast = ::time( NULL );
 		::printf( "RunNodeServer() : joining thread..... \n" );
 		DataNodeService::GetSerivceObj().Join();						///< 等待退出服务
 		DataNodeService::GetSerivceObj().Release();						///< 释放所有资源
-		::printf( "RunNodeServer() : thread ended....... \n" );
+		::printf( "RunNodeServer() : thread ended....... (duration=%d, time_t=%d) \n", (::time( NULL )-nTimeLast) );
 
 		return nErrorCode;
 	}

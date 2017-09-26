@@ -77,9 +77,13 @@ int DataIOEngine::Initialize()
 
 void DataIOEngine::Release()
 {
+	SimpleTask::StopAllThread();
+	MServicePlug::RegisterSpi( NULL );
+	MServicePlug::Release();
 	m_nPushSerialNo = 0;
 	m_nHeartBeatCount = 0;
 	m_oDataCollector.Release();
+	m_oLinkSessions.Release();
 	m_oDatabaseIO.Release();
 	SimpleTask::StopThread();
 }
