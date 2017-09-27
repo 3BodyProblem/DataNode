@@ -67,6 +67,15 @@ int DatabaseIO::NewRecord( unsigned int nDataID, char* pData, unsigned int nData
 		return -3;
 	}
 
+	if( 0 == nAffectNum )
+	{
+		if( 0 > (nAffectNum = pTable->UpdateRecord( pData, nDataLen, nDbSerialNo )) )
+		{
+			DataNodeService::GetSerivceObj().WriteError( "DatabaseIO::NewRecord() : failed 2 insert into data table 4 message, message id=%d, affectnum=%d", nDataID, nAffectNum );
+			return -3;
+		}
+	}
+
 	m_mapTableID.insert( std::make_pair(nDataID, nDataLen) );		///< 数据表ID集合，添加
 
 	return 0;
@@ -119,7 +128,7 @@ int DatabaseIO::UpdateRecord( unsigned int nDataID, char* pData, unsigned int nD
 
 	if( 0 > (nAffectNum = pTable->UpdateRecord( pData, nDataLen, nDbSerialNo )) )
 	{
-		DataNodeService::GetSerivceObj().WriteError( "DatabaseIO::UpdateRecord() : failed 2 insert into data table 4 message, message id=%d, affectnum=%d", nDataID, nAffectNum );
+		DataNodeService::GetSerivceObj().WriteError( "DatabaseIO::UpdateRecord() : failed 2 update data table 4 message, message id=%d, affectnum=%d", nDataID, nAffectNum );
 		return -3;
 	}
 
