@@ -319,7 +319,11 @@ int QuotationSynchronizer::PutMessage( unsigned short nMsgID, const char *pData,
 
 	if( nErrorCode < 0 )
 	{
-		DataNodeService::GetSerivceObj().WriteError( "QuotationSynchronizer::PutMessage() : failed 2 push message data 2 buffer, errorcode = %d", nErrorCode );
+		unsigned int	s_nCnt = 0;
+		if( s_nCnt++ % 1000 == 0 )	{
+			DataNodeService::GetSerivceObj().WriteError( "QuotationSynchronizer::PutMessage() : failed 2 push message data 2 buffer, errorcode = %d", nErrorCode );
+		}
+
 		return nErrorCode;
 	}
 

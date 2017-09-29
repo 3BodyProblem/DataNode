@@ -201,7 +201,31 @@ bool SessionCollection::OnNewLink( unsigned int uiLinkNo, unsigned int uiIpAddr,
 
 void SessionCollection::OnCloseLink( unsigned int uiLinkNo, int iCloseType )
 {
-	DataNodeService::GetSerivceObj().WriteWarning( "SessionCollection::OnCloseLink() : TCP connection closed! (linkno. = %u) errorcode=%d", uiLinkNo, iCloseType );
+	char	pszDesc[128] = { 0 };
+
+	switch( iCloseType )
+	{///< 关闭类型: 0 结束通讯服务 1 WSARECV发生错误 2 服务端主动关闭 3 客户端主动关闭 4 处理数据错误而关闭
+	case 0:
+		::sprintf( pszDesc, "%s", "结束通讯服务" );
+		break;
+	case 1:
+		::sprintf( pszDesc, "%s", "WSARECV发生错误" );
+		break;
+	case 2:
+		::sprintf( pszDesc, "%s", "服务端主动关闭" );
+		break;
+	case 3:
+		::sprintf( pszDesc, "%s", "客户端主动关闭" );
+		break;
+	case 4:
+		::sprintf( pszDesc, "%s", "处理数据错误而关闭" );
+		break;
+	default:
+		::sprintf( pszDesc, "%s", "未知错误" );
+		break;
+	}
+
+	DataNodeService::GetSerivceObj().WriteWarning( "SessionCollection::OnCloseLink() : TCP disconnected! linkno(%u), errorcode=%d, desc=%s", uiLinkNo, iCloseType, pszDesc );
 
 	LinkNoRegister::GetRegister().RemovePushLinkID( uiLinkNo );
 }

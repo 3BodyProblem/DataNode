@@ -116,7 +116,7 @@ int DatabaseIO::UpdateRecord( unsigned int nDataID, char* pData, unsigned int nD
 	nDbSerialNo = 0;
 	if( false == m_bBuilded )
 	{
-		DataNodeService::GetSerivceObj().WriteError( "DatabaseIO::UpdateRecord() : failed 2 update quotation before initialization, message id=%d" );
+		DataNodeService::GetSerivceObj().WriteError( "DatabaseIO::UpdateRecord() : failed 2 update quotation before initialization, message id=%d", nDataID );
 		return -1;
 	}
 
@@ -143,7 +143,7 @@ int DatabaseIO::QueryRecord( unsigned int nDataID, char* pData, unsigned int nDa
 	nDbSerialNo = 0;
 	if( false == m_bBuilded )
 	{
-		DataNodeService::GetSerivceObj().WriteError( "DatabaseIO::QueryRecord() : failed 2 update quotation before initialization, message id=%d" );
+		DataNodeService::GetSerivceObj().WriteError( "DatabaseIO::QueryRecord() : failed 2 update quotation before initialization, message id=%d", nDataID );
 		return -1;
 	}
 
@@ -292,7 +292,7 @@ int PowerfullDatabase::Initialize()
 		return nErrCode;
 	}
 
-	if( m_oQueryBuffer.Initialize( 1024*1024*8 ) != 0 )
+	if( m_oQueryBuffer.Initialize( 1024*1024*15 ) != 0 )
 	{
 		DataNodeService::GetSerivceObj().WriteError( "PowerfullDatabase::Initialize() : failed 2 initialize query buffer, size = %d", m_oQueryBuffer.MaxBufSize() );
 		return -100;
