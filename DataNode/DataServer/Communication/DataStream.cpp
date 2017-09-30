@@ -297,7 +297,7 @@ int QuotationSynchronizer::Execute()
 
 		FlushQuotation2AllClient();		///< 循环发送缓存中的数据
 	}
-
+ 
 	return 0;
 }
 
