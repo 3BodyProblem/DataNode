@@ -319,8 +319,8 @@ int QuotationSynchronizer::PutMessage( unsigned short nMsgID, const char *pData,
 
 	if( nErrorCode < 0 )
 	{
-		unsigned int	s_nCnt = 0;
-		if( s_nCnt++ % 1000 == 0 )	{
+		static unsigned int	s_nPutCnt = 0;
+		if( s_nPutCnt++ % 5000 == 0 )	{
 			DataNodeService::GetSerivceObj().WriteError( "QuotationSynchronizer::PutMessage() : failed 2 push message data 2 buffer, errorcode = %d", nErrorCode );
 		}
 
@@ -349,7 +349,11 @@ void QuotationSynchronizer::FlushQuotation2AllClient()
 
 		if( nDataSize < 0 )
 		{
-			DataNodeService::GetSerivceObj().WriteError( "QuotationSynchronizer::FlushQuotation2AllClient() : failed 2 fetch package from buffer, errorcode = %d", nDataSize );
+			static unsigned int	s_nFlushCnt = 0;
+			if( s_nFlushCnt++ % 5000 == 0 )	{
+				DataNodeService::GetSerivceObj().WriteError( "QuotationSynchronizer::FlushQuotation2AllClient() : failed 2 fetch package from buffer, errorcode = %d", nDataSize );
+			}
+
 			m_oWaitEvent.Wait( 1000 * 1 );
 			return;
 		}

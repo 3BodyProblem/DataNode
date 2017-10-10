@@ -24,7 +24,7 @@ int DataIOEngine::Initialize()
 	int									nErrorCode = Configuration::GetConfigObj().Load();				///< 加载配置信息
 	const tagServicePlug_StartInParam&	refInParam = Configuration::GetConfigObj().GetStartInParam();	///< ServicePlug初始化参数
 	bool								bLoadFromDisk = (false == m_oDataCollector.IsProxy());			///< 是否需要从数据库中对各表进行代码集合统计
-	DataNodeService::GetSerivceObj().WriteInfo( "DataIOEngine::Initialize() : [Version]  1.0.1 " );
+	DataNodeService::GetSerivceObj().WriteInfo( "DataIOEngine::Initialize() : [Version]  1.0.1 , ProxyModule = %d", bLoadFromDisk );
 	DataNodeService::GetSerivceObj().WriteInfo( "DataIOEngine::Initialize() : DataNode Engine is initializing ......" );
 
 	Release();
@@ -94,7 +94,7 @@ bool DataIOEngine::EnterInitializationProcess()
 	int				nErrorCode = 0;														///< 错误码
 	MkHoliday&		refHoliday = m_oInitFlag.GetHoliday();								///< 节假日对象
 	bool			bLoadFromDisk = (false == m_oDataCollector.IsProxy());				///< 是否需要从数据库中对各表进行代码集合统计(只针对数据采集插件这一层)
-	DataNodeService::GetSerivceObj().WriteInfo( "DataIOEngine::EnterInitializationProcess() : Service is Initializing ......" );
+	DataNodeService::GetSerivceObj().WriteInfo( "DataIOEngine::EnterInitializationProcess() : Service is Initializing (ProxyModule=%d) ......", bLoadFromDisk );
 
 	///< ----------------- 0) 清理所有状态 ------------------------------------
 	m_mapID2Codes.clear();							///< 清空当天的代码集合表,等待重新统计

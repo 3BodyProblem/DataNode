@@ -19,14 +19,17 @@ class CollectorStatus
 public:
 	CollectorStatus();
 
+	CollectorStatus( const CollectorStatus& obj );
+
 public:
 	enum E_SS_Status		Get() const;
 
 	bool					Set( enum E_SS_Status eNewStatus );
 
 private:
-	mutable CriticalObject	m_oCSLock;
+	mutable CriticalObject	m_oCSLock;			///< 临界区
 	enum E_SS_Status		m_eStatus;			///< 当前行情逻辑状态，用于判断当前该做什么操作了
+	int						m_nMarketID;		///< 数据采集器对应的市场ID
 };
 
 

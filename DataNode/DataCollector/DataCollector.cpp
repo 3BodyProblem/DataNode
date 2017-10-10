@@ -4,8 +4,14 @@
 
 
 CollectorStatus::CollectorStatus()
-: m_eStatus( ET_SS_UNACTIVE )
+: m_eStatus( ET_SS_UNACTIVE ), m_nMarketID( -1 )
 {
+}
+
+CollectorStatus::CollectorStatus( const CollectorStatus& obj )
+{
+	m_eStatus = obj.m_eStatus;
+	m_nMarketID = obj.m_nMarketID;
 }
 
 enum E_SS_Status CollectorStatus::Get() const
