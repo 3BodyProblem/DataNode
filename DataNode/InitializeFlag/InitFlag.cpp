@@ -248,6 +248,8 @@ bool InitializerFlag::GetFlag()
 		return true;
 	}
 
+	m_nLastTradingTimeStatus = nTradingTimeStatus;
+
 	return false;													///< 已经非首次判断本轮交易时段, 不需要重新初始化
 }
 
