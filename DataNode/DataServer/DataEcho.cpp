@@ -183,7 +183,7 @@ int DLFuture_Echo::FormatStruct2OutputBuffer( char* pszEchoBuffer, unsigned int 
 			for( int i = 0; i < 5; i++ )
 			{
 				nWritePos += ::sprintf( pszEchoBuffer+nWritePos, "买%d价:%u, 买%d量:%I64d\t卖%d价:%d,卖%i量:%I64d\n"
-					, i+1, refBuySellDataHF.Buy[i].Price, i, refBuySellDataHF.Buy[i].Volume, i+1, refBuySellDataHF.Sell[i].Price, i, refBuySellDataHF.Sell[i].Volume );
+					, i+1, refBuySellDataHF.Buy[i].Price, i+1, refBuySellDataHF.Buy[i].Volume, i+1, refBuySellDataHF.Sell[i].Price, i+1, refBuySellDataHF.Sell[i].Volume );
 			}
 
 			return nWritePos;
@@ -308,7 +308,7 @@ int SHFuture_Echo::FormatStruct2OutputBuffer( char* pszEchoBuffer, unsigned int 
 			for( int i = 0; i < 5; i++ )
 			{
 				nWritePos += ::sprintf( pszEchoBuffer+nWritePos, "买%d价:%u, 买%d量:%I64d\t卖%d价:%d,卖%i量:%I64d\n"
-					, i+1, refBuySellDataHF.Buy[i].Price, i, refBuySellDataHF.Buy[i].Volume, i+1, refBuySellDataHF.Sell[i].Price, i, refBuySellDataHF.Sell[i].Volume );
+					, i+1, refBuySellDataHF.Buy[i].Price, i+1, refBuySellDataHF.Buy[i].Volume, i+1, refBuySellDataHF.Sell[i].Price, i+1, refBuySellDataHF.Sell[i].Volume );
 			}
 
 			return nWritePos;
@@ -433,7 +433,7 @@ int ZZFuture_Echo::FormatStruct2OutputBuffer( char* pszEchoBuffer, unsigned int 
 			for( int i = 0; i < 5; i++ )
 			{
 				nWritePos += ::sprintf( pszEchoBuffer+nWritePos, "买%d价:%u, 买%d量:%I64d\t卖%d价:%d,卖%i量:%I64d\n"
-					, i+1, refBuySellDataHF.Buy[i].Price, i, refBuySellDataHF.Buy[i].Volume, i+1, refBuySellDataHF.Sell[i].Price, i, refBuySellDataHF.Sell[i].Volume );
+					, i+1, refBuySellDataHF.Buy[i].Price, i+1, refBuySellDataHF.Buy[i].Volume, i+1, refBuySellDataHF.Sell[i].Price, i+1, refBuySellDataHF.Sell[i].Volume );
 			}
 
 			return nWritePos;
@@ -558,7 +558,7 @@ int DLOption_Echo::FormatStruct2OutputBuffer( char* pszEchoBuffer, unsigned int 
 			for( int i = 0; i < 5; i++ )
 			{
 				nWritePos += ::sprintf( pszEchoBuffer+nWritePos, "买%d价:%u, 买%d量:%I64d\t卖%d价:%d,卖%i量:%I64d\n"
-					, i+1, refBuySellDataHF.Buy[i].Price, i, refBuySellDataHF.Buy[i].Volume, i+1, refBuySellDataHF.Sell[i].Price, i, refBuySellDataHF.Sell[i].Volume );
+					, i+1, refBuySellDataHF.Buy[i].Price, i+1, refBuySellDataHF.Buy[i].Volume, i+1, refBuySellDataHF.Sell[i].Price, i+1, refBuySellDataHF.Sell[i].Volume );
 			}
 
 			return nWritePos;
@@ -683,7 +683,7 @@ int SHOption_Echo::FormatStruct2OutputBuffer( char* pszEchoBuffer, unsigned int 
 			for( int i = 0; i < 5; i++ )
 			{
 				nWritePos += ::sprintf( pszEchoBuffer+nWritePos, "买%d价:%u, 买%d量:%I64d\t卖%d价:%d,卖%i量:%I64d\n"
-					, i+1, refBuySellDataHF.Buy[i].Price, i, refBuySellDataHF.Buy[i].Volume, i+1, refBuySellDataHF.Sell[i].Price, i, refBuySellDataHF.Sell[i].Volume );
+					, i+1, refBuySellDataHF.Buy[i].Price, i+1, refBuySellDataHF.Buy[i].Volume, i+1, refBuySellDataHF.Sell[i].Price, i+1, refBuySellDataHF.Sell[i].Volume );
 			}
 
 			return nWritePos;
@@ -808,7 +808,7 @@ int ZZOption_Echo::FormatStruct2OutputBuffer( char* pszEchoBuffer, unsigned int 
 			for( int i = 0; i < 5; i++ )
 			{
 				nWritePos += ::sprintf( pszEchoBuffer+nWritePos, "买%d价:%u, 买%d量:%I64d\t卖%d价:%d,卖%i量:%I64d\n"
-					, i+1, refBuySellDataHF.Buy[i].Price, i, refBuySellDataHF.Buy[i].Volume, i+1, refBuySellDataHF.Sell[i].Price, i, refBuySellDataHF.Sell[i].Volume );
+					, i+1, refBuySellDataHF.Buy[i].Price, i+1, refBuySellDataHF.Buy[i].Volume, i+1, refBuySellDataHF.Sell[i].Price, i+1, refBuySellDataHF.Sell[i].Volume );
 			}
 
 			return nWritePos;
@@ -1063,7 +1063,7 @@ int SHL1_Echo::FormatStruct2OutputBuffer( char* pszEchoBuffer, unsigned int nMsg
 			for( int i = 0; i < 5; i++ )
 			{
 				nWritePos += ::sprintf( pszEchoBuffer+nWritePos, "买%d价:%u, 买%d量:%I64d\t卖%d价:%d,卖%i量:%I64d\n"
-					, i+1, refBuySellDataHF.Buy[i].Price, i, refBuySellDataHF.Buy[i].Volume, i+1, refBuySellDataHF.Sell[i].Price, i, refBuySellDataHF.Sell[i].Volume );
+					, i+1, refBuySellDataHF.Buy[i].Price, i+1, refBuySellDataHF.Buy[i].Volume, i+1, refBuySellDataHF.Sell[i].Price, i+1, refBuySellDataHF.Sell[i].Volume );
 			}
 
 			return nWritePos;
@@ -1188,7 +1188,7 @@ int SHL1Option_Echo::FormatStruct2OutputBuffer( char* pszEchoBuffer, unsigned in
 			for( int i = 0; i < 5; i++ )
 			{
 				nWritePos += ::sprintf( pszEchoBuffer+nWritePos, "买%d价:%u, 买%d量:%I64d\t卖%d价:%d,卖%i量:%I64d\n"
-					, i+1, refBuySellDataHF.Buy[i].Price, i, refBuySellDataHF.Buy[i].Volume, i+1, refBuySellDataHF.Sell[i].Price, i, refBuySellDataHF.Sell[i].Volume );
+					, i+1, refBuySellDataHF.Buy[i].Price, i+1, refBuySellDataHF.Buy[i].Volume, i+1, refBuySellDataHF.Sell[i].Price, i+1, refBuySellDataHF.Sell[i].Volume );
 			}
 
 			return nWritePos;
@@ -1318,7 +1318,7 @@ int SZL1_Echo::FormatStruct2OutputBuffer( char* pszEchoBuffer, unsigned int nMsg
 			for( int i = 0; i < 5; i++ )
 			{
 				nWritePos += ::sprintf( pszEchoBuffer+nWritePos, "买%d价:%u, 买%d量:%I64d\t卖%d价:%d,卖%i量:%I64d\n"
-					, i+1, refBuySellDataHF.Buy[i].Price, i, refBuySellDataHF.Buy[i].Volume, i+1, refBuySellDataHF.Sell[i].Price, i, refBuySellDataHF.Sell[i].Volume );
+					, i+1, refBuySellDataHF.Buy[i].Price, i+1, refBuySellDataHF.Buy[i].Volume, i+1, refBuySellDataHF.Sell[i].Price, i+1, refBuySellDataHF.Sell[i].Volume );
 			}
 
 			return nWritePos;
