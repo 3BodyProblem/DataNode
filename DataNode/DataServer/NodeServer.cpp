@@ -91,14 +91,15 @@ void DataIOEngine::Release()
 
 bool DataIOEngine::EnterInitializationProcess()
 {
-	int				nErrorCode = 0;														///< 错误码
-	MkHoliday&		refHoliday = m_oInitFlag.GetHoliday();								///< 节假日对象
-	bool			bLoadFromDisk = (false == m_oDataCollector.IsProxy());				///< 是否需要从数据库中对各表进行代码集合统计(只针对数据采集插件这一层)
+	int				nErrorCode = 0;												///< 错误码
+	CriticalLock	guard( m_oCodeMapLock );									///< 锁定统计对象(m_mapRecvID2Codes)
+	MkHoliday&		refHoliday = m_oInitFlag.GetHoliday();						///< 节假日策略对象，用于判断是否需要初始化行情
+	bool			bLoadFromDisk = (false == m_oDataCollector.IsProxy());		///< 是否需要从数据库中对各表进行代码集合统计(只针对数据采集插件这一层)
 	DataNodeService::GetSerivceObj().WriteInfo( "DataIOEngine::EnterInitializationProcess() : Service is Initializing (ProxyModule=%d) ......", bLoadFromDisk );
 
 	///< ----------------- 0) 清理所有状态 ------------------------------------
-	m_mapID2Codes.clear();							///< 清空当天的代码集合表,等待重新统计
-	m_oDataCollector.HaltDataCollector();			///< 先事先停止数据采集模块
+	m_mapRecvID2Codes.clear();													///< 清空当天的代码集合表,等待重新统计
+	m_oDataCollector.HaltDataCollector();										///< 先事先停止数据采集模块
 
 	///< ----------------- 1) 从磁盘恢复行情数据 -------------------------------
 	if( 0 != (nErrorCode=m_oDatabaseIO.RecoverDatabase(refHoliday, bLoadFromDisk)) )
@@ -113,8 +114,8 @@ bool DataIOEngine::EnterInitializationProcess()
 		return false;;
 	}
 
-	///< ----------------- 3) 比较磁盘和行情端的代码，删除非当天的数据 ---------
-	if( 0 > (nErrorCode=m_oDatabaseIO.RemoveCodeExpiredFromDisk( m_mapID2Codes, bLoadFromDisk )) )
+	///< ----------------- 3) 比较(源驱动)磁盘和行情端的代码，删除非当天的数据 ---------
+	if( 0 > (nErrorCode=m_oDatabaseIO.RemoveCodeExpiredFromDisk( m_mapRecvID2Codes, bLoadFromDisk )) )
 	{
 		DataNodeService::GetSerivceObj().WriteWarning( "DataIOEngine::EnterInitializationProcess() : failed 2 remove expired code from database, errorcode=%d", nErrorCode );
 		return false;
@@ -189,7 +190,7 @@ int DataIOEngine::OnImage( unsigned int nDataID, char* pData, unsigned int nData
 	CriticalLock		guard( m_oCodeMapLock );
 
 	///< 记录所有当天有效的商品代码	[数据表ID,代码集合]
-	m_mapID2Codes[nDataID].insert( std::string( pData ) );
+	m_mapRecvID2Codes[nDataID].insert( std::string( pData ) );
 
 	return m_oDatabaseIO.NewRecord( nDataID, pData, nDataLen, bLastFlag, m_nPushSerialNo );
 }

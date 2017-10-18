@@ -126,7 +126,7 @@ bool LinkNoRegister::InReqLinkIDSet( unsigned int nLinkID )
 }
 
 
-SessionCollection::SessionCollection( PowerfullDatabase& refDbIO )
+SessionCollection::SessionCollection( PowerDB& refDbIO )
  : m_refDatabase( refDbIO )
 {
 }

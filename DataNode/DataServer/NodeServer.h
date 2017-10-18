@@ -112,15 +112,15 @@ protected:///< 线程任务相关函数
 	bool					EnterInitializationProcess();
 
 protected:///< 统计成员变量
+	CriticalObject			m_oCodeMapLock;					///< CodeMap锁
+	MAP_TABLEID_CODES		m_mapRecvID2Codes;				///< 记录当天的各表ID下的code集合
 	unsigned __int64		m_nPushSerialNo;				///< 实时行情更新流水
 	unsigned int			m_nHeartBeatCount;				///< 发送的心跳包数量
-	CriticalObject			m_oCodeMapLock;					///< CodeMap锁
-	MAP_TABLEID_CODES		m_mapID2Codes;					///< 记录当天的各表ID下的code集合
 protected:///< 功能成员对象
 	InitializerFlag			m_oInitFlag;					///< 重新初始化标识
 	SessionCollection		m_oLinkSessions;				///< 下级的链路会话
 protected:///< 挂载相关插件
-	PowerfullDatabase		m_oDatabaseIO;					///< 内存数据插件管理
+	PowerDB					m_oDatabaseIO;					///< 内存数据插件管理
 	DataCollector			m_oDataCollector;				///< 行情采集模块接口
 //	XXXCompress				m_oCompressObj;					///< 行情压缩模块
 };

@@ -91,7 +91,7 @@ private:
 class SessionCollection : public MServicePlug_Spi
 {
 public:
-	SessionCollection( PowerfullDatabase& refDbIO );
+	SessionCollection( PowerDB& refDbIO );
 	~SessionCollection();
 
 	/**
@@ -162,7 +162,7 @@ protected:///< 网络框架事件回调
 	virtual bool				OnRecvData( unsigned int uiLinkNo, unsigned short usMessageNo, unsigned short usFunctionID, bool bErrorFlag, const char* lpData, unsigned int uiSize, unsigned int& uiAddtionData );
 
 protected:///< 新到达的链路初始化逻辑相关
-	PowerfullDatabase&			m_refDatabase;			///< 行情内存库
+	PowerDB&			m_refDatabase;			///< 行情内存库
 	QuotationSynchronizer		m_oQuotationBuffer;		///< 实时行情推送缓存（带推送线程)
 };
 

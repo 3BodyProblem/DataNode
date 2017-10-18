@@ -133,16 +133,16 @@ protected:///< DB插件相关
 
 
 /**
- * @class				PowerfullDatabase
+ * @class				PowerDB
  * @brief				数据库操作扩展类
  * @date							2017/8/1
  * @author				barry
  */
-class PowerfullDatabase : public DatabaseIO
+class PowerDB : public DatabaseIO
 {
 public:///< 初始化
-	PowerfullDatabase();
-	~PowerfullDatabase();
+	PowerDB();
+	~PowerDB();
 
 	/**
 	 * @brief						初始化数据库管理对象
@@ -195,7 +195,7 @@ public:///< 数据库快照数据推送
 
 protected:
 	PkgBuffer						m_oQueryBuffer;					///< 数据发送缓存
-	MAP_TABLEID_CODES				m_mapID2Codes;					///< 各数据表中的code集合统计
+	MAP_TABLEID_CODES				m_mapID2CodesInDB;				///< 各数据表中的code集合统计
 };
 
 

@@ -271,46 +271,46 @@ void DatabaseIO::Release()
 ///< ----------------------------------------------------------------------------------------------
 
 
-PowerfullDatabase::PowerfullDatabase()
+PowerDB::PowerDB()
 {
 }
 
-PowerfullDatabase::~PowerfullDatabase()
+PowerDB::~PowerDB()
 {
 	BackupDatabase();		///< 先备份数据库
 	Release();				///< 再释放所有资源
 }
 
-int PowerfullDatabase::Initialize()
+int PowerDB::Initialize()
 {
 	int			nErrCode = 0;
-	DataNodeService::GetSerivceObj().WriteInfo( "PowerfullDatabase::Initialize() : initializing powerfull database object ......" );
+	DataNodeService::GetSerivceObj().WriteInfo( "PowerDB::Initialize() : initializing powerfull database object ......" );
 
 	if( (nErrCode=DatabaseIO::Initialize()) < 0 )
 	{
-		DataNodeService::GetSerivceObj().WriteError( "PowerfullDatabase::Initialize() : failed 2 initialize, errorcode = %d", nErrCode );
+		DataNodeService::GetSerivceObj().WriteError( "PowerDB::Initialize() : failed 2 initialize, errorcode = %d", nErrCode );
 		return nErrCode;
 	}
 
 	if( m_oQueryBuffer.Initialize( 1024*1024*15 ) != 0 )
 	{
-		DataNodeService::GetSerivceObj().WriteError( "PowerfullDatabase::Initialize() : failed 2 initialize query buffer, size = %d", m_oQueryBuffer.MaxBufSize() );
+		DataNodeService::GetSerivceObj().WriteError( "PowerDB::Initialize() : failed 2 initialize query buffer, size = %d", m_oQueryBuffer.MaxBufSize() );
 		return -100;
 	}
 
-	DataNodeService::GetSerivceObj().WriteInfo( "PowerfullDatabase::Initialize() : powerfull database object initialized! ..." );
+	DataNodeService::GetSerivceObj().WriteInfo( "PowerDB::Initialize() : powerfull database object initialized! ..." );
 
 	return 0;
 }
 
-void PowerfullDatabase::Release()
+void PowerDB::Release()
 {
 	DatabaseIO::Release();				///< 释放数据库插件的资源
-	m_mapID2Codes.clear();				///< 清空数据表的code集合表
+	m_mapID2CodesInDB.clear();			///< 清空数据表的code集合表
 	m_oQueryBuffer.Release();			///< 释放查询内存
 }
 
-int PowerfullDatabase::RemoveCodeExpiredFromDisk( MAP_TABLEID_CODES& mapCodeWhiteList, bool bNeed2Erase )
+int PowerDB::RemoveCodeExpiredFromDisk( MAP_TABLEID_CODES& mapCodeWhiteList, bool bNeed2Erase )
 {
 	if( true == bNeed2Erase )
 	{
@@ -321,19 +321,19 @@ int PowerfullDatabase::RemoveCodeExpiredFromDisk( MAP_TABLEID_CODES& mapCodeWhit
 		for( TMAP_DATAID2WIDTH::iterator it = m_mapTableID.begin(); it != m_mapTableID.end(); it++ )
 		{
 			unsigned int				nDataID = it->first;
-			std::set<std::string>&		setCodeFromDisk = m_mapID2Codes[nDataID];
+			std::set<std::string>&		setCodeFromDisk = m_mapID2CodesInDB[nDataID];
 
 			if( mapCodeWhiteList.find( nDataID ) == mapCodeWhiteList.end() )		///< 数据表ID过期的情况
 			{
 				m_mapTableID.erase( it++ );
-				m_mapID2Codes.erase( nDataID );
+				m_mapID2CodesInDB.erase( nDataID );
 				if( true == m_pIDatabase->DeleteTable( nDataID ) )
 				{
-					DataNodeService::GetSerivceObj().WriteInfo( "PowerfullDatabase::RemoveCodeExpiredFromDisk() : DataTable(%d) deleted!", nDataID );
+					DataNodeService::GetSerivceObj().WriteInfo( "PowerDB::RemoveCodeExpiredFromDisk() : DataTable(%d) deleted!", nDataID );
 				}
 				else
 				{
-					DataNodeService::GetSerivceObj().WriteWarning( "PowerfullDatabase::RemoveCodeExpiredFromDisk() : failed 2 delete DataTable(%d)", nDataID );
+					DataNodeService::GetSerivceObj().WriteWarning( "PowerDB::RemoveCodeExpiredFromDisk() : failed 2 delete DataTable(%d)", nDataID );
 				}
 			}
 			else																	///< 数据表ID有效的情况
@@ -351,11 +351,11 @@ int PowerfullDatabase::RemoveCodeExpiredFromDisk( MAP_TABLEID_CODES& mapCodeWhit
 
 					if( (nErrorCode=DeleteRecord( nDataID, (char*)(it->c_str()), 32 )) < 0 )
 					{
-						DataNodeService::GetSerivceObj().WriteWarning( "PowerfullDatabase::RemoveCodeExpiredFromDisk() : failed delete code[%s] from table[%d] ", it->c_str(), nDataID );
+						DataNodeService::GetSerivceObj().WriteWarning( "PowerDB::RemoveCodeExpiredFromDisk() : failed delete code[%s] from table[%d] ", it->c_str(), nDataID );
 						return -2000 - nErrorCode;
 					}
 
-					DataNodeService::GetSerivceObj().WriteInfo( "PowerfullDatabase::RemoveCodeExpiredFromDisk() : DataType=%d, Code[%s] has erased!", nDataID, it->c_str() );
+					DataNodeService::GetSerivceObj().WriteInfo( "PowerDB::RemoveCodeExpiredFromDisk() : DataType=%d, Code[%s] has erased!", nDataID, it->c_str() );
 
 					nAffectNum++;
 				}
@@ -368,7 +368,7 @@ int PowerfullDatabase::RemoveCodeExpiredFromDisk( MAP_TABLEID_CODES& mapCodeWhit
 	return 0;		///< 如果是行情传输代理，则不需要删除无效代码，因为码表都是即时从上级更新的
 }
 
-int PowerfullDatabase::RecoverDatabase( MkHoliday& refHoliday, bool bRecoverFromDisk )
+int PowerDB::RecoverDatabase( MkHoliday& refHoliday, bool bRecoverFromDisk )
 {
 	try
 	{
@@ -378,15 +378,15 @@ int PowerfullDatabase::RecoverDatabase( MkHoliday& refHoliday, bool bRecoverFrom
 
 		if( m_pIDatabase )
 		{
-			CriticalLock				lock( m_oLock );					///< 锁
-			int							nDBLoadDate = 0;					///< 行情落盘文件日期
-			unsigned int				nDataID, nRecordLen, nKeyLen;		///< 数据表ID,数据表记录结构长度,数据表的记录主键的长度
+			CriticalLock				lock( m_oLock );						///< 锁
+			int							nDBLoadDate = 0;						///< 行情落盘文件日期
+			unsigned int				nDataID, nRecordLen, nKeyLen;			///< 数据表ID,数据表记录结构长度,数据表的记录主键的长度
 
-			DataNodeService::GetSerivceObj().WriteInfo( "PowerfullDatabase::RecoverDatabase() : recovering ......" );
+			DataNodeService::GetSerivceObj().WriteInfo( "PowerDB::RecoverDatabase() : recovering ......" );
 			///< ----------------- 先清理历史缓存 -----------------------------------------------------
-			m_bBuilded = false;m_mapTableID.clear();m_mapID2Codes.clear();	///< 清空状态和统计信息
-			if( 0 != m_pIDatabase->DeleteTables() )	{						///< 清空数据库的所有内容
-				DataNodeService::GetSerivceObj().WriteWarning( "PowerfullDatabase::RecoverDatabase() : failed 2 clean mem-database" );
+			m_bBuilded = false;m_mapTableID.clear();m_mapID2CodesInDB.clear();	///< 清空状态和统计信息
+			if( 0 != m_pIDatabase->DeleteTables() )	{							///< 清空数据库的所有内容
+				DataNodeService::GetSerivceObj().WriteWarning( "PowerDB::RecoverDatabase() : failed 2 clean mem-database" );
 				return -1;
 			}
 
@@ -396,7 +396,7 @@ int PowerfullDatabase::RecoverDatabase( MkHoliday& refHoliday, bool bRecoverFrom
 				///< ------------- 检查本地落盘数据是否有效 --------------------------------------------
 				if( false == refHoliday.IsValidDatabaseDate( nDBLoadDate ) )
 				{
-					DataNodeService::GetSerivceObj().WriteWarning( "PowerfullDatabase::RecoverDatabase() : invalid dump file, file date = %d", nDBLoadDate );
+					DataNodeService::GetSerivceObj().WriteWarning( "PowerDB::RecoverDatabase() : invalid dump file, file date = %d", nDBLoadDate );
 					return -2000;
 				}
 
@@ -405,7 +405,7 @@ int PowerfullDatabase::RecoverDatabase( MkHoliday& refHoliday, bool bRecoverFrom
 				for( unsigned int n = 0; n < nTableCount; n++ )
 				{
 					if( false == m_pIDatabase->GetTableMetaByPos( n, nDataID, nRecordLen, nKeyLen ) )	{
-						DataNodeService::GetSerivceObj().WriteWarning( "PowerfullDatabase::RecoverDatabase() : cannot fetch table with index (%u)", n );
+						DataNodeService::GetSerivceObj().WriteWarning( "PowerDB::RecoverDatabase() : cannot fetch table with index (%u)", n );
 						return -1000 - n;
 					}
 
@@ -422,7 +422,7 @@ int PowerfullDatabase::RecoverDatabase( MkHoliday& refHoliday, bool bRecoverFrom
 						unsigned __int64			nSerialNoOfAnchor = 0;
 
 						if( (nDataLen=QueryBatchRecords( it->first, (char*)m_oQueryBuffer, m_oQueryBuffer.MaxBufSize(), nSerialNoOfAnchor )) < 0 )	{
-							DataNodeService::GetSerivceObj().WriteWarning( "PowerfullDatabase::RecoverDatabase() : failed 2 query batch of records from table" );
+							DataNodeService::GetSerivceObj().WriteWarning( "PowerDB::RecoverDatabase() : failed 2 query batch of records from table" );
 							return -2;
 						}
 
@@ -430,67 +430,67 @@ int PowerfullDatabase::RecoverDatabase( MkHoliday& refHoliday, bool bRecoverFrom
 							setCode.insert( std::string((char*)m_oQueryBuffer+nOffset) );
 						}
 
-						m_mapID2Codes[nDataID] = setCode;							///< 统计： {数据表ID : code集合}
+						m_mapID2CodesInDB[nDataID] = setCode;						///< 统计： {数据表ID : code集合}
 					}
 
-					DataNodeService::GetSerivceObj().WriteInfo( "PowerfullDatabase::RecoverDatabase() : fetch table number=%d", m_mapID2Codes.size() );
+					DataNodeService::GetSerivceObj().WriteInfo( "PowerDB::RecoverDatabase() : fetch table number=%d", m_mapID2CodesInDB.size() );
 				}
 
 				///< -------------- 设置数据库构建成功标识 ------------------------------------------------
 				m_bBuilded = true;
-				DataNodeService::GetSerivceObj().WriteInfo( "PowerfullDatabase::RecoverDatabase() : recovered [FileDate=%d], table count=%d ......", nDBLoadDate, nTableCount );
+				DataNodeService::GetSerivceObj().WriteInfo( "PowerDB::RecoverDatabase() : recovered [FileDate=%d], table count=%d ......", nDBLoadDate, nTableCount );
 				return 0;
 			}
 		}
 
-		DataNodeService::GetSerivceObj().WriteWarning( "PowerfullDatabase::RecoverDatabase() : failed 2 recover quotation data, (%s), DB address:%x" , Configuration::GetConfigObj().GetRecoveryFolderPath().c_str(), m_pIDatabase );
+		DataNodeService::GetSerivceObj().WriteWarning( "PowerDB::RecoverDatabase() : failed 2 recover quotation data, (%s), DB address:%x" , Configuration::GetConfigObj().GetRecoveryFolderPath().c_str(), m_pIDatabase );
 		return -3;
 	}
 	catch( std::exception& err )
 	{
-		DataNodeService::GetSerivceObj().WriteWarning( "PowerfullDatabase::RecoverDatabase() : exception : %s", err.what() );
+		DataNodeService::GetSerivceObj().WriteWarning( "PowerDB::RecoverDatabase() : exception : %s", err.what() );
 	}
 	catch( ... )
 	{
-		DataNodeService::GetSerivceObj().WriteWarning( "PowerfullDatabase::RecoverDatabase() : unknow exception" );
+		DataNodeService::GetSerivceObj().WriteWarning( "PowerDB::RecoverDatabase() : unknow exception" );
 	}
 
 	return -4;
 }
 
-int PowerfullDatabase::BackupDatabase()
+int PowerDB::BackupDatabase()
 {
 	try
 	{
 		if( m_pIDatabase )
 		{
-			DataNodeService::GetSerivceObj().WriteInfo( "PowerfullDatabase::BackupDatabase() : making backup ......" );
+			DataNodeService::GetSerivceObj().WriteInfo( "PowerDB::BackupDatabase() : making backup ......" );
 
 			if( true == m_pIDatabase->SaveToDisk( Configuration::GetConfigObj().GetRecoveryFolderPath().c_str() ) )
 			{
-				DataNodeService::GetSerivceObj().WriteInfo( "PowerfullDatabase::BackupDatabase() : backup completed ......" );
+				DataNodeService::GetSerivceObj().WriteInfo( "PowerDB::BackupDatabase() : backup completed ......" );
 				return 0;
 			}
 			else
 			{
-				DataNodeService::GetSerivceObj().WriteWarning( "PowerfullDatabase::BackupDatabase() : miss backup ......" );
+				DataNodeService::GetSerivceObj().WriteWarning( "PowerDB::BackupDatabase() : miss backup ......" );
 				return -2;
 			}
 		}
 	}
 	catch( std::exception& err )
 	{
-		DataNodeService::GetSerivceObj().WriteWarning( "PowerfullDatabase::BackupDatabase() : exception : %s", err.what() );
+		DataNodeService::GetSerivceObj().WriteWarning( "PowerDB::BackupDatabase() : exception : %s", err.what() );
 	}
 	catch( ... )
 	{
-		DataNodeService::GetSerivceObj().WriteWarning( "PowerfullDatabase::BackupDatabase() : unknow exception" );
+		DataNodeService::GetSerivceObj().WriteWarning( "PowerDB::BackupDatabase() : unknow exception" );
 	}
 
 	return -1;
 }
 
-int PowerfullDatabase::FlushDatabase2RequestSessions( unsigned __int64 nSerialNo )
+int PowerDB::FlushDatabase2RequestSessions( unsigned __int64 nSerialNo )
 {
 	int							nReqLinkID = 0;
 	unsigned int				nTableCount = GetTableCount();
@@ -510,7 +510,7 @@ int PowerfullDatabase::FlushDatabase2RequestSessions( unsigned __int64 nSerialNo
 
 				if( nDataLen <= 0 )
 				{
-					DataNodeService::GetSerivceObj().WriteWarning( "PowerfullDatabase::FlushDatabase2RequestSessions() : cannot fetch image from database, TCP connection will be destroyed! errorcode=%d", nDataLen );
+					DataNodeService::GetSerivceObj().WriteWarning( "PowerDB::FlushDatabase2RequestSessions() : cannot fetch image from database, TCP connection will be destroyed! errorcode=%d", nDataLen );
 					DataNodeService::GetSerivceObj().CloseLink( nReqLinkID );
 					return -1 * (n*100);
 				}
@@ -531,7 +531,7 @@ int PowerfullDatabase::FlushDatabase2RequestSessions( unsigned __int64 nSerialNo
 				if( nErrCode < 0 )
 				{
 					DataNodeService::GetSerivceObj().CloseLink( nReqLinkID );
-					DataNodeService::GetSerivceObj().WriteWarning( "PowerfullDatabase::FlushDatabase2RequestSessions() : failed 2 send image data, errorcode=%d", nErrCode );
+					DataNodeService::GetSerivceObj().WriteWarning( "PowerDB::FlushDatabase2RequestSessions() : failed 2 send image data, errorcode=%d", nErrCode );
 					return -2 * (n*10000);
 				}
 
