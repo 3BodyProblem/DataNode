@@ -5,6 +5,57 @@
 #include "../DataServer/NodeServer.h"
 
 
+PkgBuffer::PkgBuffer()
+ : m_pPkgBuffer( NULL ), m_nMaxBufSize( 0 )
+{
+}
+
+int PkgBuffer::Initialize( unsigned int nBuffSize )
+{
+	Release();
+
+	if( NULL == (m_pPkgBuffer = new char[nBuffSize]) )
+	{
+		DataNodeService::GetSerivceObj().WriteError( "PkgBuffer::Initialize() : failed 2 initialize pkg data buffer, size = %d", nBuffSize );
+		return -1;
+	}
+
+	m_nMaxBufSize = nBuffSize;
+
+	return 0;
+}
+
+void PkgBuffer::Release()
+{
+	if( NULL != m_pPkgBuffer )
+	{
+		DataNodeService::GetSerivceObj().WriteInfo( "PkgBuffer::Release() : release pkg data buffer, size = %d", m_nMaxBufSize );
+		delete []m_pPkgBuffer;
+		m_pPkgBuffer = NULL;
+	}
+
+	m_nMaxBufSize = 0;
+}
+
+PkgBuffer::operator char*()
+{
+	if( NULL != m_pPkgBuffer )
+	{
+		return m_pPkgBuffer;
+	}
+
+	throw std::runtime_error( "PkgBuffer::operator char*() : invalid cache buffer pointer ( NULL )" );
+}
+
+unsigned int PkgBuffer::MaxBufSize() const
+{
+	return m_nMaxBufSize;
+}
+
+
+///< -----------------------------------------------------------------------
+
+
 typedef IDBFactory& __stdcall		TFunc_GetFactoryObject();
 typedef void						(__stdcall *T_Func_DBUnitTest)();
 
@@ -292,7 +343,7 @@ int PowerDB::Initialize()
 		return nErrCode;
 	}
 
-	if( m_oQueryBuffer.Initialize( 1024*1024*15 ) != 0 )
+	if( m_oQueryBuffer.Initialize( 1024*1024*30 ) != 0 )
 	{
 		DataNodeService::GetSerivceObj().WriteError( "PowerDB::Initialize() : failed 2 initialize query buffer, size = %d", m_oQueryBuffer.MaxBufSize() );
 		return -100;
@@ -305,76 +356,67 @@ int PowerDB::Initialize()
 
 void PowerDB::Release()
 {
-	DatabaseIO::Release();				///< 释放数据库插件的资源
-	m_mapID2CodesInDB.clear();			///< 清空数据表的code集合表
-	m_oQueryBuffer.Release();			///< 释放查询内存
+	DatabaseIO::Release();					///< 释放数据库插件的资源
+	m_mapID2CodesInDB.clear();				///< 清空数据表的code集合表
+	m_oQueryBuffer.Release();				///< 释放查询内存
 }
 
-int PowerDB::RemoveCodeExpiredFromDisk( MAP_TABLEID_CODES& mapCodeWhiteList, bool bNeed2Erase )
+int PowerDB::RemoveExpiredItem4LoadFromDisk( MAP_TABLEID_CODES& mapID2CodeWhiteList, bool bNeed2Erase )
 {
-	if( true == bNeed2Erase )
+	int					nAffectNum = 0;
+	int					nErrorCode = 0;
+	CriticalLock		guard( m_oLock );
+
+	if( false == bNeed2Erase )	return 0;	///< 如果是行情传输代理，则不需要删除无效代码，因为码表都是即时从上级更新的
+
+	for( TMAP_DATAID2WIDTH::iterator it = m_mapTableID.begin(); it != m_mapTableID.end(); it++ )
 	{
-		int					nAffectNum = 0;
-		int					nErrorCode = 0;
-		CriticalLock		guard( m_oLock );
+		unsigned int					nDataID = it->first;									///< 遍历出从磁盘加载的所有Message ID
 
-		for( TMAP_DATAID2WIDTH::iterator it = m_mapTableID.begin(); it != m_mapTableID.end(); it++ )
+		if( mapID2CodeWhiteList.find( nDataID ) == mapID2CodeWhiteList.end() )					///< [ 数据表ID过期的情况 ]
 		{
-			unsigned int				nDataID = it->first;
-			std::set<std::string>&		setCodeFromDisk = m_mapID2CodesInDB[nDataID];
+			m_mapTableID.erase( it++ );															///< 删除统计信息中的过期Message ID
+			m_mapID2CodesInDB.erase( nDataID );													///< 删除统计信息中的过期Message ID
 
-			if( mapCodeWhiteList.find( nDataID ) == mapCodeWhiteList.end() )		///< 数据表ID过期的情况
-			{
-				m_mapTableID.erase( it++ );
-				m_mapID2CodesInDB.erase( nDataID );
-				if( true == m_pIDatabase->DeleteTable( nDataID ) )
-				{
-					DataNodeService::GetSerivceObj().WriteInfo( "PowerDB::RemoveCodeExpiredFromDisk() : DataTable(%d) deleted!", nDataID );
-				}
-				else
-				{
-					DataNodeService::GetSerivceObj().WriteWarning( "PowerDB::RemoveCodeExpiredFromDisk() : failed 2 delete DataTable(%d)", nDataID );
-				}
+			if( true == m_pIDatabase->DeleteTable( nDataID ) )	{								///< 删除内存库中的过期Message ID
+				DataNodeService::GetSerivceObj().WriteInfo( "PowerDB::RemoveExpiredItem4LoadFromDisk() : DataTable(%d) deleted!", nDataID );
+			}	else	{
+				DataNodeService::GetSerivceObj().WriteWarning( "PowerDB::RemoveExpiredItem4LoadFromDisk() : failed 2 delete DataTable(%d)", nDataID );
 			}
-			else																	///< 数据表ID有效的情况
+		}
+		else																					///< [ 数据表ID有效的情况 ]
+		{
+			std::set<std::string>&		setCodeFromDisk = m_mapID2CodesInDB[nDataID];			///< 根据这个Message ID定位出之下的商品Code集合
+
+			for( std::set<std::string>::iterator it = setCodeFromDisk.begin(); it != setCodeFromDisk.end(); it++ )
 			{
-				std::set<std::string>&	setCodeFromExchange = mapCodeWhiteList[nDataID];
+				std::string					sCodeInDisk = it->c_str();
+				std::set<std::string>&		setCodeFromExchange = mapID2CodeWhiteList[nDataID];
 
-				for( std::set<std::string>::iterator it = setCodeFromDisk.begin(); it != setCodeFromDisk.end(); it++ )
+				if( setCodeFromExchange.find( sCodeInDisk ) == setCodeFromExchange.end() )		///< 对从磁盘加载的Code，但确不曾在行情接收中收到的Code进行记录删除
 				{
-					std::string			sCodeInDisk = it->c_str();
-
-					if( setCodeFromExchange.find( sCodeInDisk ) != setCodeFromExchange.end() )
+					if( (nErrorCode=DeleteRecord( nDataID, (char*)(it->c_str()), 32 )) < 0 )	///< 删除过期的记录
 					{
+						DataNodeService::GetSerivceObj().WriteWarning( "PowerDB::RemoveExpiredItem4LoadFromDisk() : failed delete code[%s] from table[%d] ", it->c_str(), nDataID );
 						continue;
 					}
 
-					if( (nErrorCode=DeleteRecord( nDataID, (char*)(it->c_str()), 32 )) < 0 )
-					{
-						DataNodeService::GetSerivceObj().WriteWarning( "PowerDB::RemoveCodeExpiredFromDisk() : failed delete code[%s] from table[%d] ", it->c_str(), nDataID );
-						return -2000 - nErrorCode;
-					}
-
-					DataNodeService::GetSerivceObj().WriteInfo( "PowerDB::RemoveCodeExpiredFromDisk() : DataType=%d, Code[%s] has erased!", nDataID, it->c_str() );
-
 					nAffectNum++;
+					DataNodeService::GetSerivceObj().WriteInfo( "PowerDB::RemoveExpiredItem4LoadFromDisk() : DataType=%d, Code[%s] has erased!", nDataID, it->c_str() );
 				}
 			}
-		}
 
-		return nAffectNum;		
+		}
 	}
 
-	return 0;		///< 如果是行情传输代理，则不需要删除无效代码，因为码表都是即时从上级更新的
+	return nAffectNum;
 }
 
 int PowerDB::RecoverDatabase( MkHoliday& refHoliday, bool bRecoverFromDisk )
 {
 	try
 	{
-		if( false == bRecoverFromDisk )	{
-			return 0;
-		}
+		if( false == bRecoverFromDisk )	{	return 0;	}
 
 		if( m_pIDatabase )
 		{
@@ -494,58 +536,50 @@ int PowerDB::FlushDatabase2RequestSessions( unsigned __int64 nSerialNo )
 {
 	int							nReqLinkID = 0;
 	unsigned int				nTableCount = GetTableCount();
-	CriticalLock				lock( m_oLock );
 	unsigned int				nReqLinkCount = LinkNoRegister::GetRegister().GetReqLinkCount();
+	CriticalLock				lock( m_oLock );
 
-	if( nReqLinkCount > 0 )
+	if( nReqLinkCount <= 0 )	return 0;
+
+	for( int nSeqNo = 0; (nReqLinkID = LinkNoRegister::GetRegister().PopReqLinkID()) >= 0; nSeqNo = 0 )			///< 有新到达的链接的情况，需要被发送初始化快照数据
 	{
-		while( (nReqLinkID = LinkNoRegister::GetRegister().PopReqLinkID()) >= 0 )
+		for( TMAP_DATAID2WIDTH::iterator it = m_mapTableID.begin(); it != m_mapTableID.end(); it++, nSeqNo++ )	///< 遍历每个MessageID值
 		{
-			int					n = 0;
-			for( TMAP_DATAID2WIDTH::iterator it = m_mapTableID.begin(); it != m_mapTableID.end(); it++, n++ )
+			unsigned __int64	nSerialNoOfAnchor = nSerialNo;													///< 获取数据块查询"锚值"
+			int					nFunctionID = ((nSeqNo+1)==nTableCount) ? 100 : 0;								///< 最后一个数据包的标识
+			int					nDataLen = QueryBatchRecords( it->first, (char*)m_oQueryBuffer, m_oQueryBuffer.MaxBufSize(), nSerialNoOfAnchor );
+
+			if( nDataLen <= 0 )
 			{
-				int					nFunctionID = ((n+1)==nTableCount) ? 100 : 0;	///< 最后一个数据包的标识
-				unsigned __int64	nSerialNoOfAnchor = nSerialNo;
-				int					nDataLen = QueryBatchRecords( it->first, (char*)m_oQueryBuffer, m_oQueryBuffer.MaxBufSize(), nSerialNoOfAnchor );
+				DataNodeService::GetSerivceObj().WriteWarning( "PowerDB::FlushDatabase2RequestSessions() : cannot fetch Table(ID=%d) from D.B., TCP connection will be destroyed! errorcode=%d", it->first, nDataLen );
+				DataNodeService::GetSerivceObj().CloseLink( nReqLinkID );										///< 查询MessageID对应的数据表的数据失败,断开对下链路
+				return -1 * (nSeqNo*100);
+			}
 
-				if( nDataLen <= 0 )
-				{
-					DataNodeService::GetSerivceObj().WriteWarning( "PowerDB::FlushDatabase2RequestSessions() : cannot fetch image from database, TCP connection will be destroyed! errorcode=%d", nDataLen );
-					DataNodeService::GetSerivceObj().CloseLink( nReqLinkID );
-					return -1 * (n*100);
-				}
+			///< ---------------- 将查询出的数据重新格式到发送缓存 -------------------------------
+			tagPackageHead*		pPkgHead = (tagPackageHead*)((char*)m_oQueryBuffer);							///< 构建发送格式数据包
+			::memmove( (char*)m_oQueryBuffer+sizeof(tagPackageHead), (char*)m_oQueryBuffer, nDataLen );			///< 数据包头构建
+			pPkgHead->nSeqNo = nSeqNo;
+			pPkgHead->nMsgLength = it->second;
+			pPkgHead->nMarketID = DataCollector::GetMarketID();
+			///< ---------------------------------------------------------------------------------
 
-				///< ---------------- 将查询出的数据重新格式到发送缓存 -------------------------------
-				tagPackageHead*		pPkgHead = (tagPackageHead*)((char*)m_oQueryBuffer);
-				///< 构建发送格式数据包
-				::memmove( (char*)m_oQueryBuffer+sizeof(tagPackageHead), (char*)m_oQueryBuffer, nDataLen );
-				///< 数据包头构建
-				pPkgHead->nSeqNo = n;
-				pPkgHead->nMsgLength = it->second;
-				pPkgHead->nMsgCount = nDataLen / it->second;
-				pPkgHead->nMarketID = DataCollector::GetMarketID();
-				unsigned int	nSendLen = nDataLen + sizeof(tagPackageHead);
-				///< ---------------------------------------------------------------------------------
+			int	nErrCode = DataNodeService::GetSerivceObj().SendData( nReqLinkID, it->first, nFunctionID, (char*)m_oQueryBuffer, nDataLen + sizeof(tagPackageHead) );
+			if( nErrCode < 0 )
+			{
+				DataNodeService::GetSerivceObj().CloseLink( nReqLinkID );										///< 发送初始化快照数据失败，则断开对下链路
+				DataNodeService::GetSerivceObj().WriteWarning( "PowerDB::FlushDatabase2RequestSessions() : failed 2 send image data, errorcode=%d", nErrCode );
+				return -2 * (nSeqNo*10000);
+			}
 
-				int	nErrCode = DataNodeService::GetSerivceObj().SendData( nReqLinkID, it->first, nFunctionID, (char*)m_oQueryBuffer, nSendLen/*, nSerialNo*/ );
-				if( nErrCode < 0 )
-				{
-					DataNodeService::GetSerivceObj().CloseLink( nReqLinkID );
-					DataNodeService::GetSerivceObj().WriteWarning( "PowerDB::FlushDatabase2RequestSessions() : failed 2 send image data, errorcode=%d", nErrCode );
-					return -2 * (n*10000);
-				}
-
-				if( 100 == nFunctionID )					///< 最后一个数据包的function id是100
-				{
-					LinkNoRegister::GetRegister().NewPushLinkID( nReqLinkID );	///< 将新会话的id加入推送列表
-				}
+			if( 100 == nFunctionID )																			///< 最后一个数据包的Function ID等于100，则表示初始化成功
+			{
+				LinkNoRegister::GetRegister().NewPushLinkID( nReqLinkID );										///< 初始化快照数据发送成功后，将新会话的LinkID加入推送列表
 			}
 		}
-
-		return nReqLinkCount;
 	}
 
-	return 0;
+	return nReqLinkCount;
 }
 
 

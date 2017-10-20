@@ -92,7 +92,6 @@ void DataIOEngine::Release()
 bool DataIOEngine::EnterInitializationProcess()
 {
 	int				nErrorCode = 0;												///< 错误码
-	CriticalLock	guard( m_oCodeMapLock );									///< 锁定统计对象(m_mapRecvID2Codes)
 	MkHoliday&		refHoliday = m_oInitFlag.GetHoliday();						///< 节假日策略对象，用于判断是否需要初始化行情
 	bool			bLoadFromDisk = (false == m_oDataCollector.IsProxy());		///< 是否需要从数据库中对各表进行代码集合统计(只针对数据采集插件这一层)
 	DataNodeService::GetSerivceObj().WriteInfo( "DataIOEngine::EnterInitializationProcess() : Service is Initializing (ProxyModule=%d) ......", bLoadFromDisk );
@@ -101,21 +100,21 @@ bool DataIOEngine::EnterInitializationProcess()
 	m_mapRecvID2Codes.clear();													///< 清空当天的代码集合表,等待重新统计
 	m_oDataCollector.HaltDataCollector();										///< 先事先停止数据采集模块
 
-	///< ----------------- 1) 从磁盘恢复行情数据 -------------------------------
+	///< ----------------- 1) 从磁盘恢复行情数据(统计加载的"数据"和"数据类型") -------------------------------
 	if( 0 != (nErrorCode=m_oDatabaseIO.RecoverDatabase(refHoliday, bLoadFromDisk)) )
 	{
 		DataNodeService::GetSerivceObj().WriteWarning( "DataIOEngine::EnterInitializationProcess() : failed 2 recover database from disk, errorcode=%d", nErrorCode );
 	}
 
-	///< ----------------- 2) 从行情模块初始化 ----------------------------------
+	///< ----------------- 2) 从行情模块初始化 (统计接收的"数据"和"数据类型") ----------------------------------
 	if( 0 != (nErrorCode=m_oDataCollector.RecoverDataCollector()) )
 	{
 		DataNodeService::GetSerivceObj().WriteWarning( "DataIOEngine::EnterInitializationProcess() : failed 2 initialize data collector module, errorcode=%d", nErrorCode );
 		return false;;
 	}
 
-	///< ----------------- 3) 比较(源驱动)磁盘和行情端的代码，删除非当天的数据 ---------
-	if( 0 > (nErrorCode=m_oDatabaseIO.RemoveCodeExpiredFromDisk( m_mapRecvID2Codes, bLoadFromDisk )) )
+	///< ----------------- 3) 比较(源驱动)磁盘和行情端的代码，删除非当天的"数据"或数据"类型" --------------------------
+	if( 0 > (nErrorCode=m_oDatabaseIO.RemoveExpiredItem4LoadFromDisk( m_mapRecvID2Codes, bLoadFromDisk )) )
 	{
 		DataNodeService::GetSerivceObj().WriteWarning( "DataIOEngine::EnterInitializationProcess() : failed 2 remove expired code from database, errorcode=%d", nErrorCode );
 		return false;
@@ -187,10 +186,7 @@ int DataIOEngine::OnQuery( unsigned int nDataID, char* pData, unsigned int nData
 
 int DataIOEngine::OnImage( unsigned int nDataID, char* pData, unsigned int nDataLen, bool bLastFlag )
 {
-	CriticalLock		guard( m_oCodeMapLock );
-
-	///< 记录所有当天有效的商品代码	[数据表ID,代码集合]
-	m_mapRecvID2Codes[nDataID].insert( std::string( pData ) );
+	m_mapRecvID2Codes[nDataID].insert( std::string( pData ) );		///< 记录所有当天有效的商品代码	[数据表ID,代码集合]
 
 	return m_oDatabaseIO.NewRecord( nDataID, pData, nDataLen, bLastFlag, m_nPushSerialNo );
 }
@@ -255,40 +251,43 @@ DataNodeService& DataNodeService::GetSerivceObj()
 
 int DataNodeService::OnIdle()
 {
-	bool				bInitPoint = false;
-	int					nPertiodIndex = m_oInitFlag.InTradingPeriod( bInitPoint );
+	bool				bInitPoint = false;				///< 是否需要做初始化标识
+	int					nPeriodIndex = m_oInitFlag.InTradingPeriod( bInitPoint );
 
-	///< 检查是否有新的链接到来请求初始化行情数据推送的
 	m_oDatabaseIO.FlushDatabase2RequestSessions( 0 );	///< 对新到达的链接，推送"全量"初始化快照行情
+	OnHeartBeat();										///< 链路维持：在行情推送间隔过大时，发送心跳包以维持TCP连接
+	OnCheckConnection();								///< 检查对下链路（判断是否需要断开所有的下级）
 
-	///< 链路维持：心跳包发送
-	OnHeartBeat();
-
-	///< ------------------ 数据采集模块所在层的业务 ------------------------------------------------
+	///< ------------------ 数据采集模块所在层的业务(源驱动) ------------------------------------------------
 	if( false == m_oDataCollector.IsProxy() )
 	{
-		///< 非交易时段，停止源驱动的数据采集模块的工作
-		if( nPertiodIndex < 0 && true == m_oDataCollector.IsAlive() )
+		///< 非交易时段，停止("源驱动")的数据采集模块的工作
+		if( nPeriodIndex < 0 && true == m_oDataCollector.IsAlive() )
 		{
 			DataNodeService::GetSerivceObj().WriteInfo( "DataNodeService::OnIdle() : halting data collector ......" );
 			m_oDataCollector.HaltDataCollector();
 		}
 
 		///< 在交易时段，进行内存插件中的行情数据落盘
-		if( 0 <= nPertiodIndex && true == m_oDatabaseIO.IsBuilded() )
+		if( 0 <= nPeriodIndex && true == m_oDatabaseIO.IsBuilded() )
 		{
 			static time_t		s_nLastDumpTime = ::time( NULL );
 			int					nNowTime = (int)::time( NULL );
 
 			if( (nNowTime-=(int)s_nLastDumpTime) >= Configuration::GetConfigObj().GetDumpInterval() )
 			{
-				OnBackupDatabase();
+				OnBackupDatabase();						///< 盘中，周期性备份落盘数据，以备行情从硬盘恢复的时候加载用
 				s_nLastDumpTime = ::time( NULL );
 			}
 		}
 	}
 
 	return 0;
+}
+
+void DataNodeService::OnCheckConnection()
+{
+
 }
 
 void DataNodeService::OnHeartBeat()
@@ -298,7 +297,7 @@ void DataNodeService::OnHeartBeat()
 	static time_t				s_nLastTime = ::time( NULL );
 	unsigned int				nNowT = (unsigned int)::time( NULL );
 
-	if( s_nPushSerialNo == m_nPushSerialNo )
+	if( s_nPushSerialNo == m_nPushSerialNo )	///< 推送续号未变，说明最近未有对下行情推送
 	{
 		if( false == s_bBeginCheck )
 		{

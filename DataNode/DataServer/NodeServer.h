@@ -112,7 +112,6 @@ protected:///< 线程任务相关函数
 	bool					EnterInitializationProcess();
 
 protected:///< 统计成员变量
-	CriticalObject			m_oCodeMapLock;					///< CodeMap锁
 	MAP_TABLEID_CODES		m_mapRecvID2Codes;				///< 记录当天的各表ID下的code集合
 	unsigned __int64		m_nPushSerialNo;				///< 实时行情更新流水
 	unsigned int			m_nHeartBeatCount;				///< 发送的心跳包数量
@@ -158,6 +157,11 @@ public:///< Scheduled Task
 	 * @brief				心跳包：链路维持
 	 */
 	void					OnHeartBeat();
+
+	/**
+	 * @brief				检查对下链路（判断是否需要断开所有的下级）
+	 */
+	void					OnCheckConnection();
 
 	/**
 	 * @brief				备份内存插件中的行情数据

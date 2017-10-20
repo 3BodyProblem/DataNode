@@ -17,6 +17,50 @@ typedef			std::map<unsigned int,std::set<std::string>>	MAP_TABLEID_CODES;			///<
 
 
 /**
+ * @class							PkgBuffer
+ * @brief							用于保存一个完成的Package的数据
+ * @author							barry
+ */
+class PkgBuffer
+{
+public:
+	PkgBuffer();
+
+	/**
+	 * @brief					初始化缓存
+	 * @param[in]				nBuffSize				要分配的缓存大小
+	 * @return					!= 0					失败
+	 */
+	int							Initialize( unsigned int nBuffSize );
+
+	/**
+	 * @brief					释放资源
+	 */
+	void						Release();
+
+public:
+	/**
+	 * @brief					将缓存地址转换出来
+	 * @return					char*
+	 */
+	operator					char*();
+
+	/**
+	 * @brief					获取缓存的最大长度
+	 * @return					最大长度
+	 */
+	unsigned int				MaxBufSize() const;
+
+protected:
+	char*						m_pPkgBuffer;			///< 数据发送缓存
+	unsigned int				m_nMaxBufSize;			///< 发送缓存最大长度
+};
+
+
+///< -------------------------------------------------------------------------------------------
+
+
+/**
  * @class							DatabaseIO
  * @brief							数据库管理类
  * @date							2017/5/4
@@ -182,7 +226,7 @@ public:///< 数据库恢复与备份
 	 * @return						返回删除的数量
 	 * @note						传输代码层的模块只对bNeed2Erase传递false值，以短路掉本函数
 	 */
-	int								RemoveCodeExpiredFromDisk( MAP_TABLEID_CODES& mapCodeWhiteList, bool bNeed2Erase );
+	int								RemoveExpiredItem4LoadFromDisk( MAP_TABLEID_CODES& mapCodeWhiteList, bool bNeed2Erase );
 
 public:///< 数据库快照数据推送
 	/**
