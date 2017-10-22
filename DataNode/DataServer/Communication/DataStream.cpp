@@ -18,6 +18,8 @@ int SendPackagePool::Initialize( unsigned int nOneBuffSize, unsigned int nMsgCou
 	m_nOneMsgBufSize = nOneBuffSize;							///< 为单个消息分类分配的缓冲大小
 	m_nMaxBufSize = nOneBuffSize*nMsgCount;						///< 大缓冲区大小
 	::memset( m_vctAddrMap, 0, sizeof(m_vctAddrMap) );			///< 清空缓存映射表
+	::memset( m_vctMsgCount, 0, sizeof(m_vctMsgCount) );		///< 清空缓存中的各消息计数
+	::memset( m_vctCheckCount, 0, sizeof(m_vctCheckCount) );
 	::memset( m_vctCurDataSize, 0, sizeof(m_vctCurDataSize) );	///< 有效数据长度清零
 	if( NULL == (m_pPkgBuffer = new char[m_nMaxBufSize]) )
 	{
@@ -25,11 +27,12 @@ int SendPackagePool::Initialize( unsigned int nOneBuffSize, unsigned int nMsgCou
 		return -1;
 	}
 
-	return 0;
+	return 0;//SimpleTask::Activate();
 }
 
 void SendPackagePool::Release()
 {
+	SimpleTask::StopThread();
 	if( NULL != m_pPkgBuffer )
 	{
 		DataNodeService::GetSerivceObj().WriteInfo( "SendPackagePool::Release() : release pkg data buffer, size = %d", m_nMaxBufSize );
@@ -42,7 +45,51 @@ void SendPackagePool::Release()
 	m_nOneMsgBufSize = 0;										///< 单个消息分类分配的缓冲大小清零
 	m_nAllocatedTimes = 0;										///< 分配消息数清零
 	::memset( m_vctAddrMap, 0, sizeof(m_vctAddrMap) );			///< 清空缓存映射表
+	::memset( m_vctMsgCount, 0, sizeof(m_vctMsgCount) );		///< 清空缓存中的各消息计数
+	::memset( m_vctCheckCount, 0, sizeof(m_vctCheckCount) );
 	::memset( m_vctCurDataSize, 0, sizeof(m_vctCurDataSize) );	///< 有效数据长度清零
+}
+
+int SendPackagePool::Execute()
+{
+	DataNodeService::GetSerivceObj().WriteInfo( "SendPackagePool::Execute() : enter into thread func ..." );
+
+	while( true == IsAlive() )
+	{
+		try
+		{
+			unsigned int			nSleepTime = 200;
+
+			{
+				CriticalLock		guard( m_oLock );
+
+				for( std::set<unsigned int>::iterator it = m_setMsgID.begin(); it != m_setMsgID.end(); it++ )
+				{
+					unsigned int	nMsgID = *it;
+
+					if( m_vctCurDataSize[nMsgID] > 0 )
+					{
+						nSleepTime = 10;
+						m_vctCheckCount[nMsgID]++;						///< 累加待发送数据的检查/滞留次数引用计数
+					}
+				}
+			}
+
+			SimpleTask::Sleep( nSleepTime );
+		}
+		catch( std::exception& err )
+		{
+			DataNodeService::GetSerivceObj().WriteWarning( "SendPackagePool::Execute() : exception : %s", err.what() );
+		}
+		catch( ... )
+		{
+			DataNodeService::GetSerivceObj().WriteWarning( "SendPackagePool::Execute() : unknow exception ..." );
+		}
+	}
+
+	DataNodeService::GetSerivceObj().WriteInfo( "SendPackagePool::Execute() : exit thread func ..." );
+
+	return 0;
 }
 
 int SendPackagePool::SendAllPkg()
@@ -55,7 +102,7 @@ int SendPackagePool::SendAllPkg()
 	{
 		unsigned int			nMsgID = *it;
 
-		if( m_vctCurDataSize[nMsgID] > 0 )
+		if( m_vctCurDataSize[nMsgID] > 0 && (m_vctMsgCount[nMsgID] >= 8 || m_vctCheckCount[nMsgID] >= 2) )
 		{
 			char*				pMsgBuff = m_vctAddrMap[nMsgID];	///< 数据包的头结构
 
@@ -66,6 +113,8 @@ int SendPackagePool::SendAllPkg()
 			}
 
 			m_vctCurDataSize[nMsgID] = 0;							///< 清空发送缓存
+			m_vctMsgCount[nMsgID] = 0;								///< 清空余下消息的数量
+			m_vctCheckCount[nMsgID] = 0;							///< 清空检查次数
 		}
 	}
 
@@ -110,6 +159,7 @@ int SendPackagePool::DispatchMessage( unsigned int nDataID, const char* pData, u
 
 		::memcpy( pMsgBuff + m_vctCurDataSize[nDataID], (char*)pData, nDataSize );			///< Copy数据体部分(Message)
 		m_vctCurDataSize[nDataID] += nDataSize;												///< 更新有效数据长度计数
+		m_vctMsgCount[nDataID]++;															///< 累加滞留消息的引用计数
 
 		if( true == bSendDirect )															///< 如果标识为true，则直接发送掉所有当前数据
 		{

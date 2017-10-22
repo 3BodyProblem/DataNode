@@ -55,7 +55,7 @@ typedef struct
  * @brief						用于保存一个待发送的Package的数据
  * @author						barry
  */
-class SendPackagePool
+class SendPackagePool : public SimpleTask
 {
 public:
 	SendPackagePool();
@@ -94,6 +94,13 @@ protected:
 	 */
 	int							SendAllPkg();
 
+	/**
+	 * @brief					任务函数(内循环)
+	 * @return					==0							成功
+								!=0							失败
+	 */
+	virtual int					Execute();
+
 protected:
 	CriticalObject				m_oLock;				///< 锁
 	std::set<unsigned int>		m_setMsgID;				///< 消息ID集合
@@ -101,6 +108,8 @@ protected:
 	unsigned int				m_nOneMsgBufSize;		///< 一块消息缓冲区的大小
 	char*						m_vctAddrMap[512];		///< 将协议号映射为在大缓存中的起始位置
 	unsigned int				m_vctCurDataSize[512];	///< 有效发送数据长度
+	unsigned int				m_vctMsgCount[512];		///< 每个消息的缓存数量
+	unsigned int				m_vctCheckCount[512];	///< 统计每个消息缓存等待了多少次
 	char*						m_pPkgBuffer;			///< 数据发送缓存
 	unsigned int				m_nMaxBufSize;			///< 发送缓存最大长度
 };
