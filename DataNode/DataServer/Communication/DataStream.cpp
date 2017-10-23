@@ -27,7 +27,7 @@ int SendPackagePool::Initialize( unsigned int nOneBuffSize, unsigned int nMsgCou
 		return -1;
 	}
 
-	return 0;//SimpleTask::Activate();
+	return SimpleTask::Activate();
 }
 
 void SendPackagePool::Release()
@@ -155,6 +155,11 @@ int SendPackagePool::DispatchMessage( unsigned int nDataID, const char* pData, u
 			((tagPackageHead*)pMsgBuff)->nMarketID = DataCollector::GetMarketID();
 			((tagPackageHead*)pMsgBuff)->nMsgLength = nDataSize;							///< 赋值,每个Message的长度
 			m_vctCurDataSize[nDataID] += sizeof(tagPackageHead);							///< 偏移出一个sizeof(tagPackageHead) + sizeof(unsigned int)Message ID的距离
+		}
+
+		if( m_vctCurDataSize[nDataID] + nDataSize > m_nOneMsgBufSize )
+		{
+			return -3;
 		}
 
 		::memcpy( pMsgBuff + m_vctCurDataSize[nDataID], (char*)pData, nDataSize );			///< Copy数据体部分(Message)

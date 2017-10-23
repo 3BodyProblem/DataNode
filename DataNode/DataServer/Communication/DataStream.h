@@ -67,7 +67,7 @@ public:
 	 * @return					!= 0					失败
 	 * @note					分配的总缓存大小 = nOneBuffSize * nMsgCount
 	 */
-	int							Initialize( unsigned int nOneBuffSize = 1024*1024, unsigned int nMsgCount = 20 );
+	int							Initialize( unsigned int nOneBuffSize = 1024*1024*3, unsigned int nMsgCount = 20 );
 
 	/**
 	 * @brief					释放资源

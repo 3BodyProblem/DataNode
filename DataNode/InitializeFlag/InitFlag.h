@@ -132,7 +132,7 @@ public:
 private:
 	CriticalObject					m_oLock;
 	MkHoliday						m_oHoliday;						///< 节假日记录
-	DataCollector&					m_refDataCellector;				///< 行情采集插件
+	DataCollector&					m_refDataCollector;				///< 行情采集插件
 	T_VECTOR_PERIODS				m_vctTradingPeriod;				///< 交易时段列表，用于判断是否该初始化了
 	int								m_nLastTradingTimeStatus;		///< 最后一次交易状态记录
 };

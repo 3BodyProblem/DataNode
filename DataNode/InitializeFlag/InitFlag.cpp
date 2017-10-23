@@ -177,7 +177,7 @@ int MkHoliday::ReloadHoliday()
 
 
 InitializerFlag::InitializerFlag( DataCollector& refDataCellector )
- : m_nLastTradingTimeStatus( -1 ), m_refDataCellector( refDataCellector )
+ : m_nLastTradingTimeStatus( -1 ), m_refDataCollector( refDataCellector )
 {
 }
 
@@ -218,29 +218,30 @@ bool InitializerFlag::GetFlag()
 	bool				bInitFlag = false;
 	int					nTradingTimeStatus = InTradingPeriod( bInitFlag );
 
-	if( true == m_refDataCellector.IsProxy() )						///< 特化处理行情采集插件是传输代理的情况
+	if( true == m_refDataCollector.IsProxy() )						///< 特化处理行情采集插件是传输代理的情况
 	{
 		static char			s_pszTmp[2048] = { 0 };
 		unsigned int		nBufLen = sizeof(s_pszTmp);
-		enum E_SS_Status	eStatus = m_refDataCellector.InquireDataCollectorStatus( s_pszTmp, nBufLen );
+		enum E_SS_Status	eStatus = m_refDataCollector.InquireDataCollectorStatus( s_pszTmp, nBufLen );
 
 		return ( ET_SS_DISCONNECTED == eStatus ) ? true : false;	///< 在传输断开的时候，需要重新连接请求并订阅行情
 	}
 
 	if( nTradingTimeStatus < 0 )									///< 不在交易时段内
 	{
+		m_nLastTradingTimeStatus = nTradingTimeStatus;				///< 更新时段状态
 		return false;
 	}
 
 	if( m_nLastTradingTimeStatus != nTradingTimeStatus )			///< 本轮时间循环中，首次进入该时段 & 为需要做重新初始化的时段
 	{
-		m_nLastTradingTimeStatus = nTradingTimeStatus;
+		m_nLastTradingTimeStatus = nTradingTimeStatus;				///< 更新时段状态
 
 		if( false == bInitFlag )									///< 对于普通数据采集插件，行情时段内，如果服务断开，则重新启动连接操作
 		{
 			static char			s_pszTmp[2048] = { 0 };
 			unsigned int		nBufLen = sizeof(s_pszTmp);
-			enum E_SS_Status	eStatus = m_refDataCellector.InquireDataCollectorStatus( s_pszTmp, nBufLen );
+			enum E_SS_Status	eStatus = m_refDataCollector.InquireDataCollectorStatus( s_pszTmp, nBufLen );
 
 			return (ET_SS_DISCONNECTED == eStatus) ? true : false;	///< 在传输断开的时候，需要重新连接请求并订阅行情
 		}
@@ -248,7 +249,7 @@ bool InitializerFlag::GetFlag()
 		return true;
 	}
 
-	m_nLastTradingTimeStatus = nTradingTimeStatus;
+	m_nLastTradingTimeStatus = nTradingTimeStatus;					///< 更新时段状态
 
 	return false;													///< 已经非首次判断本轮交易时段, 不需要重新初始化
 }
@@ -332,7 +333,7 @@ int InitializerFlag::InTradingPeriod( bool& bInitPoint )
 						mktime( &t );
 
 						if( (t.tm_wday == 1) )	{
-							return false;
+							return nPeriodsIndex;
 						}
 					}
 
