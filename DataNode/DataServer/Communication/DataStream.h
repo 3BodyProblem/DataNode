@@ -67,7 +67,7 @@ public:
 	 * @return					!= 0					失败
 	 * @note					分配的总缓存大小 = nOneBuffSize * nMsgCount
 	 */
-	int							Initialize( unsigned int nOneBuffSize = 1024*1024*3, unsigned int nMsgCount = 20 );
+	int							Initialize( unsigned int nOneBuffSize = 1024*1024*8, unsigned int nMsgCount = 16 );
 
 	/**
 	 * @brief					释放资源
@@ -102,14 +102,13 @@ protected:
 	virtual int					Execute();
 
 protected:
+	WaitEvent					m_oSendNotice;			///< 发送通知事件
 	CriticalObject				m_oLock;				///< 锁
 	std::set<unsigned int>		m_setMsgID;				///< 消息ID集合
 	unsigned int				m_nAllocatedTimes;		///< 已经分配过的次数(消息类型数)
 	unsigned int				m_nOneMsgBufSize;		///< 一块消息缓冲区的大小
 	char*						m_vctAddrMap[512];		///< 将协议号映射为在大缓存中的起始位置
 	unsigned int				m_vctCurDataSize[512];	///< 有效发送数据长度
-	unsigned int				m_vctMsgCount[512];		///< 每个消息的缓存数量
-	unsigned int				m_vctCheckCount[512];	///< 统计每个消息缓存等待了多少次
 	char*						m_pPkgBuffer;			///< 数据发送缓存
 	unsigned int				m_nMaxBufSize;			///< 发送缓存最大长度
 };

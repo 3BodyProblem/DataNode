@@ -18,8 +18,6 @@ int SendPackagePool::Initialize( unsigned int nOneBuffSize, unsigned int nMsgCou
 	m_nOneMsgBufSize = nOneBuffSize;							///< 为单个消息分类分配的缓冲大小
 	m_nMaxBufSize = nOneBuffSize*nMsgCount;						///< 大缓冲区大小
 	::memset( m_vctAddrMap, 0, sizeof(m_vctAddrMap) );			///< 清空缓存映射表
-	::memset( m_vctMsgCount, 0, sizeof(m_vctMsgCount) );		///< 清空缓存中的各消息计数
-	::memset( m_vctCheckCount, 0, sizeof(m_vctCheckCount) );
 	::memset( m_vctCurDataSize, 0, sizeof(m_vctCurDataSize) );	///< 有效数据长度清零
 	if( NULL == (m_pPkgBuffer = new char[m_nMaxBufSize]) )
 	{
@@ -45,8 +43,6 @@ void SendPackagePool::Release()
 	m_nOneMsgBufSize = 0;										///< 单个消息分类分配的缓冲大小清零
 	m_nAllocatedTimes = 0;										///< 分配消息数清零
 	::memset( m_vctAddrMap, 0, sizeof(m_vctAddrMap) );			///< 清空缓存映射表
-	::memset( m_vctMsgCount, 0, sizeof(m_vctMsgCount) );		///< 清空缓存中的各消息计数
-	::memset( m_vctCheckCount, 0, sizeof(m_vctCheckCount) );
 	::memset( m_vctCurDataSize, 0, sizeof(m_vctCurDataSize) );	///< 有效数据长度清零
 }
 
@@ -58,24 +54,9 @@ int SendPackagePool::Execute()
 	{
 		try
 		{
-			unsigned int			nSleepTime = 200;
+			m_oSendNotice.Wait( 1000 );
 
-			{
-				CriticalLock		guard( m_oLock );
-
-				for( std::set<unsigned int>::iterator it = m_setMsgID.begin(); it != m_setMsgID.end(); it++ )
-				{
-					unsigned int	nMsgID = *it;
-
-					if( m_vctCurDataSize[nMsgID] > 0 )
-					{
-						nSleepTime = 10;
-						m_vctCheckCount[nMsgID]++;						///< 累加待发送数据的检查/滞留次数引用计数
-					}
-				}
-			}
-
-			SimpleTask::Sleep( nSleepTime );
+			SendAllPkg();
 		}
 		catch( std::exception& err )
 		{
@@ -97,12 +78,13 @@ int SendPackagePool::SendAllPkg()
 	int				nSendSize = 0;									///< 发送数据的大小
 	LINKID_VECTOR	vctLinkNo = { 0 };								///< 发送链路表
 	unsigned int	nLinkCount = LinkNoRegister::GetRegister().FetchLinkNoTable( vctLinkNo+0, MAX_LINKID_NUM );
+	CriticalLock	guard( m_oLock );
 
 	for( std::set<unsigned int>::iterator it = m_setMsgID.begin(); it != m_setMsgID.end(); it++ )
 	{
 		unsigned int			nMsgID = *it;
 
-		if( m_vctCurDataSize[nMsgID] > 0 && (m_vctMsgCount[nMsgID] >= 8 || m_vctCheckCount[nMsgID] >= 2) )
+		if( m_vctCurDataSize[nMsgID] > 0 )
 		{
 			char*				pMsgBuff = m_vctAddrMap[nMsgID];	///< 数据包的头结构
 
@@ -113,8 +95,6 @@ int SendPackagePool::SendAllPkg()
 			}
 
 			m_vctCurDataSize[nMsgID] = 0;							///< 清空发送缓存
-			m_vctMsgCount[nMsgID] = 0;								///< 清空余下消息的数量
-			m_vctCheckCount[nMsgID] = 0;							///< 清空检查次数
 		}
 	}
 
@@ -127,7 +107,7 @@ int SendPackagePool::DispatchMessage( unsigned int nDataID, const char* pData, u
 	{
 		CriticalLock		guard( m_oLock );
 		char*				pMsgBuff = m_vctAddrMap[nDataID];								///< 数据包的头结构
-		int					nFreeSize = m_nMaxBufSize - m_vctCurDataSize[nDataID];			///< 计算余下的空间
+		int					nFreeSize = m_nOneMsgBufSize - m_vctCurDataSize[nDataID];		///< 计算余下的空间
 
 		if( NULL == pMsgBuff )
 		{
@@ -141,11 +121,19 @@ int SendPackagePool::DispatchMessage( unsigned int nDataID, const char* pData, u
 
 		if( NULL == pMsgBuff || m_nMaxBufSize == 0 || nDataSize == 0 || NULL == pData )
 		{
+			DataNodeService::GetSerivceObj().WriteError( "SendPackagePool::DispatchMessage() : msgid=%d, Send Pool is not ready.", nDataID );
 			return -1;
 		}
 
 		if( nFreeSize < nDataSize )
 		{
+			SendAllPkg();
+		}
+
+		if( nFreeSize < nDataSize )
+		{
+			DataNodeService::GetSerivceObj().WriteError( "SendPackagePool::DispatchMessage() : msgid=%d, not enough buffer, %d < %d", nDataID, nFreeSize, nDataSize );
+			m_oSendNotice.Active();
 			return -2;
 		}
 
@@ -157,18 +145,12 @@ int SendPackagePool::DispatchMessage( unsigned int nDataID, const char* pData, u
 			m_vctCurDataSize[nDataID] += sizeof(tagPackageHead);							///< 偏移出一个sizeof(tagPackageHead) + sizeof(unsigned int)Message ID的距离
 		}
 
-		if( m_vctCurDataSize[nDataID] + nDataSize > m_nOneMsgBufSize )
-		{
-			return -3;
-		}
-
 		::memcpy( pMsgBuff + m_vctCurDataSize[nDataID], (char*)pData, nDataSize );			///< Copy数据体部分(Message)
 		m_vctCurDataSize[nDataID] += nDataSize;												///< 更新有效数据长度计数
-		m_vctMsgCount[nDataID]++;															///< 累加滞留消息的引用计数
 
 		if( true == bSendDirect )															///< 如果标识为true，则直接发送掉所有当前数据
 		{
-			SendAllPkg();
+			m_oSendNotice.Active();
 		}
 
 		return 0;

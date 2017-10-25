@@ -369,7 +369,7 @@ int PowerDB::RemoveExpiredItem4LoadFromDisk( MAP_TABLEID_CODES& mapID2CodeWhiteL
 
 	if( false == bNeed2Erase )	return 0;	///< 如果是行情传输代理，则不需要删除无效代码，因为码表都是即时从上级更新的
 
-	for( TMAP_DATAID2WIDTH::iterator it = m_mapTableID.begin(); it != m_mapTableID.end(); it++ )
+	for( TMAP_DATAID2WIDTH::iterator it = m_mapTableID.begin(); it != m_mapTableID.end(); )
 	{
 		unsigned int					nDataID = it->first;									///< 遍历出从磁盘加载的所有Message ID
 
@@ -383,6 +383,8 @@ int PowerDB::RemoveExpiredItem4LoadFromDisk( MAP_TABLEID_CODES& mapID2CodeWhiteL
 			}	else	{
 				DataNodeService::GetSerivceObj().WriteWarning( "PowerDB::RemoveExpiredItem4LoadFromDisk() : failed 2 delete DataTable(%d)", nDataID );
 			}
+
+			continue;
 		}
 		else																					///< [ 数据表ID有效的情况 ]
 		{
@@ -406,6 +408,8 @@ int PowerDB::RemoveExpiredItem4LoadFromDisk( MAP_TABLEID_CODES& mapID2CodeWhiteL
 				}
 			}
 
+			it++;
+			continue;
 		}
 	}
 
