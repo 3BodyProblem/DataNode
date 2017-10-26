@@ -153,12 +153,12 @@ void DataClusterPlugin::OnQuotation( QUO_MARKET_ID eMarketID, unsigned int nMess
 
 				if( false == s_bEchoTitle ) {
 					s_bEchoTitle = true;
-					::printf( "SecurityID,LastPrice,HighPx,LowPx,Amount,Volume,Position,OpenPx,ClosePx,PreClosePx,PhaseCode\n" );
+					::printf( "SecurityID,LastPrice,HighPx,LowPx,Amount,Volume,Position,OpenPx,ClosePx,PreClosePx,PhaseCode,BidVol,AskVol\n" );
 				}
 
-				::printf( "%s,%f,%f,%f,%f,%I64d,%I64d,%f,%f,%f,%s\n"
+				::printf( "%s,%f,%f,%f,%f,%I64d,%I64d,%f,%f,%f,%s,%I64d,%I64d\n"
 						, pEcho->szCode, pEcho->dNowPx, pEcho->dHighPx, pEcho->dLowPx, pEcho->dAmount, pEcho->ui64Volume, pEcho->ui64OpenInterest
-						, pEcho->dOpenPx, pEcho->dClosePx, pEcho->dPreClosePx, pEcho->szTradingPhaseCode );
+						, pEcho->dOpenPx, pEcho->dClosePx, pEcho->dPreClosePx, pEcho->szTradingPhaseCode, pEcho->mBid[0].ui64Volume, pEcho->mAsk[0].ui64Volume );
 				return;
 			}
 		}
