@@ -29,6 +29,8 @@ private:
 public:
 	static LinkNoRegister&		GetRegister();
 
+	void						ClearAll();
+
 public:///< 推送链路号
 	/**
 	 * @brief					添加一个新到的链路ID

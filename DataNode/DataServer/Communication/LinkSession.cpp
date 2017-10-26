@@ -8,13 +8,25 @@
 
 LinkNoRegister::LinkNoRegister()
  : m_nLinkCount( 0 )
-{}
+{
+	::memset( m_vctLinkNo, 0, sizeof(m_vctLinkNo) );
+}
 
 LinkNoRegister& LinkNoRegister::GetRegister()
 {
 	static LinkNoRegister		obj;
 
 	return obj;
+}
+
+void LinkNoRegister::ClearAll()
+{
+	CriticalLock	guard( m_oLock );
+
+	m_nLinkCount = 0;
+	m_setPushLinkID.clear();
+	::memset( m_vctLinkNo, 0, sizeof(m_vctLinkNo) );
+	m_setNewReqLinkID.clear();
 }
 
 int LinkNoRegister::NewPushLinkID( unsigned int nNewLinkID )

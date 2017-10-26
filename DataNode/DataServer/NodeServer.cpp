@@ -92,13 +92,20 @@ void DataIOEngine::Release()
 bool DataIOEngine::EnterInitializationProcess()
 {
 	int				nErrorCode = 0;												///< 错误码
+	LINKID_VECTOR	vctLinkNo = { 0 };											///< 发送链路表
 	MkHoliday&		refHoliday = m_oInitFlag.GetHoliday();						///< 节假日策略对象，用于判断是否需要初始化行情
+	unsigned int	nLinkCount = LinkNoRegister::GetRegister().FetchLinkNoTable( vctLinkNo+0, MAX_LINKID_NUM );
 	bool			bLoadFromDisk = (false == m_oDataCollector.IsProxy());		///< 是否需要从数据库中对各表进行代码集合统计(只针对数据采集插件这一层)
-	DataNodeService::GetSerivceObj().WriteInfo( "DataIOEngine::EnterInitializationProcess() : Service is Initializing (ProxyModule=%d) ......", bLoadFromDisk );
+	DataNodeService::GetSerivceObj().WriteInfo( "DataIOEngine::EnterInitializationProcess() : Service is Initializing (ProxyModule=%d) ......", !bLoadFromDisk );
 
 	///< ----------------- 0) 清理所有状态 ------------------------------------
 	m_mapRecvID2Codes.clear();													///< 清空当天的代码集合表,等待重新统计
 	m_oDataCollector.HaltDataCollector();										///< 先事先停止数据采集模块
+	for( unsigned int n = 0; n < nLinkCount; n++ )	{
+		DataNodeService::GetSerivceObj().CloseLink( vctLinkNo[n] );				///< 断开所有对下链路
+		DataNodeService::GetSerivceObj().WriteInfo( "DataIOEngine::EnterInitializationProcess() : Closing Link(No. %u) ...... ", vctLinkNo[n] );
+	}
+	LinkNoRegister::GetRegister().ClearAll();									///< 清理所链路号列表
 
 	///< ----------------- 1) 从磁盘恢复行情数据(统计加载的"数据"和"数据类型") -------------------------------
 	if( 0 != (nErrorCode=m_oDatabaseIO.RecoverDatabase(refHoliday, bLoadFromDisk)) )
