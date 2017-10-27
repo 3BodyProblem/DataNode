@@ -24,7 +24,7 @@ int DataIOEngine::Initialize()
 	int									nErrorCode = Configuration::GetConfigObj().Load();				///< 加载配置信息
 	const tagServicePlug_StartInParam&	refInParam = Configuration::GetConfigObj().GetStartInParam();	///< ServicePlug初始化参数
 	bool								bLoadFromDisk = (false == m_oDataCollector.IsProxy());			///< 是否需要从数据库中对各表进行代码集合统计
-	DataNodeService::GetSerivceObj().WriteInfo( "DataIOEngine::Initialize() : [Version]  1.0.1 , ProxyModule = %d", bLoadFromDisk );
+	DataNodeService::GetSerivceObj().WriteInfo( "DataIOEngine::Initialize() : [Version]  1.0.2 , ProxyModule = %d", bLoadFromDisk );
 	DataNodeService::GetSerivceObj().WriteInfo( "DataIOEngine::Initialize() : DataNode Engine is initializing ......" );
 
 	Release();

@@ -81,8 +81,6 @@ unsigned int LinkNoRegister::FetchLinkNoTable( unsigned int* pIDTable, unsigned 
 
 int LinkNoRegister::GetPushLinkCount()
 {
-	CriticalLock	guard( m_oLock );
-
 	return m_nLinkCount;
 }
 
@@ -185,12 +183,12 @@ void SessionCollection::OnReportStatus( char* szStatusInfo, unsigned int uiSize 
 
 	::sprintf( szStatusInfo
 		, ":working = %s,[NodeServer],版本 = V%.2f B%03d,测试行情模式 = %s,发送心跳包数 = %u,推送链路数 = %d(路),\
-		  初始化链路数 = %u(路),数据表数量 = %u(张), [QuotationPlugin],%s"
+		  数据表数量 = %u(张), [QuotationPlugin],%s"
 		, DataNodeService::GetSerivceObj().OnInquireStatus( pszStatusDesc, nDescLen )==true?"true":"false"
 		, (float)(nModuleVersion>>16)/100.f, nModuleVersion&0xFF
 		, Configuration::GetConfigObj().GetTestFlag()==true?"是":"否"
 		, DataNodeService::GetSerivceObj().OnInquireHeartBeatCount()
-		, LinkNoRegister::GetRegister().GetPushLinkCount(), LinkNoRegister::GetRegister().GetReqLinkCount()
+		, LinkNoRegister::GetRegister().GetPushLinkCount()
 		, m_refDatabase.GetTableCount(), pszStatusDesc );
 }
 

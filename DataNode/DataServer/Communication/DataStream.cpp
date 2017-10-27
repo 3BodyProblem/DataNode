@@ -5,15 +5,17 @@
 
 
 SendPackagePool::SendPackagePool()
- : m_pPkgBuffer( NULL ), m_nMaxBufSize( 0 ), m_nOneMsgBufSize( 0 ), m_nAllocatedTimes( 0 )
+ : m_pPkgBuffer( NULL ), m_nMaxBufSize( 0 ), m_nOneMsgBufSize( 0 ), m_nAllocatedTimes( 0 ), m_MsgIDCount( 0 )
 {
+	::memset( m_vctMsgID, 0, sizeof(m_vctMsgID) );
 }
 
 int SendPackagePool::Initialize( unsigned int nOneBuffSize, unsigned int nMsgCount )
 {
 	Release();
 
-	m_setMsgID.clear();											///< 需要被推送的消息ID集合
+	m_MsgIDCount = 0;
+	::memset( m_vctMsgID, 0, sizeof(m_vctMsgID) );
 	m_nAllocatedTimes = 0;										///< 分配消息数清零
 	m_nOneMsgBufSize = nOneBuffSize;							///< 为单个消息分类分配的缓冲大小
 	m_nMaxBufSize = nOneBuffSize*nMsgCount;						///< 大缓冲区大小
@@ -38,7 +40,8 @@ void SendPackagePool::Release()
 		m_pPkgBuffer = NULL;
 	}
 
-	m_setMsgID.clear();											///< 需要被推送的消息ID集合
+	m_MsgIDCount = 0;
+	::memset( m_vctMsgID, 0, sizeof(m_vctMsgID) );
 	m_nMaxBufSize = 0;											///< 大缓冲区大小清零
 	m_nOneMsgBufSize = 0;										///< 单个消息分类分配的缓冲大小清零
 	m_nAllocatedTimes = 0;										///< 分配消息数清零
@@ -80,9 +83,9 @@ int SendPackagePool::SendAllPkg()
 	unsigned int	nLinkCount = LinkNoRegister::GetRegister().FetchLinkNoTable( vctLinkNo+0, MAX_LINKID_NUM );
 	CriticalLock	guard( m_oLock );
 
-	for( std::set<unsigned int>::iterator it = m_setMsgID.begin(); it != m_setMsgID.end(); it++ )
+	for( int n = 0; n < m_MsgIDCount; n++ )
 	{
-		unsigned int			nMsgID = *it;
+		unsigned int			nMsgID = m_vctMsgID[n];
 
 		if( m_vctCurDataSize[nMsgID] > 0 )
 		{
@@ -115,7 +118,20 @@ int SendPackagePool::DispatchMessage( unsigned int nDataID, const char* pData, u
 			{
 				pMsgBuff = m_pPkgBuffer + (m_nAllocatedTimes++ * m_nOneMsgBufSize);			///< 划拔一段缓冲地址给该消息类型
 				m_vctAddrMap[nDataID] = (char*)pMsgBuff;									///< 更新缓冲记录体的值
-				m_setMsgID.insert( nDataID );												///< 消息ID的集合记录
+
+				int	nIndex = 0;
+				for( nIndex = 0; nIndex < m_MsgIDCount; nIndex++ )
+				{
+					if( nDataID == m_vctMsgID[nIndex] )
+					{
+						break;																///< 如果该Message ID已经存在注册，则跳出
+					}
+				}
+
+				if( nIndex == m_MsgIDCount )
+				{
+					m_vctMsgID[m_MsgIDCount++] = nDataID;									///< 注册到消息ID的集合记录
+				}
 			}
 		}
 

@@ -104,7 +104,8 @@ protected:
 protected:
 	WaitEvent					m_oSendNotice;			///< 发送通知事件
 	CriticalObject				m_oLock;				///< 锁
-	std::set<unsigned int>		m_setMsgID;				///< 消息ID集合
+	unsigned int				m_vctMsgID[128];		///< 经处理的消息列表
+	unsigned int				m_MsgIDCount;			///< 消息列表长度
 	unsigned int				m_nAllocatedTimes;		///< 已经分配过的次数(消息类型数)
 	unsigned int				m_nOneMsgBufSize;		///< 一块消息缓冲区的大小
 	char*						m_vctAddrMap[512];		///< 将协议号映射为在大缓存中的起始位置
