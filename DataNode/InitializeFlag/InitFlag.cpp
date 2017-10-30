@@ -140,7 +140,7 @@ int MkHoliday::ReloadHoliday()
 	{
 		int				nSepIndex = it->first.find( "." );
 		std::string		prefix = it->first.substr( 0, nSepIndex );///<ini_file.GetSectionName(i).Left(4);
-		if( prefix != Configuration::GetConfigObj().GetHolidayNodeName() )
+		if( prefix != Configuration::GetConfigObj().GetHolidayNodeName() || it->first.length() <= 0 )
 		{
             continue;
         }
