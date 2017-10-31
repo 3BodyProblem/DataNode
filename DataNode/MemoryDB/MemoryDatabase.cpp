@@ -141,19 +141,19 @@ int DatabaseIO::DeleteRecord( unsigned int nDataID, char* pData, unsigned int nD
 	if( false == m_bBuilded )
 	{
 		DataNodeService::GetSerivceObj().WriteError( "DatabaseIO::DeleteRecord() : failed 2 delete record before initialization, message id=%d" );
-		return -1;
+		return -1000;
 	}
 
 	if( NULL == ((pTable = m_pIDatabase->QueryTable( nDataID ))) )
 	{
 		DataNodeService::GetSerivceObj().WriteError( "DatabaseIO::DeleteRecord() : failed 2 locate data table 4 message, message id=%d", nDataID );
-		return -2;
+		return -2000;
 	}
 
 	if( 0 > (nAffectNum = pTable->DeleteRecord( pData, nDataLen, nDbSerialNo )) )
 	{
-		DataNodeService::GetSerivceObj().WriteError( "DatabaseIO::DeleteRecord() : failed 2 delete record from table, message id=%d, affectnum=%d", nDataID, nAffectNum );
-		return -3;
+		DataNodeService::GetSerivceObj().WriteError( "DatabaseIO::DeleteRecord() : failed 2 delete record from table, message id=%d, errorcode=%d", nDataID, nAffectNum );
+		return -3000;
 	}
 
 	return nAffectNum;
@@ -397,9 +397,9 @@ int PowerDB::RemoveExpiredItem4LoadFromDisk( MAP_TABLEID_CODES& mapID2CodeWhiteL
 
 				if( setCodeFromExchange.find( sCodeInDisk ) == setCodeFromExchange.end() )		///< 对从磁盘加载的Code，但确不曾在行情接收中收到的Code进行记录删除
 				{
-					if( (nErrorCode=DeleteRecord( nDataID, (char*)(it->c_str()), 32 )) < 0 )	///< 删除过期的记录
+					if( (nErrorCode=DeleteRecord( nDataID, (char*)(it->c_str()), 32 )) <= 0 )	///< 删除过期的记录
 					{
-						DataNodeService::GetSerivceObj().WriteWarning( "PowerDB::RemoveExpiredItem4LoadFromDisk() : failed delete code[%s] from table[%d] ", it->c_str(), nDataID );
+						DataNodeService::GetSerivceObj().WriteWarning( "PowerDB::RemoveExpiredItem4LoadFromDisk() : failed 2 delete code[%s] from table[%d], errorcode = %d", it->c_str(), nDataID, nErrorCode );
 						continue;
 					}
 
@@ -476,7 +476,8 @@ int PowerDB::RecoverDatabase( MkHoliday& refHoliday, bool bRecoverFromDisk )
 							setCode.insert( std::string((char*)m_oQueryBuffer+nOffset) );
 						}
 
-						m_mapID2CodesInDB[nDataID] = setCode;						///< 统计： {数据表ID : code集合}
+						m_mapID2CodesInDB[it->first] = setCode;						///< 统计： {数据表ID : code集合}
+						DataNodeService::GetSerivceObj().WriteInfo( "PowerDB::RecoverDatabase() : ID = %d, record count (in disk) = %d", it->first, setCode.size() );
 					}
 
 					DataNodeService::GetSerivceObj().WriteInfo( "PowerDB::RecoverDatabase() : fetch table number=%d", m_mapID2CodesInDB.size() );

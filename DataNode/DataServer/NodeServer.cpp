@@ -24,7 +24,7 @@ int DataIOEngine::Initialize()
 	int									nErrorCode = Configuration::GetConfigObj().Load();				///< 加载配置信息
 	const tagServicePlug_StartInParam&	refInParam = Configuration::GetConfigObj().GetStartInParam();	///< ServicePlug初始化参数
 	bool								bLoadFromDisk = (false == m_oDataCollector.IsProxy());			///< 是否需要从数据库中对各表进行代码集合统计
-	DataNodeService::GetSerivceObj().WriteInfo( "DataIOEngine::Initialize() : [Version]  1.0.2 , ProxyModule = %d", bLoadFromDisk );
+	DataNodeService::GetSerivceObj().WriteInfo( "DataIOEngine::Initialize() : [Version]  1.0.3 , ProxyModule = %d", bLoadFromDisk );
 	DataNodeService::GetSerivceObj().WriteInfo( "DataIOEngine::Initialize() : DataNode Engine is initializing ......" );
 
 	Release();
@@ -99,13 +99,16 @@ bool DataIOEngine::EnterInitializationProcess()
 	DataNodeService::GetSerivceObj().WriteInfo( "DataIOEngine::EnterInitializationProcess() : Service is Initializing (ProxyModule=%d) ......", !bLoadFromDisk );
 
 	///< ----------------- 0) 清理所有状态 ------------------------------------
-	m_mapRecvID2Codes.clear();													///< 清空当天的代码集合表,等待重新统计
-	m_oDataCollector.HaltDataCollector();										///< 先事先停止数据采集模块
-	for( unsigned int n = 0; n < nLinkCount; n++ )	{
-		DataNodeService::GetSerivceObj().CloseLink( vctLinkNo[n] );				///< 断开所有对下链路
-		DataNodeService::GetSerivceObj().WriteInfo( "DataIOEngine::EnterInitializationProcess() : Closing Link(No. %u) ...... ", vctLinkNo[n] );
+	{
+		CriticalLock		guard( m_oLock );
+		m_mapRecvID2Codes.clear();													///< 清空当天的代码集合表,等待重新统计
+		m_oDataCollector.HaltDataCollector();										///< 先事先停止数据采集模块
+		for( unsigned int n = 0; n < nLinkCount; n++ )	{
+			DataNodeService::GetSerivceObj().CloseLink( vctLinkNo[n] );				///< 断开所有对下链路
+			DataNodeService::GetSerivceObj().WriteInfo( "DataIOEngine::EnterInitializationProcess() : Closing Link(No. %u) ...... ", vctLinkNo[n] );
+		}
+		LinkNoRegister::GetRegister().ClearAll();									///< 清理所链路号列表
 	}
-	LinkNoRegister::GetRegister().ClearAll();									///< 清理所链路号列表
 
 	///< ----------------- 1) 从磁盘恢复行情数据(统计加载的"数据"和"数据类型") -------------------------------
 	if( 0 != (nErrorCode=m_oDatabaseIO.RecoverDatabase(refHoliday, bLoadFromDisk)) )
@@ -117,7 +120,7 @@ bool DataIOEngine::EnterInitializationProcess()
 	if( 0 != (nErrorCode=m_oDataCollector.RecoverDataCollector()) )
 	{
 		DataNodeService::GetSerivceObj().WriteWarning( "DataIOEngine::EnterInitializationProcess() : failed 2 initialize data collector module, errorcode=%d", nErrorCode );
-		return false;;
+		return false;
 	}
 
 	///< ----------------- 3) 比较(源驱动)磁盘和行情端的代码，删除非当天的"数据"或数据"类型" --------------------------
@@ -193,7 +196,10 @@ int DataIOEngine::OnQuery( unsigned int nDataID, char* pData, unsigned int nData
 
 int DataIOEngine::OnImage( unsigned int nDataID, char* pData, unsigned int nDataLen, bool bLastFlag )
 {
-	m_mapRecvID2Codes[nDataID].insert( std::string( pData ) );		///< 记录所有当天有效的商品代码	[数据表ID,代码集合]
+	CriticalLock			guard( m_oLock );
+	std::set<std::string>&	refSetCode = m_mapRecvID2Codes[nDataID];
+
+	refSetCode.insert( std::string( pData ) );		///< 记录所有当天有效的商品代码	[数据表ID,代码集合]
 
 	return m_oDatabaseIO.NewRecord( nDataID, pData, nDataLen, bLastFlag, m_nPushSerialNo );
 }

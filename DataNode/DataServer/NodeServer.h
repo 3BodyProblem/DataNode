@@ -112,6 +112,7 @@ protected:///< 线程任务相关函数
 	bool					EnterInitializationProcess();
 
 protected:///< 统计成员变量
+	CriticalObject			m_oLock;						///< 锁
 	MAP_TABLEID_CODES		m_mapRecvID2Codes;				///< 记录当天的各表ID下的code集合
 	unsigned __int64		m_nPushSerialNo;				///< 实时行情更新流水
 	unsigned int			m_nHeartBeatCount;				///< 发送的心跳包数量
