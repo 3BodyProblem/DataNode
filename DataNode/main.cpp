@@ -106,7 +106,20 @@ void RunDebugFunction( int argc, _TCHAR* argv[] )
 			sRecordKey = argv[3];
 
 		objDataCluster.TestQuotationEcho( nTableID, sRecordKey );
-		::printf( "--------------- [DONE!] ---------------------------\n" );
+		::printf( "--------------- [DONE!] ----------------------------\n" );
+	}
+	else if( sCmd == "echodata" )
+	{
+		::printf( "--------------- [Echo Data] ------------------------\n" );
+		int					nTableID = -1;				///< 数据表ID(MessageID),		[-1表示不做过滤]
+		std::string			sRecordKey;					///< 记录主键字符串(索引串),	[""表示不做过滤]
+
+		if( argc > 2 )
+			nTableID = ::atoi( argv[2] );
+		if( argc > 3 )
+			sRecordKey = argv[3];
+
+		::printf( "--------------- [DONE!] ----------------------------\n" );
 	}
 	else if( sCmd == "echo" )
 	{
