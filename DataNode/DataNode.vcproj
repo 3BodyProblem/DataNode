@@ -229,6 +229,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\UnitTest\EchoDataNode.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\UnitTest\EchoDataNode.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\DataCluster\DataCluster\Interface.h"
 				>
 			</File>
