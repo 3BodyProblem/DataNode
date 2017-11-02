@@ -182,9 +182,9 @@ int DataIOEngine::Execute()
 int DataIOEngine::OnQuery( unsigned int nDataID, char* pData, unsigned int nDataLen )
 {
 	unsigned __int64		nSerialNo = 0;
-	static	const char		s_pszZeroBuff[128] = { 0 };
+	static	const char		s_pszZeroBuff[128*8] = { 0 };
 
-	if( 0 == strncmp( pData, s_pszZeroBuff, sizeof(s_pszZeroBuff) ) )
+	if( 0 == strncmp( pData, s_pszZeroBuff, min( nDataLen, sizeof(s_pszZeroBuff) ) ) )
 	{
 		return m_oDatabaseIO.QueryBatchRecords( nDataID, pData, nDataLen, nSerialNo );
 	}
