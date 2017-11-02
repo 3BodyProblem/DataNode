@@ -8,6 +8,7 @@
 #include "DataNode.h"
 #include "DataServer/SvrConfig.h"
 #include "MemoryDB/MemoryDatabase.h"
+#include "UnitTest/EchoDataNode.h"
 #include "UnitTest/EchoDataCluster.h"
 #pragma comment( lib, "ws2_32.lib" )
 
@@ -72,7 +73,7 @@ void RunDebugFunction( int argc, _TCHAR* argv[] )
 
 	if( sCmd == "help" )
 	{
-		::printf( "单元测试命令:\na) 本程序名.exe testdb\t调用数据库插件的单元测试。\nb) 本程序名.exe testself\t本模块的单元测试。\nc) 本程序名.exe echocluster [TableID] [Code]\t调用客户端插件的行情回显\nd) 本程序名.exe echo\t回显落盘数据文件\n" );
+		::printf( "单元测试命令:\na) 本程序名.exe testdb\t调用数据库插件的单元测试。\nb) 本程序名.exe testself\t本模块的单元测试。\nc) 本程序名.exe echocluster [TableID] [Code]\t调用客户端插件的行情回显\nd) 本程序名.exe echo\t回显落盘数据文件\ne) 本程序名.exe echodata\t调用传输插件的行情回显\n" );
 	}
 	else if( sCmd == "testdb" )
 	{
@@ -113,12 +114,17 @@ void RunDebugFunction( int argc, _TCHAR* argv[] )
 		::printf( "--------------- [Echo Data] ------------------------\n" );
 		int					nTableID = -1;				///< 数据表ID(MessageID),		[-1表示不做过滤]
 		std::string			sRecordKey;					///< 记录主键字符串(索引串),	[""表示不做过滤]
+		EchoNodeEngine		objEchoNode;
 
 		if( argc > 2 )
 			nTableID = ::atoi( argv[2] );
 		if( argc > 3 )
 			sRecordKey = argv[3];
 
+		if( 0 == objEchoNode.Initialize( nTableID, sRecordKey ) )
+		{
+			objEchoNode.EchoQuotation();
+		}
 		::printf( "--------------- [DONE!] ----------------------------\n" );
 	}
 	else if( sCmd == "echo" )

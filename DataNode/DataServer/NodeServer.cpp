@@ -242,7 +242,7 @@ void DataIOEngine::OnLog( unsigned char nLogLevel, const char* pszFormat, ... )
 		MServicePlug::WriteDetail( "[Plugin] %s", pszLogBuf );
 		break;
 	default:
-		::printf( "[Plugin] unknow log level [%d] \n", nLogLevel );
+		::printf( "[Plugin] unknow log level [%d] %s \n", nLogLevel, pszLogBuf );
 		break;
 	}
 }

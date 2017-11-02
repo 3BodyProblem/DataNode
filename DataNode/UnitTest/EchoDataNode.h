@@ -1,71 +1,116 @@
-#ifndef __QLX_DATA_CLUSTER_TEST_H__
-#define __QLX_DATA_CLUSTER_TEST_H__
+#ifndef __QLX_DATA_NODE_TEST_H__
+#define __QLX_DATA_NODE_TEST_H__
 #pragma warning(disable : 4996)
 #pragma warning(disable : 4204)
 
 
-#include <vector>
-#include "../../../DataCluster/DataCluster/Interface.h"
-#include "../Infrastructure/Dll.h"
-#include "../Infrastructure/Lock.h"
+#include "../DataServer/NodeServer.h"
 
 
 /**
- * @class					DataClusterPlugin
- * @brief					数据收集客户端测试封装
- * @author					barry
+ * @class				EchoNodeEngine
+ * @brief				行情回显引擎
+ * @author				barry
  */
-class DataClusterPlugin : public I_QuotationCallBack
+class EchoNodeEngine : public I_DataHandle
 {
 public:
-	DataClusterPlugin();
-	~DataClusterPlugin();
+	EchoNodeEngine();
 
-public:
 	/**
-	 * @brief				数据收集客户端的行情回显测试
-	 * @param[in]			nMsgID				只显示的MessageID, -1表示不过滤
-	 * @param[in]			sKey				只显示的记录主键， ""表示不过滤
-	 * @return				>=0					成功
-							<0					出错
+ 	 * @brief				初始化行情各参数，准备工作
+	 * @param[in]			nMsgID						消息ID
+	 * @param[in]			sCode						商品代码
+	 * @note				流程中，先从本地文件加载内存插件的行情数据，再初始化行情解析插件
+	 * @return				==0							成功
+							!=0							失败
 	 */
-	int						TestQuotationEcho( int nMsgID, std::string sKey );
-
-protected:
-	/**
-	 * @brief				初始化并启动模块
-	 * @return				true				成功
-	 */
-	bool					Initialize();
+	int						Initialize( unsigned int nMsgID, std::string sCode );
 
 	/**
-	 * @brief				停止并释放模块
+	 * @brief				释放行情模块各资源
 	 */
 	void					Release();
 
-protected:
-	virtual void			OnQuotation( QUO_MARKET_ID eMarketID, unsigned int nMessageID, char* pDataPtr, unsigned int nDataLen );
-	virtual void			OnStatus( QUO_MARKET_ID eMarketID, QUO_MARKET_STATUS eMarketStatus );
-	virtual void			OnLog( unsigned char nLogLevel, const char* pszLogBuf );
+	/**
+	 * @brief				重新加载/初始化行情(内存插件、数据采集器)
+	 * @detail				初始化部分的所有业务流程都在这个函数里了
+	 * @return				true						初始化成功
+							false						失败
+	 */
+	bool					EchoQuotation();
 
-protected:
-	int								m_nMessageID;					///< 只显示的消息ID
-	std::string						m_sMessageKey;					///< 只显示的记录Code
+public:///< I_DataHandle接口实现: 用于给数据采集模块提供行情数据的回调方法
+	/**
+ 	 * @brief				初始化性质的行情数据回调
+	 * @note				只是更新构造好行情数据的内存初始结构，不推送
+	 * @param[in]			nDataID						消息ID
+	 * @param[in]			pData						数据内容
+	 * @param[in]			nDataLen					长度
+	 * @param[in]			bLastFlag					是否所有初始化数据已经发完，本条为最后一条的，标识
+	 * @return				==0							成功
+							!=0							错误
+	 */
+	virtual int				OnImage( unsigned int nDataID, char* pData, unsigned int nDataLen, bool bLastFlag );
 
-protected:
-	Dll								m_oDllPlugin;					///< 插件加载类
-	tagQUOFun_StartWork				m_funcActivate;					///< 插件启动函数
-	tagQUOFun_EndWork				m_funcDestroy;					///< 插件停止函数
-	tagQUOFun_GetMarketID			m_funcGetMarketID;				///< 插件市场ID表查询函数
-	tagQUOFun_GetMarketInfo			m_funcGetMarketInfo;			///< 插件查询函数
-	tagQUOFun_GetAllReferenceData	m_funcGetAllRefData;			///< 获取所有参考数据
-	tagQUOFun_GetReferenceData		m_funcGetRefData;				///< 获取参考数据
-	tagQUOFun_GetAllSnapData		m_funcGetAllSnapData;			///< 获取所有快照数据
-	tagQUOFun_GetSnapData			m_funcGetSnapData;				///< 获取快照数据
-	T_Func_ExecuteUnitTest			m_funcUnitTest;					///< 插件测试函数
+	/**
+	 * @brief				实行行情数据回调
+	 * @note				更新行情内存块，并推送
+	 * @param[in]			nDataID						消息ID
+	 * @param[in]			pData						数据内容
+	 * @param[in]			nDataLen					长度
+	 * @param[in]			bPushFlag					推送标识
+	 * @return				==0							成功
+							!=0							错误
+	 */
+	virtual int				OnData( unsigned int nDataID, char* pData, unsigned int nDataLen, bool bPushFlag );
+
+	/**
+	 * @brief				内存数据查询接口
+	 * @param[in]			nDataID						消息ID
+	 * @param[in,out]		pData						数据内容(包含查询主键)
+	 * @param[in]			nDataLen					长度
+	 * @return				>0							成功,返回数据结构的大小
+							==0							没查到结果
+							!=0							错误
+	 * @note				如果pData的缓存为“全零”缓存，则返回表内的所有数据
+	 */
+	virtual int				OnQuery( unsigned int nDataID, char* pData, unsigned int nDataLen );
+
+	/**
+	 * @brief				日志函数
+	 * @param[in]			nLogLevel					日志类型[0=信息、1=警告日志、2=错误日志、3=详细日志]
+	 * @param[in]			pszFormat					字符串格式化串
+	 */
+	virtual void			OnLog( unsigned char nLogLevel, const char* pszFormat, ... );
+
+public:///< Log Method
+	/**
+	 * @brief				信息
+	 */
+	virtual void			WriteInfo( const char * szFormat,... );
+
+	/**
+	 * @brief				警告
+	 */
+	virtual void			WriteWarning( const char * szFormat,... );
+
+	/**
+	 * @brief				错误
+	 */
+	virtual void			WriteError( const char * szFormat,... );
+
+	/**
+	 * @brief				明细
+	 */
+	virtual void			WriteDetail( const char * szFormat,... );
+
+protected:///< 挂载相关插件
+	DataCollector			m_oDataCollector;				///< 行情采集模块接口
+	int						m_nMessageID;					///< 订阅回显的消息ID( ==0, 表示显示全部 )
+	std::string				m_sCode;						///< 订阅回显的消息Code( =="", 表示显示全部 )
+
 };
-
-
 
 
 #endif
