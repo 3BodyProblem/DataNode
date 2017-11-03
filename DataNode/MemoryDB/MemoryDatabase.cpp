@@ -337,6 +337,7 @@ int PowerDB::Initialize()
 	int			nErrCode = 0;
 	DataNodeService::GetSerivceObj().WriteInfo( "PowerDB::Initialize() : initializing powerfull database object ......" );
 
+	Release();
 	if( (nErrCode=DatabaseIO::Initialize()) < 0 )
 	{
 		DataNodeService::GetSerivceObj().WriteError( "PowerDB::Initialize() : failed 2 initialize, errorcode = %d", nErrCode );
