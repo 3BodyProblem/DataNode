@@ -409,6 +409,22 @@
 				>
 			</File>
 		</Filter>
+		<Filter
+			Name="Encoder"
+			>
+			<File
+				RelativePath=".\Encoder\DataEncoder.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\Encoder\DataEncoder.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\QLXEnDeCode\QLXEnDeCode\IEnDeCode.h"
+				>
+			</File>
+		</Filter>
 		<File
 			RelativePath=".\DataNode.cpp"
 			>

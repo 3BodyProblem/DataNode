@@ -43,9 +43,10 @@ public:
 class MockDataHandle : public I_DataHandle
 {
 public:
-	virtual int				OnImage( unsigned int nDataID, char* pData, unsigned int nDataLen, bool bLastFlag ){	return 0;	};
-	virtual int				OnData( unsigned int nDataID, char* pData, unsigned int nDataLen, bool bPushFlag ){	return 0;	};
-	virtual int				OnQuery( unsigned int nDataID, char* pData, unsigned int nDataLen ){	return 0;	};
+	virtual int				OnImage( unsigned int nDataID, const char* pData, unsigned int nDataLen, bool bLastFlag ){	return 0;	};
+	virtual int				OnData( unsigned int nDataID, const char* pData, unsigned int nDataLen, bool bLastFlag, bool bPushFlag = true ){	return 0;	};
+	virtual int				OnStream( unsigned int nDataID, const char* pData, unsigned int nDataLen ){	return 0;	}
+	virtual int				OnQuery( unsigned int nDataID, const char* pData, unsigned int nDataLen ){	return 0;	};
 	virtual void			OnLog( unsigned char nLogLevel, const char* pszFormat, ... )
 	{
 		va_list		valist;

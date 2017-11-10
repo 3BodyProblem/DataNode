@@ -51,7 +51,7 @@ public:///< I_DataHandle接口实现: 用于给数据采集模块提供行情数据的回调方法
 	 * @return				==0							成功
 							!=0							错误
 	 */
-	virtual int				OnImage( unsigned int nDataID, char* pData, unsigned int nDataLen, bool bLastFlag );
+	virtual int				OnImage( unsigned int nDataID, const char* pData, unsigned int nDataLen, bool bLastFlag );
 
 	/**
 	 * @brief				实行行情数据回调
@@ -59,11 +59,22 @@ public:///< I_DataHandle接口实现: 用于给数据采集模块提供行情数据的回调方法
 	 * @param[in]			nDataID						消息ID
 	 * @param[in]			pData						数据内容
 	 * @param[in]			nDataLen					长度
+	 * @param[in]			bLastFlag					是否为最后一个包的标识
 	 * @param[in]			bPushFlag					推送标识
 	 * @return				==0							成功
 							!=0							错误
 	 */
-	virtual int				OnData( unsigned int nDataID, char* pData, unsigned int nDataLen, bool bPushFlag );
+	virtual int				OnData( unsigned int nDataID, const char* pData, unsigned int nDataLen, bool bLastFlag, bool bPushFlag = true );
+
+	/**
+	 * @brief				行情数据帧直接转发回调接口
+	 * @note				不进行数据包的解析，直接转发推送
+	 * @param[in]			pData				数据内容
+	 * @param[in]			nDataID				消息ID
+	 * @return				==0					成功
+							!=0					错误
+	 */
+	virtual int				OnStream( unsigned int nDataID, const char* pData, unsigned int nDataLen );
 
 	/**
 	 * @brief				内存数据查询接口
@@ -75,7 +86,7 @@ public:///< I_DataHandle接口实现: 用于给数据采集模块提供行情数据的回调方法
 							!=0							错误
 	 * @note				如果pData的缓存为“全零”缓存，则返回表内的所有数据
 	 */
-	virtual int				OnQuery( unsigned int nDataID, char* pData, unsigned int nDataLen );
+	virtual int				OnQuery( unsigned int nDataID, const char* pData, unsigned int nDataLen );
 
 	/**
 	 * @brief				日志函数

@@ -39,7 +39,7 @@ public:
 	 * @return				==0					成功
 							!=0					错误
 	 */
-	virtual int				OnImage( unsigned int nDataID, char* pData, unsigned int nDataLen, bool bLastFlag ) = 0;
+	virtual int				OnImage( unsigned int nDataID, const char* pData, unsigned int nDataLen, bool bLastFlag ) = 0;
 
 	/**
 	 * @brief				实行行情数据回调
@@ -47,11 +47,23 @@ public:
 	 * @param[in]			nDataID				消息ID
 	 * @param[in]			pData				数据内容
 	 * @param[in]			nDataLen			长度
-	 * @param[in]			bPushFlag			推送标识
+	 * @param[in]			bLastFlag			是否为最后一个包的标识
+	 * @param[in]			bPushFlag			是否推送的标识
 	 * @return				==0					成功
 							!=0					错误
 	 */
-	virtual int				OnData( unsigned int nDataID, char* pData, unsigned int nDataLen, bool bPushFlag ) = 0;
+	virtual int				OnData( unsigned int nDataID, const char* pData, unsigned int nDataLen, bool bLastFlag, bool bPushFlag = true ) = 0;
+
+	/**
+	 * @brief				行情数据帧直接转发回调接口
+	 * @note				不进行数据包的解析，直接转发推送
+	 * @param[in]			nDataID				消息ID
+	 * @param[in]			pData				数据内容
+	 * @param[in]			nDataID				消息ID
+	 * @return				==0					成功
+							!=0					错误
+	 */
+	virtual int				OnStream( unsigned int nDataID, const char* pData, unsigned int nDataLen ) = 0;
 
 	/**
 	 * @brief				内存数据查询接口
@@ -62,7 +74,7 @@ public:
 							==0					没查到结果
 							!=0					错误
 	 */
-	virtual int				OnQuery( unsigned int nDataID, char* pData, unsigned int nDataLen ) = 0;
+	virtual int				OnQuery( unsigned int nDataID, const char* pData, unsigned int nDataLen ) = 0;
 
 	/**
 	 * @brief				日志函数

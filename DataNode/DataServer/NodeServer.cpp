@@ -24,7 +24,7 @@ int DataIOEngine::Initialize()
 	int									nErrorCode = Configuration::GetConfigObj().Load();				///< 加载配置信息
 	const tagServicePlug_StartInParam&	refInParam = Configuration::GetConfigObj().GetStartInParam();	///< ServicePlug初始化参数
 	bool								bLoadFromDisk = (false == m_oDataCollector.IsProxy());			///< 是否需要从数据库中对各表进行代码集合统计
-	DataNodeService::GetSerivceObj().WriteInfo( "DataIOEngine::Initialize() : [Version]  1.1.3 , ProxyModule = %d", bLoadFromDisk );
+	DataNodeService::GetSerivceObj().WriteInfo( "DataIOEngine::Initialize() : [Version]  1.2.3 , ProxyModule = %d", bLoadFromDisk );
 	DataNodeService::GetSerivceObj().WriteInfo( "DataIOEngine::Initialize() : DataNode Engine is initializing ......" );
 
 	Release();
@@ -179,43 +179,60 @@ int DataIOEngine::Execute()
 	return 0;
 }
 
-int DataIOEngine::OnQuery( unsigned int nDataID, char* pData, unsigned int nDataLen )
+int DataIOEngine::OnQuery( unsigned int nDataID, const char* pData, unsigned int nDataLen )
 {
 	unsigned __int64		nSerialNo = 0;
 	static	const char		s_pszZeroBuff[128*8] = { 0 };
 
 	if( 0 == strncmp( pData, s_pszZeroBuff, min( nDataLen, sizeof(s_pszZeroBuff) ) ) )
 	{
-		return m_oDatabaseIO.QueryBatchRecords( nDataID, pData, nDataLen, nSerialNo );
+		return m_oDatabaseIO.QueryBatchRecords( nDataID, (char*)pData, nDataLen, nSerialNo );
 	}
 	else
 	{
-		return m_oDatabaseIO.QueryRecord( nDataID, pData, nDataLen, nSerialNo );
+		return m_oDatabaseIO.QueryRecord( nDataID, (char*)pData, nDataLen, nSerialNo );
 	}
 }
 
-int DataIOEngine::OnImage( unsigned int nDataID, char* pData, unsigned int nDataLen, bool bLastFlag )
+int DataIOEngine::OnImage( unsigned int nDataID, const char* pData, unsigned int nDataLen, bool bLastFlag )
 {
 	CriticalLock			guard( m_oLock );
 	std::set<std::string>&	refSetCode = m_mapRecvID2Codes[nDataID];
 
 	refSetCode.insert( std::string( pData ) );		///< 记录所有当天有效的商品代码	[数据表ID,代码集合]
 
-	return m_oDatabaseIO.NewRecord( nDataID, pData, nDataLen, bLastFlag, m_nPushSerialNo );
+	return m_oDatabaseIO.NewRecord( nDataID, (char*)pData, nDataLen, bLastFlag, m_nPushSerialNo );
 }
 
-int DataIOEngine::OnData( unsigned int nDataID, char* pData, unsigned int nDataLen, bool bPushFlag )
+int DataIOEngine::OnData( unsigned int nDataID, const char* pData, unsigned int nDataLen, bool bLastFlag, bool bPushFlag )
 {
-	int					nErrorCode = m_oDatabaseIO.UpdateRecord( nDataID, pData, nDataLen, m_nPushSerialNo );
+	int					nErrorCode = m_oDatabaseIO.UpdateRecord( nDataID, (char*)pData, nDataLen, m_nPushSerialNo );
 
 	if( 0 >= nErrorCode )
 	{
 		return nErrorCode;
 	}
 
-	m_oLinkSessions.PushQuotation( nDataID, 0, pData, nDataLen, bPushFlag, m_nPushSerialNo );
+	if( true == bPushFlag )
+	{
+		m_oLinkSessions.PushQuotation( nDataID, 0, pData, nDataLen, bLastFlag, m_nPushSerialNo );
+	}
 
 	return nErrorCode;
+}
+
+int DataIOEngine::OnStream( unsigned int nDataID, const char* pData, unsigned int nDataLen )
+{
+	LINKID_VECTOR			vctLinkNo = { 0 };								///< 发送链路表
+	unsigned int			nLinkCount = LinkNoRegister::GetRegister().FetchLinkNoTable( vctLinkNo+0, MAX_LINKID_NUM );
+
+	if( nLinkCount > 0 )
+	{
+		DataNodeService::GetSerivceObj().PushData( vctLinkNo+0, nLinkCount, nDataID, 0, pData, nDataLen );
+		return nDataLen;
+	}
+
+	return 0;
 }
 
 void DataIOEngine::OnLog( unsigned char nLogLevel, const char* pszFormat, ... )

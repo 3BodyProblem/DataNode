@@ -61,12 +61,12 @@ bool EchoNodeEngine::EchoQuotation()
 	return true;
 }
 
-int EchoNodeEngine::OnQuery( unsigned int nDataID, char* pData, unsigned int nDataLen )
+int EchoNodeEngine::OnQuery( unsigned int nDataID, const char* pData, unsigned int nDataLen )
 {
 	return 0;
 }
 
-int EchoNodeEngine::OnImage( unsigned int nDataID, char* pData, unsigned int nDataLen, bool bLastFlag )
+int EchoNodeEngine::OnImage( unsigned int nDataID, const char* pData, unsigned int nDataLen, bool bLastFlag )
 {
 	if( 0 >= m_nMessageID )
 	{
@@ -86,7 +86,12 @@ int EchoNodeEngine::OnImage( unsigned int nDataID, char* pData, unsigned int nDa
 	return 0;
 }
 
-int EchoNodeEngine::OnData( unsigned int nDataID, char* pData, unsigned int nDataLen, bool bPushFlag )
+int EchoNodeEngine::OnStream( unsigned int nDataID, const char* pData, unsigned int nDataLen )
+{
+	return 0;
+}
+
+int EchoNodeEngine::OnData( unsigned int nDataID, const char* pData, unsigned int nDataLen, bool bLastFlag, bool bPushFlag )
 {
 	if( 0 >= m_nMessageID )
 	{
