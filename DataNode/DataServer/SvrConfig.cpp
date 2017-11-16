@@ -96,6 +96,11 @@ int Configuration::Load()
 	if( 0 != nErrCode )	{
 		::printf( "Configuration::Load() : Without Quotation Data Compressor .............................. \n" );
 	}
+	m_sCompressPluginConfig = oIniFile.getStringValue( std::string("Plugin"), std::string("compressorcfg"), nErrCode );
+	if( 0 != nErrCode )	{
+		m_sCompressPluginConfig = "./DataXCode.xml";
+		::printf( "Configuration::Load() : Default Data Compressor Configuration Path : %s\n", m_sCompressPluginConfig.c_str() );
+	}
 
 	m_sHolidayFilePath = GetModulePath(NULL) + oIniFile.getStringValue( std::string("Holiday"), std::string("file"), nErrCode );
 	if( 0 != nErrCode )	{
@@ -267,6 +272,11 @@ const std::string& Configuration::GetMemPluginPath() const
 const std::string& Configuration::GetCompressPluginPath() const
 {
 	return m_sCompressPluginPath;
+}
+
+const std::string& Configuration::GetCompressPluginCfg() const
+{
+	return m_sCompressPluginConfig;
 }
 
 const std::string& Configuration::GetDataCollectorPluginPath() const

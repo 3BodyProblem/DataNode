@@ -80,6 +80,11 @@ public:
 	const std::string&					GetDataCollectorPluginPath() const;
 
 	/**
+	 * @brief							数据采集插件配置
+	 */
+	const std::string&					GetCompressPluginCfg() const;
+
+	/**
 	 * @brief							登录名
 	 */
 	const std::string&					GetCheckName() const;
@@ -117,6 +122,7 @@ protected:
 	std::string							m_sHolidayFilePath;				///< 节假日文件路径
 	std::string							m_sMemPluginPath;				///< 数据内存块插件所在路径
 	std::string							m_sCompressPluginPath;			///< 数据压缩插件所在路径
+	std::string							m_sCompressPluginConfig;		///< 数据压缩插件配置文件
 	std::string							m_sDataCollectorPluginPath;		///< 数据采集插件所在路径
 	std::string							m_sRecoveryFolder;				///< 行情数据存储/恢复目录
 	T_VECTOR_PERIODS					m_vctTradingPeriods;			///< 交易时段信息表

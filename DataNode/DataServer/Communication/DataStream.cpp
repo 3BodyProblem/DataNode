@@ -27,6 +27,12 @@ int SendPackagePool::Initialize( unsigned int nOneBuffSize, unsigned int nMsgCou
 		return -1;
 	}
 
+	if( 0 != m_oEncoder.Initialize( Configuration::GetConfigObj().GetCompressPluginPath(), Configuration::GetConfigObj().GetCompressPluginCfg(), nOneBuffSize * 3 ) )
+	{
+		DataNodeService::GetSerivceObj().WriteError( "SendPackagePool::Initialize() : failed 2 initialize data encoder" );
+		return -2;
+	}
+
 	return SimpleTask::Activate();
 }
 

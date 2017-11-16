@@ -5,6 +5,7 @@
 #pragma warning(disable:4018)
 #include <set>
 #include <string>
+#include "../../Encoder/DataEncoder.h"
 #include "../../Infrastructure/Lock.h"
 #include "../../Infrastructure/Thread.h"
 
@@ -102,6 +103,7 @@ protected:
 	virtual int					Execute();
 
 protected:
+	DataEncoder					m_oEncoder;				///< 行情压缩模块
 	WaitEvent					m_oSendNotice;			///< 发送通知事件
 	CriticalObject				m_oLock;				///< 锁
 	unsigned int				m_vctMsgID[128];		///< 经处理的消息列表

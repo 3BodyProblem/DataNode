@@ -133,7 +133,6 @@ protected:///< 功能成员对象
 protected:///< 挂载相关插件
 	PowerDB					m_oDatabaseIO;					///< 内存数据插件管理
 	DataCollector			m_oDataCollector;				///< 行情采集模块接口
-//	XXXCompress				m_oCompressObj;					///< 行情压缩模块
 };
 
 
