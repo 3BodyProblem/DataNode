@@ -1,40 +1,39 @@
 #include "DataEncoder.h"
 #include "../DataServer/SvrConfig.h"
+#include "../DataServer/NodeServer.h"
 
 
 DataEncoder::DataEncoder()
+ : m_pFuncEncodeApi( NULL )
 {
 }
 
-int DataEncoder::Initialize()
+int DataEncoder::Initialize( std::string sModulePath )
 {
 	Release();
-/*	DataNodeService::GetSerivceObj().WriteInfo( "DataCollector::Initialize() : initializing data collector plugin ......" );
+	DataNodeService::GetSerivceObj().WriteInfo( "DataEncoder::Initialize() : initializing data encoder plugin ......" );
 
-	std::string		sModulePath = GetModulePath(NULL) + Configuration::GetConfigObj().GetDataCollectorPluginPath();
-	int				nErrorCode = m_oDllPlugin.LoadDll( sModulePath );
+	T_Func_FetchModuleVersion	pFunGetVersion = NULL;
+	int							nErrorCode = m_oDllPlugin.LoadDll( sModulePath );
 
 	if( 0 != nErrorCode )
 	{
-		DataNodeService::GetSerivceObj().WriteError( "DataCollector::Initialize() : failed 2 load data collector module, errorcode=%d", nErrorCode );
+		DataNodeService::GetSerivceObj().WriteError( "DataEncoder::Initialize() : failed 2 load data encoder plugin, errorcode=%d", nErrorCode );
 		return nErrorCode;
 	}
 
-	m_pFuncInitialize = (T_Func_Initialize)m_oDllPlugin.GetDllFunction( "Initialize" );
-	m_pFuncRelease = (T_Func_Release)m_oDllPlugin.GetDllFunction( "Release" );
-	m_pFuncRecoverQuotation = (T_Func_RecoverQuotation)m_oDllPlugin.GetDllFunction( "RecoverQuotation" );
-	m_pFuncHaltQuotation = (T_Func_HaltQuotation)m_oDllPlugin.GetDllFunction( "HaltQuotation" );
-	m_pFuncGetStatus = (T_Func_GetStatus)m_oDllPlugin.GetDllFunction( "GetStatus" );
-	m_pFuncGetMarketID = (T_Func_GetMarketID)m_oDllPlugin.GetDllFunction( "GetMarketID" );
-	m_pFuncIsProxy = (T_Func_IsProxy)m_oDllPlugin.GetDllFunction( "IsProxy" );
-	m_pFuncEcho = (T_Echo)m_oDllPlugin.GetDllFunction( "Echo" );
+	pFunGetVersion = (T_Func_FetchModuleVersion)m_oDllPlugin.GetDllFunction( "FetchModuleVersion" );
+	m_pFuncEncodeApi = (T_Func_GetEncodeApi)m_oDllPlugin.GetDllFunction( "GetEncodeApi" );
 
-	if( NULL == m_pFuncInitialize || NULL == m_pFuncRelease || NULL == m_pFuncRecoverQuotation || NULL == m_pFuncGetStatus || NULL == m_pFuncGetMarketID || NULL == m_pFuncHaltQuotation || NULL == m_pFuncIsProxy || NULL == m_pFuncEcho )
+	if( NULL == pFunGetVersion || NULL == m_pFuncEncodeApi )
 	{
-		DataNodeService::GetSerivceObj().WriteError( "DataCollector::Initialize() : invalid fuction pointer(NULL)" );
+		DataNodeService::GetSerivceObj().WriteError( "DataEncoder::Initialize() : invalid fuction pointer(NULL)" );
 		return -100;
 	}
 
+	DataNodeService::GetSerivceObj().WriteInfo( "DataEncoder::Initialize() : DataEncoder Version => [%s] ......", pFunGetVersion() );
+
+/*
 	if( 0 != (nErrorCode = m_pFuncInitialize( pIDataCallBack )) )
 	{
 		DataNodeService::GetSerivceObj().WriteError( "DataCollector::Initialize() : failed 2 initialize data collector module, errorcode=%d", nErrorCode );
@@ -51,22 +50,15 @@ int DataEncoder::Initialize()
 
 void DataEncoder::Release()
 {
-/*	if( NULL != m_pFuncRelease )
+	if( NULL != m_pFuncEncodeApi )
 	{
-		DataNodeService::GetSerivceObj().WriteInfo( "DataCollector::Release() : releasing memory database plugin ......" );
-		m_pFuncHaltQuotation();
-		m_pFuncHaltQuotation = NULL;
-		m_pFuncRelease();
-		m_pFuncRelease = NULL;
-		m_pFuncEcho = NULL;
-		m_bActivated = false;
-		DataNodeService::GetSerivceObj().WriteInfo( "DataCollector::Release() : memory database plugin is released ......" );
+		DataNodeService::GetSerivceObj().WriteInfo( "DataEncoder::Release() : releasing data encoder plugin ......" );
+		m_pFuncEncodeApi = NULL;
+		DataNodeService::GetSerivceObj().WriteInfo( "DataEncoder::Release() : data encoder plugin is released ......" );
 	}
 
-	m_pFuncGetStatus = NULL;
-	m_pFuncInitialize = NULL;
-	m_pFuncRecoverQuotation = NULL;
-	m_oDllPlugin.CloseDll();*/
+	m_pFuncEncodeApi = NULL;
+	m_oDllPlugin.CloseDll();
 }
 
 
