@@ -1,6 +1,7 @@
 #include "DataEncoder.h"
 #include "../DataServer/SvrConfig.h"
 #include "../DataServer/NodeServer.h"
+#include "../DataServer/Communication/DataStream.h"
 
 
 DataEncoder::DataEncoder()
@@ -81,6 +82,20 @@ void DataEncoder::Release()
 	m_oDllPlugin.CloseDll();
 }
 
+int DataEncoder::Prepare4ACompression( char* pTagHead )
+{
+	m_nDataLen = 0;
+
+	if( NULL == m_pEncoderApi || NULL == pTagHead )
+	{
+		return -1;
+	}
+
+	::memcpy( m_pXCodeBuffer, pTagHead, sizeof(tagPackageHead) );
+
+	return m_pEncoderApi->Attach2Buffer( m_pXCodeBuffer + sizeof(tagPackageHead), m_nDataLen - sizeof(tagPackageHead) );
+}
+
 const char* DataEncoder::GetBufferPtr()
 {
 	return m_pXCodeBuffer;
@@ -88,7 +103,21 @@ const char* DataEncoder::GetBufferPtr()
 
 unsigned int DataEncoder::GetBufferLen()
 {
-	return m_nDataLen;
+	return m_nDataLen + sizeof(tagPackageHead);
+}
+
+bool DataEncoder::CompressData( unsigned short nMsgID, const char *pData, unsigned int nLen )
+{
+	int		nErrorCode = m_pEncoderApi->EncodeMessage( nMsgID, pData, nLen );
+
+	if( nErrorCode <= 0 )
+	{
+		return false;
+	}
+
+	m_nDataLen = nErrorCode;
+
+	return true;
 }
 
 

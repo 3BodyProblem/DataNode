@@ -322,6 +322,9 @@ void DatabaseIO::Release()
 ///< ----------------------------------------------------------------------------------------------
 
 
+const unsigned int	MAX_QUERY_BUFFER_LEN = 1024*1024*20;
+
+
 PowerDB::PowerDB()
 {
 }
@@ -344,10 +347,16 @@ int PowerDB::Initialize()
 		return nErrCode;
 	}
 
-	if( m_oQueryBuffer.Initialize( 1024*1024*30 ) != 0 )
+	if( m_oQueryBuffer.Initialize( MAX_QUERY_BUFFER_LEN ) != 0 )
 	{
 		DataNodeService::GetSerivceObj().WriteError( "PowerDB::Initialize() : failed 2 initialize query buffer, size = %d", m_oQueryBuffer.MaxBufSize() );
 		return -100;
+	}
+
+	if( 0 != m_oEncoder.Initialize( Configuration::GetConfigObj().GetCompressPluginPath(), Configuration::GetConfigObj().GetCompressPluginCfg(), MAX_QUERY_BUFFER_LEN ) )
+	{
+		DataNodeService::GetSerivceObj().WriteError( "PowerDB::Initialize() : failed 2 initialize data encoder" );
+		return -200;
 	}
 
 	DataNodeService::GetSerivceObj().WriteInfo( "PowerDB::Initialize() : powerfull database object initialized! ..." );
@@ -568,9 +577,19 @@ int PowerDB::FlushDatabase2RequestSessions( unsigned __int64 nSerialNo )
 			pPkgHead->nSeqNo = nSeqNo;
 			pPkgHead->nMsgLength = it->second;
 			pPkgHead->nMarketID = DataCollector::GetMarketID();
-			///< ---------------------------------------------------------------------------------
+			///< ---------------- 将数据编码到缓存 -----------------------------------------------
+			if( 0 != m_oEncoder.Prepare4ACompression( (char*)pPkgHead ) )
+			{
+				DataNodeService::GetSerivceObj().WriteError( "PowerDB::FlushDatabase2RequestSessions() : failed 2 prepare a compression, messageid=%u", it->first );
+				return -1;
+			}
 
-			int	nErrCode = DataNodeService::GetSerivceObj().SendData( nReqLinkID, it->first, nFunctionID, (char*)m_oQueryBuffer, nDataLen + sizeof(tagPackageHead) );
+			for( unsigned int nOffset = sizeof(tagPackageHead); nOffset < (sizeof(tagPackageHead)+nDataLen); nOffset += it->second )
+			{
+				m_oEncoder.CompressData( it->first, (char*)pPkgHead + nOffset, it->second );
+			}
+			///< ---------------- 发送数据 --------------------------------------------------------
+			int	nErrCode = DataNodeService::GetSerivceObj().SendData( nReqLinkID, it->first, nFunctionID, m_oEncoder.GetBufferPtr(), m_oEncoder.GetBufferLen() );
 			if( nErrCode < 0 )
 			{
 				DataNodeService::GetSerivceObj().CloseLink( nReqLinkID );										///< 发送初始化快照数据失败，则断开对下链路

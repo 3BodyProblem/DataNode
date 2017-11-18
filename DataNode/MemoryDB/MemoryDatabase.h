@@ -238,6 +238,7 @@ public:///< 数据库快照数据推送
 	int								FlushDatabase2RequestSessions( unsigned __int64 nSerialNo = 0 );
 
 protected:
+	DataEncoder						m_oEncoder;						///< 压缩数据
 	PkgBuffer						m_oQueryBuffer;					///< 数据发送缓存
 	MAP_TABLEID_CODES				m_mapID2CodesInDB;				///< 各数据表中的code集合统计
 };

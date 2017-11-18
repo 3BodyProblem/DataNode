@@ -425,6 +425,18 @@
 				>
 			</File>
 		</Filter>
+		<Filter
+			Name="Decoder"
+			>
+			<File
+				RelativePath=".\Decoder\DataDecoder.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\Decoder\DataDecoder.h"
+				>
+			</File>
+		</Filter>
 		<File
 			RelativePath=".\DataNode.cpp"
 			>

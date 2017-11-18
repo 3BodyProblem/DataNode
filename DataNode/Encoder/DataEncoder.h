@@ -34,7 +34,23 @@ public:
 	 */
 	void					Release();
 
+	/**
+	 * @brief				准备一次新的压缩
+	 * @param[in]			pTagHead					数据包头(不压缩的部分)
+	 * @note				只对同一个message类型的数据组进行压缩
+	 * @return				==0							成功
+							!=0							错误
+	 */
+	int						Prepare4ACompression( char* pTagHead );
 
+	/**
+	 * @brief				序列化数据到缓存
+	 * @param[in]			nMsgID						Message ID
+	 * @param[in]			pData						消息数据地址
+	 * @param[in]			nLen						消息长度
+	 * @return				true						成功
+	 */
+	bool					CompressData( unsigned short nMsgID, const char *pData, unsigned int nLen );
 
 public:
 	/**

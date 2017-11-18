@@ -33,6 +33,14 @@ int SendPackagePool::Initialize( unsigned int nOneBuffSize, unsigned int nMsgCou
 		return -2;
 	}
 
+#ifdef _DEBUG
+	if( 0 != m_oDecoder.Initialize( Configuration::GetConfigObj().GetCompressPluginPath(), Configuration::GetConfigObj().GetCompressPluginCfg(), nOneBuffSize * 3 ) )
+	{
+		DataNodeService::GetSerivceObj().WriteError( "SendPackagePool::Initialize() : failed 2 initialize data decoder" );
+		return -3;
+	}
+#endif
+
 	return SimpleTask::Activate();
 }
 
@@ -92,18 +100,55 @@ int SendPackagePool::SendAllPkg()
 	for( int n = 0; n < m_MsgIDCount; n++ )
 	{
 		unsigned int			nMsgID = m_vctMsgID[n];
+		int						nBufSize = m_vctCurDataSize[nMsgID];
 
-		if( m_vctCurDataSize[nMsgID] > 0 )
+		if( nBufSize > 0 )
 		{
-			char*				pMsgBuff = m_vctAddrMap[nMsgID];	///< 数据包的头结构
+			char*				pMsgBuff = m_vctAddrMap[nMsgID];	///< Message的头结构
+			tagPackageHead*		pHead = (tagPackageHead*)pMsgBuff;	///< Package的头结构
+			unsigned int		nMsgLen = pHead->nMsgLength;		///< Message结构长度
 
 			if( nLinkCount > 0 && NULL != pMsgBuff )
 			{
-				DataNodeService::GetSerivceObj().PushData( vctLinkNo+0, nLinkCount, nMsgID, 0, pMsgBuff, m_vctCurDataSize[nMsgID] );
-				nSendSize += m_vctCurDataSize[nMsgID];				///< 累计发送量
+				if( 0 != m_oEncoder.Prepare4ACompression( (char*)pHead ) )
+				{
+					DataNodeService::GetSerivceObj().WriteError( "SendPackagePool::SendAllPkg() : failed 2 prepare a compression, messageid=%u", nMsgID );
+					return -1;
+				}
+
+				for( unsigned int nOffset = sizeof(tagPackageHead); nOffset < nBufSize; nOffset += nMsgLen )
+				{
+					if( false == m_oEncoder.CompressData( nMsgID, pMsgBuff + nOffset, nMsgLen ) )
+					{
+						DataNodeService::GetSerivceObj().WriteError( "SendPackagePool::SendAllPkg() : failed 2 compress message, messageid=%u", nMsgID );
+						return -2;
+					}
+				}
+
+				nSendSize += nBufSize;								///< 累计发送量
 			}
 
 			m_vctCurDataSize[nMsgID] = 0;							///< 清空发送缓存
+			DataNodeService::GetSerivceObj().PushData( vctLinkNo+0, nLinkCount, nMsgID, 0, m_oEncoder.GetBufferPtr(), m_oEncoder.GetBufferLen() );
+
+			///< ---------------------- Debug模式下的，缩压/解压测试代码 -------------------------------
+#ifdef _DEBUG
+			if( 0 != m_oDecoder.Prepare4AUncompression( m_oEncoder.GetBufferPtr() ) )
+			{
+				DataNodeService::GetSerivceObj().WriteError( "SendPackagePool::SendAllPkg() : failed 2 prepare a uncompression, messageid=%u", nMsgID );
+				return -100;
+			}
+
+			for( unsigned int nOffset = sizeof(tagPackageHead); nOffset < nBufSize; nOffset += nMsgLen )
+			{
+				if( false == m_oDecoder.UncompressData( nMsgID, (char*)(m_oEncoder.GetBufferPtr()) + nOffset, nMsgLen ) )
+				{
+					DataNodeService::GetSerivceObj().WriteError( "SendPackagePool::SendAllPkg() : failed 2 compress message, messageid=%u", nMsgID );
+					return -200;
+				}
+			}
+#endif
+
 		}
 	}
 

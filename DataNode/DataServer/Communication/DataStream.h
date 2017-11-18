@@ -6,6 +6,7 @@
 #include <set>
 #include <string>
 #include "../../Encoder/DataEncoder.h"
+#include "../../Decoder/DataDecoder.h"
 #include "../../Infrastructure/Lock.h"
 #include "../../Infrastructure/Thread.h"
 
@@ -103,6 +104,9 @@ protected:
 	virtual int					Execute();
 
 protected:
+#ifdef _DEBUG
+	DataDecoder					m_oDecoder;				///< 行情解压模块
+#endif
 	DataEncoder					m_oEncoder;				///< 行情压缩模块
 	WaitEvent					m_oSendNotice;			///< 发送通知事件
 	CriticalObject				m_oLock;				///< 锁
