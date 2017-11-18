@@ -104,11 +104,12 @@ int SendPackagePool::SendAllPkg()
 
 		if( nBufSize > 0 )
 		{
-			char*				pMsgBuff = m_vctAddrMap[nMsgID];	///< Message的头结构dsafdasfadsfasdfasdfasdfasdfasdfdasf
+			char*				pMsgBuff = m_vctAddrMap[nMsgID];	///< Message的头结构
 			tagPackageHead*		pHead = (tagPackageHead*)pMsgBuff;	///< Package的头结构
 			unsigned int		nMsgLen = pHead->nMsgLength;		///< Message结构长度
-
+#ifdef _DEBUG
 			if( nLinkCount > 0 && NULL != pMsgBuff )
+#endif
 			{
 				if( 0 != m_oEncoder.Prepare4ACompression( (char*)pHead ) )
 				{
