@@ -104,7 +104,7 @@ int SendPackagePool::SendAllPkg()
 
 		if( nBufSize > 0 )
 		{
-			char*				pMsgBuff = m_vctAddrMap[nMsgID];	///< Message的头结构
+			char*				pMsgBuff = m_vctAddrMap[nMsgID];	///< Message的头结构dsafdasfadsfasdfasdfasdfasdfasdfdasf
 			tagPackageHead*		pHead = (tagPackageHead*)pMsgBuff;	///< Package的头结构
 			unsigned int		nMsgLen = pHead->nMsgLength;		///< Message结构长度
 
