@@ -134,7 +134,7 @@ int SendPackagePool::SendAllPkg()
 
 			///< ---------------------- Debug模式下的，缩压/解压测试代码 -------------------------------
 #ifdef _DEBUG
-			if( 0 != m_oDecoder.Prepare4AUncompression( m_oEncoder.GetBufferPtr() ) )
+			if( 0 != m_oDecoder.Prepare4AUncompression( m_oEncoder.GetBufferPtr(), m_oEncoder.GetBufferLen() ) )
 			{
 				DataNodeService::GetSerivceObj().WriteError( "SendPackagePool::SendAllPkg() : failed 2 prepare a uncompression, messageid=%u", nMsgID );
 				return -100;

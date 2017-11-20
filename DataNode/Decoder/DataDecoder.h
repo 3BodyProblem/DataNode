@@ -2,10 +2,9 @@
 #define	__DATA_DECODER_H__
 
 
-#include <string>
-#include "../Infrastructure/Dll.h"
-#include "../Infrastructure/Lock.h"
 #include "../../../DataXCode/DataXCode/IXCode.h"
+#include "../Infrastructure/Lock.h"
+#include "../Infrastructure/Dll.h"
 
 
 /**
@@ -36,39 +35,26 @@ public:
 
 	/**
 	 * @brief				准备一次新的压缩
-	 * @param[in]			pTagHead					数据包头(不压缩的部分)
+	 * @param[in]			pData						数据体地址(Body部分)
+	 * @param[in]			nLen						数据体长度
 	 * @note				只对同一个message类型的数据组进行压缩
 	 * @return				==0							成功
 							!=0							错误
 	 */
-	int						Prepare4AUncompression( const char* pTagHead );
+	int						Prepare4AUncompression( const char* pData, unsigned int nLen );
 
 	/**
 	 * @brief				序列化数据到缓存
 	 * @param[in]			nMsgID						Message ID
 	 * @param[in]			pData						消息数据地址
 	 * @param[in]			nLen						消息长度
-	 * @return				true						成功
+	 * @return				>= 0						成功，返回历次调用后,未序列化部分的长度
 	 */
-	bool					UncompressData( unsigned short nMsgID, char *pData, unsigned int nLen );
-
-public:
-	/**
-	 * @brief				获取缓存地址
-	 */
-	const char*				GetBufferPtr();
-
-	/**
-	 * @brief				获取取缓存数据长度
-	 */
-	unsigned int			GetBufferLen();
+	int						UncompressData( unsigned short nMsgID, char *pData, unsigned int nLen );
 
 private:
 	Dll						m_oDllPlugin;					///< 插件加载类
 	InterfaceDecode*		m_pDecoderApi;					///< 反序列化对象指针
-	char*					m_pXCodeBuffer;					///< 编码缓存
-	unsigned int			m_nMaxBufferLen;				///< 缓存最大长度
-	unsigned int			m_nDataLen;						///< 缓存数据长度
 };
 
 
@@ -78,6 +64,7 @@ private:
 
 
 #endif
+
 
 
 
