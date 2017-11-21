@@ -7,6 +7,29 @@
 #include "../DataServer/NodeServer.h"
 
 
+class XCodeMsgPool : public SendPackagePool
+{
+protected:
+	/**
+	 * @brief					将package中的数据整体推送下发
+	 * @return					发送的数据大小
+	 */
+	virtual int					SendAllPkg();
+};
+
+
+/**
+ * @class							tagMsgInfo
+ * @brief							消息描述信息
+ * @author							barry
+ */
+typedef struct
+{
+	unsigned short					nMsgLen;		///< 消息长度
+	unsigned __int64				nMsgCount;		///< 消息计数
+} tagMsgInfo;
+
+
 /**
  * @class				EchoNodeEngine
  * @brief				行情回显引擎
@@ -117,11 +140,12 @@ public:///< Log Method
 	virtual void			WriteDetail( const char * szFormat,... );
 
 protected:///< 挂载相关插件
+	XCodeMsgPool			m_oSendPackage;					///< 数据缓存 + 编/解码模块
 	DataCollector			m_oDataCollector;				///< 行情采集模块接口
 	int						m_nMessageID;					///< 订阅回显的消息ID( ==0, 表示显示全部 )
 	std::string				m_sCode;						///< 订阅回显的消息Code( =="", 表示显示全部 )
-
 };
+
 
 
 #endif

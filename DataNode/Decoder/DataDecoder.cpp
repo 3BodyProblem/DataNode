@@ -26,7 +26,7 @@ int DataDecoder::Initialize( std::string sPluginPath, std::string sCnfXml, unsig
 
 	pFunGetVersion = (T_Func_FetchModuleVersion)m_oDllPlugin.GetDllFunction( "FetchModuleVersion" );
 	pFuncDecodeApi = (T_Func_GetDecodeApi)m_oDllPlugin.GetDllFunction( "GetDecodeApi" );
-	if( NULL == pFunGetVersion || NULL == m_pDecoderApi )
+	if( NULL == pFunGetVersion || NULL == pFuncDecodeApi )
 	{
 		DataNodeService::GetSerivceObj().WriteError( "DataDecoder::Initialize() : invalid fuction pointer(NULL)" );
 		return -100;
@@ -77,14 +77,12 @@ int DataDecoder::Prepare4AUncompression( const char* pData, unsigned int nLen )
 
 int DataDecoder::UncompressData( unsigned short nMsgID, char *pData, unsigned int nLen )
 {
-	int		nErrorCode = m_pDecoderApi->DecodeMessage( nMsgID, pData, nLen );
-
-	if( nErrorCode <= 0 )
+	if( NULL == m_pDecoderApi || NULL == pData )
 	{
-		return nErrorCode;
+		return -1;
 	}
 
-	return nErrorCode;
+	return m_pDecoderApi->DecodeMessage( nMsgID, pData, nLen );
 }
 
 

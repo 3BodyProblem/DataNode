@@ -94,7 +94,7 @@ protected:
 	 * @brief					将package中的数据整体推送下发
 	 * @return					发送的数据大小
 	 */
-	int							SendAllPkg();
+	virtual int					SendAllPkg();
 
 	/**
 	 * @brief					任务函数(内循环)
