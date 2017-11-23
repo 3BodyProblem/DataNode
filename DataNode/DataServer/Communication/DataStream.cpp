@@ -108,7 +108,7 @@ int SendPackagePool::SendAllPkg()
 			DataNodeService::GetSerivceObj().PushData( vctLinkNo+0, nLinkCount, nMsgID, 0, pMsgBuff, nBufSize );
 		}
 
-		if( nBufSize > 0 && 0 != nMsgID )
+		if( nBufSize > 0 && 0 != nMsgID )							///< 行情包推送
 		{
 			tagPackageHead*		pHead = (tagPackageHead*)pMsgBuff;	///< Package的头结构
 			unsigned int		nMsgLen = pHead->nMsgLength;		///< Message结构长度

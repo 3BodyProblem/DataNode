@@ -9,81 +9,80 @@ static tagMsgInfo				s_vctDecodeMsgInfo[512] = { 0 };		///< 解码的消息描述信息数
 
 int XCodeMsgPool::SendAllPkg()
 {
-	int							nSendSize = 0;						///< 发送数据的大小
-	LINKID_VECTOR				vctLinkNo = { 0 };					///< 发送链路表
-	unsigned int				nLinkCount = LinkNoRegister::GetRegister().FetchLinkNoTable( vctLinkNo+0, MAX_LINKID_NUM );
+	int							nSendSize = 0;							///< 发送数据的大小
 	CriticalLock				guard( m_oLock );
 
 	for( int n = 0; n < m_MsgIDCount; n++ )
 	{
-		unsigned int			nMsgID = m_vctMsgID[n];
-		int						nBufSize = m_vctCurDataSize[nMsgID];
-		char*					pMsgBuff = m_vctAddrMap[nMsgID];	///< Message的头结构
+		unsigned int			nMsgID = m_vctMsgID[n];					///< Message ID
+		int						nBufSize = m_vctCurDataSize[nMsgID];	///< 该类型的Message数据累计长度
+		char*					pMsgBuff = m_vctAddrMap[nMsgID];		///< Message的头结构
 
-		if( nBufSize > 0 && 0 == nMsgID )							///< 心跳包推送
+		if( nBufSize > 0 && 0 != nMsgID )								///< nMsgID如果等于0则是心跳包，忽略即可
 		{
-			DataNodeService::GetSerivceObj().PushData( vctLinkNo+0, nLinkCount, nMsgID, 0, pMsgBuff, nBufSize );
-		}
-
-		if( nBufSize > 0 && 0 != nMsgID )
-		{
-			tagPackageHead*		pHead = (tagPackageHead*)pMsgBuff;	///< Package的头结构
-			unsigned int		nMsgLen = pHead->nMsgLength;		///< Message结构长度
+			tagPackageHead*		pHead = (tagPackageHead*)pMsgBuff;		///< Package的头结构
 			tagMsgInfo&			refEnMsgInfo = s_vctEncodeMsgInfo[nMsgID];
 			tagMsgInfo&			refDeMsgInfo = s_vctDecodeMsgInfo[nMsgID];
 
+			///< ---------------------- 缩压代码 -------------------------------
 			if( 0 != m_oEncoder.Prepare4ACompression( (char*)pHead ) )
 			{
 				DataNodeService::GetSerivceObj().WriteError( "SendPackagePool::SendAllPkg() : failed 2 prepare a compression, messageid=%u", nMsgID );
+				assert( 0 );
 				return -1;
 			}
 
-			for( unsigned int nOffset = sizeof(tagPackageHead); nOffset < nBufSize; nOffset += nMsgLen )
+			for( unsigned int nOffset = sizeof(tagPackageHead); nOffset < nBufSize; nOffset += pHead->nMsgLength )
 			{
-				if( false == m_oEncoder.CompressData( nMsgID, pMsgBuff + nOffset, nMsgLen ) )
+				if( false == m_oEncoder.CompressData( nMsgID, pMsgBuff + nOffset, pHead->nMsgLength ) )
 				{
 					DataNodeService::GetSerivceObj().WriteError( "SendPackagePool::SendAllPkg() : failed 2 compress message, messageid=%u", nMsgID );
+					assert( 0 );
 					return -2;
 				}
 			}
 
-			nSendSize += nBufSize;								///< 累计发送量
-			m_vctCurDataSize[nMsgID] = 0;							///< 清空发送缓存
-			DataNodeService::GetSerivceObj().PushData( vctLinkNo+0, nLinkCount, nMsgID, 0, m_oEncoder.GetBufferPtr(), m_oEncoder.GetBufferLen() );
-
-			///< ---------------------- Debug模式下的，缩压/解压测试代码 -------------------------------
+			nSendSize += nBufSize;										///< 累计发送量
+			m_vctCurDataSize[nMsgID] = 0;								///< 清空发送缓存
+#ifdef _DEBUG
+			///< ---------------------- 解压代码 -------------------------------
 			if( 0 != m_oDecoder.Prepare4AUncompression( m_oEncoder.GetBufferPtr() + sizeof(tagPackageHead), m_oEncoder.GetBufferLen() - sizeof(tagPackageHead) ) )
 			{
 				DataNodeService::GetSerivceObj().WriteError( "SendPackagePool::SendAllPkg() : failed 2 prepare a uncompression, messageid=%u", nMsgID );
+				assert( 0 );
 				return -100;
 			}
 
-			for( unsigned int nOffset = sizeof(tagPackageHead); nOffset < nBufSize; nOffset += nMsgLen )
+			for( unsigned int nOffset = sizeof(tagPackageHead); nOffset < nBufSize; nOffset += pHead->nMsgLength )
 			{
 				char			pszOutput[1024] = { 0 };
 
 				if( 0 > m_oDecoder.UncompressData( nMsgID, pszOutput, sizeof(pszOutput) ) )
 				{
 					::printf( "SendPackagePool::SendAllPkg() : failed 2 compress message, messageid=%u", nMsgID );
+					assert( 0 );
 					return -200;
 				}
 				else
 				{
-					if( ::memcmp( pMsgBuff + nOffset, pszOutput, nMsgLen ) != 0 )
+					if( ::memcmp( pMsgBuff + nOffset, pszOutput, pHead->nMsgLength ) != 0 )
 					{
-						::printf( "SendPackagePool::SendAllPkg() : [WARNING] Find A Discrepancy after decoding\n" );
-						return -300;
+						::printf( "[WARNING] Find A Discrepancy As Follow (In Vs Out) : \n" );
+						EchoNodeEngine::PrintMessage( pHead->nMarketID, nMsgID, pMsgBuff + nOffset );
+						EchoNodeEngine::PrintMessage( pHead->nMarketID, nMsgID, pszOutput );
+						/*assert( 0 );return -300;*/
 					}
 
 					refDeMsgInfo.nMsgCount++;
 					if( refDeMsgInfo.nMsgLen == 0 )
 					{
-						refDeMsgInfo.nMsgLen = nMsgLen;
+						refDeMsgInfo.nMsgLen = pHead->nMsgLength;
 					}
 				}
 			}
 
 			::printf( "[%u] InNum=%I64d, OutNum=%I64d\n", nMsgID, refEnMsgInfo.nMsgCount, refDeMsgInfo.nMsgCount );
+#endif
 		}
 	}
 
@@ -230,44 +229,54 @@ int EchoNodeEngine::OnData( unsigned int nDataID, const char* pData, unsigned in
 			return 0;
 		}
 
-		switch( nMarketID )
-		{
-		case QUO_MARKET_DCE:
-			DLFuture_Echo::FormatStruct2OutputBuffer( pszEcho, nDataID, pData );
-			break;
-		case QUO_MARKET_DCEOPT:
-			DLOption_Echo::FormatStruct2OutputBuffer( pszEcho, nDataID, pData );
-			break;
-		case QUO_MARKET_SHFE:
-			SHFuture_Echo::FormatStruct2OutputBuffer( pszEcho, nDataID, pData );
-			break;
-		case QUO_MARKET_SHFEOPT:
-			SHOption_Echo::FormatStruct2OutputBuffer( pszEcho, nDataID, pData );
-			break;
-		case QUO_MARKET_CZCE:
-			ZZFuture_Echo::FormatStruct2OutputBuffer( pszEcho, nDataID, pData );
-			break;
-		case QUO_MARKET_CZCEOPT:
-			ZZOption_Echo::FormatStruct2OutputBuffer( pszEcho, nDataID, pData );
-			break;
-		case QUO_MARKET_CFFEX:
-			CFFFuture_Echo::FormatStruct2OutputBuffer( pszEcho, nDataID, pData );
-			break;
-		case QUO_MARKET_SSE:
-			SHL1_Echo::FormatStruct2OutputBuffer( pszEcho, nDataID, pData );
-			break;
-		case QUO_MARKET_SSEOPT:
-			SHL1Option_Echo::FormatStruct2OutputBuffer( pszEcho, nDataID, pData );
-			break;
-		case QUO_MARKET_SZSE:
-			SZL1_Echo::FormatStruct2OutputBuffer( pszEcho, nDataID, pData );
-			break;
-		default:
-			return -1;
-		}
-
-		::printf( "%s", pszEcho );
+		return PrintMessage( nMarketID, nDataID, pData );
 	}
+
+	return 0;
+}
+
+int EchoNodeEngine::PrintMessage( unsigned int nMarketID, unsigned int nDataID, const char* pData )
+{
+	char			pszEcho[1024] = { 0 };
+
+	switch( nMarketID )
+	{
+	case QUO_MARKET_DCE:
+		DLFuture_Echo::FormatStruct2OutputBuffer( pszEcho, nDataID, pData );
+		break;
+	case QUO_MARKET_DCEOPT:
+		DLOption_Echo::FormatStruct2OutputBuffer( pszEcho, nDataID, pData );
+		break;
+	case QUO_MARKET_SHFE:
+		SHFuture_Echo::FormatStruct2OutputBuffer( pszEcho, nDataID, pData );
+		break;
+	case QUO_MARKET_SHFEOPT:
+		SHOption_Echo::FormatStruct2OutputBuffer( pszEcho, nDataID, pData );
+		break;
+	case QUO_MARKET_CZCE:
+		ZZFuture_Echo::FormatStruct2OutputBuffer( pszEcho, nDataID, pData );
+		break;
+	case QUO_MARKET_CZCEOPT:
+		ZZOption_Echo::FormatStruct2OutputBuffer( pszEcho, nDataID, pData );
+		break;
+	case QUO_MARKET_CFFEX:
+		CFFFuture_Echo::FormatStruct2OutputBuffer( pszEcho, nDataID, pData );
+		break;
+	case QUO_MARKET_SSE:
+		SHL1_Echo::FormatStruct2OutputBuffer( pszEcho, nDataID, pData );
+		break;
+	case QUO_MARKET_SSEOPT:
+		SHL1Option_Echo::FormatStruct2OutputBuffer( pszEcho, nDataID, pData );
+		break;
+	case QUO_MARKET_SZSE:
+		SZL1_Echo::FormatStruct2OutputBuffer( pszEcho, nDataID, pData );
+		break;
+	default:
+		::sprintf( pszEcho, "%s\n", "Unknow Market ID" );
+		break;
+	}
+
+	::printf( "%s", pszEcho );
 
 	return 0;
 }

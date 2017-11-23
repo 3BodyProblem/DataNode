@@ -139,6 +139,9 @@ public:///< Log Method
 	 */
 	virtual void			WriteDetail( const char * szFormat,... );
 
+public:
+	static int				PrintMessage( unsigned int nMarketID, unsigned int nDataID, const char* pData );
+
 protected:///< 挂载相关插件
 	XCodeMsgPool			m_oSendPackage;					///< 数据缓存 + 编/解码模块
 	DataCollector			m_oDataCollector;				///< 行情采集模块接口
