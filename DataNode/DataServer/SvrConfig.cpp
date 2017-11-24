@@ -94,7 +94,8 @@ int Configuration::Load()
 
 	m_sCompressPluginPath = oIniFile.getStringValue( std::string("Plugin"), std::string("compressor"), nErrCode );
 	if( 0 != nErrCode )	{
-		::printf( "Configuration::Load() : Without Quotation Data Compressor .............................. \n" );
+		m_sCompressPluginPath = "./DataXCode.dll";
+		::printf( "Configuration::Load() : Default Data Compressor Plugin Path : %s\n", m_sCompressPluginPath.c_str() );
 	}
 	m_sCompressPluginConfig = oIniFile.getStringValue( std::string("Plugin"), std::string("compressorcfg"), nErrCode );
 	if( 0 != nErrCode )	{
