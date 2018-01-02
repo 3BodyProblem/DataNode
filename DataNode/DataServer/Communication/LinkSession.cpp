@@ -183,7 +183,7 @@ void SessionCollection::OnReportStatus( char* szStatusInfo, unsigned int uiSize 
 
 	::sprintf( szStatusInfo
 		, ":working = %s,[DataNode.exe基本信息],ServicePlug版本 = V%.2f B%03d,测试行情模式 = %s,发送心跳包数 = %u,推送链路数 = %d(路),\
-		  数据表数量 = %u(张), [插件基本信息],%s"
+		  数据表数量 = %u(张),[插件基本信息],%s"
 		, DataNodeService::GetSerivceObj().OnInquireStatus( pszStatusDesc, nDescLen )==true?"true":"false"
 		, (float)(nModuleVersion>>16)/100.f, nModuleVersion&0xFF
 		, Configuration::GetConfigObj().GetTestFlag()==true?"是":"否"
